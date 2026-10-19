@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye v1.9 — Dashboard</title>
+<title>CapEye Final — Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,8 +18,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20260824"></script>
+<script src="ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <script src="live-sync.js?v=20260824"></script>
 <script>
 (function() {
@@ -234,7 +235,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20260930b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
 </head>
 <body>
 
@@ -726,6 +727,6 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=20260930b"></script>
+<script src="mobile-menu.js?v=20261019"></script>
 </body>
 </html>

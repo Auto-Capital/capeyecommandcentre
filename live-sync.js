@@ -78,27 +78,23 @@ var CE_LIVE = (function () {
   }
 
   // Wait for Firebase Auth to be READY with a signed-in user before any
-  // Firestore read. This fixes the "works on phone, not on desktop" bug:
-  // reads were racing ahead of the auth session being restored, so the
-  // security rules (request.auth != null) denied them and the screen came
-  // up empty. We now hold until auth confirms a user (or times out).
+  // Firestore read. Fixes the "works on phone, not on desktop" bug: reads
+  // were racing ahead of the auth session being restored, so the security
+  // rules (request.auth != null) denied them and the screen came up empty.
   function _awaitAuth() {
     return new Promise(function (resolve) {
       if (typeof AUTH === 'undefined' || !AUTH) { resolve(false); return; }
-      // Already signed in? Go immediately.
       if (AUTH.currentUser) { resolve(true); return; }
       var done = false;
       var unsub = AUTH.onAuthStateChanged(function (user) {
         if (done) return;
         if (user) { done = true; if (unsub) unsub(); resolve(true); }
       });
-      // Safety timeout: if auth never resolves in 6s, proceed anyway so the
-      // page isn't stuck — reads may still be served from local cache.
       setTimeout(function () {
         if (done) return;
         done = true; if (unsub) unsub();
         console.warn('[CapEye] auth not ready after timeout — proceeding on cache.');
-        resolve(!!AUTH.currentUser);
+        resolve(!!(AUTH && AUTH.currentUser));
       }, 6000);
     });
   }
@@ -109,15 +105,11 @@ var CE_LIVE = (function () {
       console.log('[CapEye] Live sync: Firestore unavailable — using local cache only.');
       return Promise.resolve(false);
     }
-    // Gate every read behind a confirmed auth session.
     return _awaitAuth().then(function (authed) {
       if (!authed) {
-        console.warn('[CapEye] No Firebase auth session — data reads will be denied. Prompting re-login.');
-        // If the app THINKS we're logged in (localStorage) but Firebase
-        // disagrees, the session has drifted — send them to login to
-        // re-establish a real Firebase session rather than show an empty app.
+        console.warn('[CapEye] No Firebase auth session — reads would be denied.');
         if (typeof isSessionValid === 'function' && isSessionValid()) {
-          try { localStorage.setItem('ce_auth_drift', '1'); } catch (e) {}
+          // App thinks we're logged in but Firebase disagrees — session drift.
           window.location.href = 'login.html';
           return false;
         }

@@ -1,18 +1,1545 @@
+<!-- 
+  CapEye Auto Capital | Version 1.2 | 24 August 2026 | Build v20260824
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye v1.8 — Redirecting…</title>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<script>
-  // The full CapEye app is now responsive and used on mobile too, so the
-  // old standalone mobile prototype is retired. Send anyone here to the
-  // real app (which has live sync + auth), preserving login state.
-  window.location.replace('index.html');
-</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B1120">
+<title>CapEye Mobile | Auto Capital</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="./ac-data.js?v=20261019b"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --red:#C8102E;--navy:#003DA5;--dark:#0B1120;
+  --green:#16a34a;--gold:#d4980a;--orange:#ea580c;--purple:#7c3aed;--teal:#0891b2;
+  --bg:#F2F5F9;--card:#fff;--border:#E5EAF2;--border2:#CBD5E1;
+  --text:#0F1923;--text2:#3D4D5C;--muted:#8A9AB0;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.05);
+  --shl:0 8px 28px rgba(0,0,0,.13);
+  --r:14px;--rsm:10px;--rxs:7px;
+}
+html,body{height:100%;font-family:"DM Sans",sans-serif;background:#0e1422;color:var(--text);-webkit-font-smoothing:antialiased;overflow:hidden}
+
+/* ═══ OUTER LAYOUT ═══ */
+.outer{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;gap:44px;padding:28px 20px;
+  background:linear-gradient(150deg,#070d1c 0%,#001040 52%,#070d1c 100%)}
+
+/* ═══ INFO PANEL ═══ */
+.infop{width:310px;flex-shrink:0;color:#fff;padding-top:10px;display:flex;flex-direction:column;gap:16px;
+  position:sticky;top:28px;max-height:calc(100vh - 56px);overflow-y:auto}
+.infop::-webkit-scrollbar{display:none}
+.ip-back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.25);font-size:11px;text-decoration:none;transition:.15s}
+.ip-back:hover{color:#fff}
+.ip-lr{display:flex;align-items:center;gap:7px}
+.ip-logo{height:26px;filter:brightness(0) invert(1);opacity:.72}
+.ip-sep{width:1px;height:18px;background:rgba(255,255,255,.1)}
+.ip-ce{background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:1.5px}
+.ip-h{font-size:20px;font-weight:800;color:#fff;line-height:1.2}
+.ip-h em{color:var(--red);font-style:normal}
+.ip-d{font-size:11px;color:rgba(255,255,255,.35);line-height:1.65;margin-top:6px}
+.ip-div{height:1px;background:rgba(255,255,255,.06)}
+.ip-sl{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px}
+.ip-feats{display:flex;flex-direction:column;gap:9px}
+.ip-feat{display:flex;gap:9px;align-items:flex-start}
+.ip-fi{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ip-ft{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:1px}
+.ip-fd{font-size:10px;color:rgba(255,255,255,.28);line-height:1.5}
+.ip-accts{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 12px}
+.ia-h{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px}
+.ia-row{display:flex;justify-content:space-between;align-items:center;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px;cursor:pointer;border-radius:5px;transition:.12s}
+.ia-row:last-child{border-bottom:none}
+.ia-row:hover{background:rgba(255,255,255,.05)}
+.ia-name{font-weight:600;color:rgba(255,255,255,.62)}
+.ia-dept{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;flex-shrink:0;margin:0 5px}
+.ia-cred{font-family:"DM Mono",monospace;font-size:9px;color:rgba(255,255,255,.2)}
+.ip-note{font-size:9px;color:rgba(255,255,255,.16);line-height:1.6;padding-bottom:16px}
+/* Selector cards */
+.selcard{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.07);margin-bottom:6px;transition:.15s;
+  background:rgba(255,255,255,.03);position:relative;overflow:hidden}
+.selcard::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--sc,transparent) 0,transparent 100%);
+  opacity:0;transition:.15s}
+.selcard:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14)}
+.selcard.selected{border-color:var(--sc,#fff);background:rgba(255,255,255,.06)}
+.selcard.selected::before{opacity:.08}
+.selcard-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#fff;flex-shrink:0;background:var(--sc,#888)}
+.selcard-info{flex:1}
+.selcard-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.78);margin-bottom:1px}
+.selcard-role{font-size:10px;color:rgba(255,255,255,.3)}
+.selcard-dept{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;background:var(--sc,#888);
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);flex-shrink:0}
+.selcard-tick{width:18px;height:18px;border-radius:50%;background:var(--sc,#888);
+  display:none;align-items:center;justify-content:center;flex-shrink:0}
+.selcard-tick i{font-size:9px;color:#fff}
+.selcard.selected .selcard-tick{display:flex}
+.login-as-btn{width:100%;background:linear-gradient(135deg,var(--navy),#001f70);color:#fff;border:none;
+  border-radius:10px;padding:12px;font-size:13px;font-weight:700;font-family:"DM Sans",sans-serif;
+  cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;transition:.18s;
+  box-shadow:0 4px 14px rgba(0,61,165,.3);margin-top:12px}
+.login-as-btn.show{display:flex}
+.login-as-btn:active{transform:scale(.98)}
+
+/* ═══ PHONE ═══ */
+.phonew{display:flex;flex-direction:column;align-items:center;gap:10px}
+.phonel{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.16)}
+.phone{width:390px;height:844px;background:#fff;border-radius:50px;
+  box-shadow:0 0 0 9px #141929,0 0 0 11px #1c2338,0 28px 72px rgba(0,0,0,.72);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;flex-shrink:0}
+.di{position:absolute;top:9px;left:50%;transform:translateX(-50%);
+  width:112px;height:30px;background:#0b1020;border-radius:18px;z-index:300;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.di-cam{width:8px;height:8px;border-radius:50%;background:#141e36;border:1.5px solid #1d2c50}
+.sb{height:48px;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 22px 8px;font-size:13px;font-weight:700;color:var(--text);
+  flex-shrink:0;position:relative;z-index:10;background:inherit}
+.sb-r{display:flex;align-items:center;gap:5px;font-size:11px}
+
+/* ═══ SCREENS ═══ */
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;background:#fff}
+.screen.active{display:flex}
+
+/* ═══ LOGIN ═══ */
+#sc-login{background:#fff}
+.lhero{height:228px;flex-shrink:0;
+  background:linear-gradient(160deg,#060c18 0%,#001240 60%,#060c18 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:7px;position:relative;overflow:hidden}
+.lhero-g{position:absolute;inset:0;opacity:.025;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 25px,#fff 25px,#fff 26px),
+  repeating-linear-gradient(90deg,transparent,transparent 25px,#fff 25px,#fff 26px)}
+.lhero-glow{position:absolute;inset:0;
+  background:radial-gradient(circle at 22% 65%,rgba(200,16,46,.15) 0%,transparent 48%),
+  radial-gradient(circle at 82% 28%,rgba(0,61,165,.2) 0%,transparent 46%)}
+.lhero-c{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.lhero-lr{display:flex;align-items:center;gap:7px}
+.lhero-logo{height:30px;filter:brightness(0) invert(1);opacity:.85}
+.lhero-s{width:1px;height:22px;background:rgba(255,255,255,.1)}
+.lhero-ce{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1.5px}
+.lhero-t{font-size:18px;font-weight:800;color:#fff;text-align:center;line-height:1.2}
+.lhero-t em{color:var(--red);font-style:normal}
+.lhero-sub{font-size:10px;color:rgba(255,255,255,.32)}
+.lform{flex:1;overflow-y:auto;padding:18px 20px 0}
+.lform::-webkit-scrollbar{display:none}
+.lg{font-size:17px;font-weight:800;color:var(--text)}
+.lgs{font-size:11px;color:var(--muted);margin-bottom:14px;margin-top:2px}
+.lfg{margin-bottom:12px}
+.lfg label{font-size:10px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px}
+.lfiw{position:relative}
+.lfii{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+.lfi{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rsm);
+  padding:11px 12px 11px 34px;font-size:14px;font-family:"DM Sans",sans-serif;color:var(--text);outline:none;transition:.18s}
+.lfi:focus{border-color:var(--navy);background:#fff;box-shadow:0 0 0 3px rgba(0,61,165,.08)}
+.lfi::placeholder{color:var(--muted)}
+.lbtn{width:100%;background:linear-gradient(135deg,var(--navy) 0%,#001f70 100%);color:#fff;border:none;
+  border-radius:var(--r);padding:13px;font-size:14px;font-weight:700;font-family:"DM Sans",sans-serif;
+  cursor:pointer;box-shadow:0 4px 14px rgba(0,61,165,.28);display:flex;align-items:center;justify-content:center;
+  gap:7px;transition:.18s;margin-bottom:10px}
+.lbtn:active{transform:scale(.98)}
+.lerr{background:rgba(200,16,46,.07);border:1px solid rgba(200,16,46,.2);border-radius:7px;
+  padding:8px 12px;font-size:11px;color:var(--red);font-weight:600;text-align:center;display:none;margin-bottom:9px}
+.lql{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.lchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.lchip{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 10px;
+  font-size:10px;font-weight:600;color:var(--text2);cursor:pointer;transition:.15s;display:flex;align-items:center;gap:4px}
+.lchip:active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.lchip-dot{width:6px;height:6px;border-radius:50%}
+
+/* ═══ APP SHELL ═══ */
+.appsh{display:none;flex-direction:column;flex:1;overflow:hidden;background:var(--bg)}
+.appsh.active{display:flex}
+
+/* App Header */
+.ahdr{background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.ahdr-top{display:flex;align-items:center;justify-content:space-between;padding:9px 14px}
+.ahdr-l{display:flex;align-items:center;gap:7px}
+.ahdr-logo{height:22px;object-fit:contain}
+.ahdr-sep{width:1px;height:16px;background:var(--border)}
+.ahdr-ce{background:var(--red);color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:1px}
+.ahdr-r{display:flex;align-items:center;gap:7px}
+.ahdr-user{text-align:right}
+.ahdr-name{font-size:11px;font-weight:700;color:var(--text)}
+.ahdr-role{font-size:9px;color:var(--muted)}
+.nbtn{width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--text2);position:relative}
+.nbadge{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid #fff;display:none}
+
+/* Bottom Nav */
+.bnav{display:flex;background:#fff;border-top:1px solid var(--border);flex-shrink:0;box-shadow:0 -1px 6px rgba(0,0,0,.05)}
+.bn{flex:1;padding:8px 0 6px;text-align:center;font-size:9px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:.15s;border-top:2px solid transparent;
+  display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.bn i{font-size:16px}
+.bn.active{color:var(--navy);border-top-color:var(--navy)}
+.bn-pip{position:absolute;top:5px;right:calc(50% - 14px);width:6px;height:6px;border-radius:50%;background:var(--red);border:1.5px solid #fff;display:none}
+
+/* Body / Pages */
+.abody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.abody::-webkit-scrollbar{display:none}
+.pv{display:none;padding:13px;animation:fadeUp .2s ease}
+.pv.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section headers */
+.sh{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+  display:flex;align-items:center;justify-content:space-between;margin:13px 0 7px}
+.sh:first-child{margin-top:0}
+.sha{font-size:11px;color:var(--navy);font-weight:700;cursor:pointer;letter-spacing:0;text-transform:none}
+
+/* Summary row */
+.sumrow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.sumc{background:#fff;border:1px solid var(--border);border-radius:var(--rsm);padding:10px 8px;text-align:center;box-shadow:var(--sh)}
+.sumbar{height:3px;border-radius:2px;background:var(--sc,#888);margin:0 auto 6px;width:24px}
+.sumv{font-size:20px;font-weight:800;color:var(--sc,#888);line-height:1}
+.suml{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:2px}
+
+/* Task card */
+.tk{background:#fff;border:1px solid var(--border);border-left:4px solid var(--tlc,var(--border));
+  border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);margin-bottom:9px;cursor:pointer;transition:.14s}
+.tk:active{transform:scale(.99);box-shadow:none}
+.tkh{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:7px}
+.tkreg{font-family:"DM Mono",monospace;font-size:11px;background:#fffbdb;color:#7a5c00;padding:2px 7px;border-radius:4px;border:1px solid #e6d080;letter-spacing:1.2px;flex-shrink:0}
+.tkstage{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.tkb{padding:10px 13px}
+.tkmake{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.tkmeta{font-size:10px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px}
+.tkf{padding:8px 13px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ptag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:5px}
+.obtn{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:10px;font-weight:700;font-family:"DM Sans",sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px}
+.obtn:active{opacity:.85}
+
+/* Empty state */
+.emp{text-align:center;padding:36px 16px;color:var(--muted)}
+.emp i{font-size:32px;display:block;margin-bottom:9px;opacity:.28}
+.emp p{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px}
+.emp span{font-size:10px}
+
+/* Key items */
+.kitem{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;box-shadow:var(--sh)}
+.kreg{font-family:"DM Mono",monospace;font-size:11px;background:#fffbdb;color:#7a5c00;padding:3px 8px;border-radius:4px;border:1px solid #e6d080;letter-spacing:1.2px;flex-shrink:0}
+.kinfo{flex:1}
+.kdesc{font-size:12px;font-weight:600;color:var(--text)}
+.kpos{font-size:10px;color:var(--muted)}
+.kstat{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px}
+
+/* Info rows */
+.irow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.irow:last-child{border-bottom:none}
+.irlbl{color:var(--muted);font-weight:600;display:flex;align-items:center;gap:5px}
+.irval{color:var(--text);font-weight:700;text-align:right;max-width:58%}
+
+/* ═══ VEHICLE DETAIL SCREEN ═══ */
+.vds{display:none;flex-direction:column;flex:1;overflow:hidden;background:var(--bg);animation:slin .2s ease}
+.vds.active{display:flex}
+@keyframes slin{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.vdhdr{background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.vdhtop{display:flex;align-items:center;gap:9px;padding:10px 13px}
+.backbtn{width:30px;height:30px;border-radius:8px;background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:12px;flex-shrink:0;transition:.13s}
+.backbtn:active{background:var(--border2)}
+.vdhi{flex:1;min-width:0}
+.vdhtitle{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vdhsub{font-size:9px;color:var(--muted)}
+.vdreg{font-family:"DM Mono",monospace;font-size:11px;background:#fffbdb;color:#7a5c00;padding:3px 9px;border-radius:4px;border:1px solid #e6d080;letter-spacing:1.5px;flex-shrink:0}
+
+/* Vehicle hero */
+.vhero{padding:13px 15px;background:linear-gradient(135deg,#0B1120,#001750);position:relative;overflow:hidden;flex-shrink:0}
+.vhero-g{position:absolute;inset:0;background:radial-gradient(circle at 80% 35%,rgba(200,16,46,.15),transparent 52%)}
+.vhero-c{position:relative;z-index:1}
+.vhero-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px}
+.vhero-make{font-size:15px;font-weight:800;color:#fff;line-height:1.1}
+.vhero-var{font-size:9px;color:rgba(255,255,255,.32);margin-top:3px;max-width:185px;line-height:1.4}
+.vhero-price{font-size:17px;font-weight:800;color:#fff;text-align:right}
+.vhero-plbl{font-size:8px;color:rgba(255,255,255,.28);text-align:right;margin-top:1px}
+.vchips{display:flex;flex-wrap:wrap;gap:4px}
+.vchip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 8px;font-size:9px;font-weight:600;color:rgba(255,255,255,.58);display:flex;align-items:center;gap:3px}
+
+/* Stage track */
+.vdprog{background:#fff;border-bottom:1px solid var(--border);padding:9px 13px 10px;flex-shrink:0}
+.vdprog-lbl{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.strack{display:flex;align-items:center;overflow-x:auto;padding-bottom:1px}
+.strack::-webkit-scrollbar{display:none}
+.sstep{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:30px}
+.sdot{width:9px;height:9px;border-radius:50%;background:var(--border);transition:.18s}
+.sdot.done{background:var(--green)}
+.sdot.cur{background:var(--navy);box-shadow:0 0 0 3px rgba(0,61,165,.18);width:13px;height:13px}
+.sdot.nxt{border:2px solid var(--gold);background:#fff}
+.sname{font-size:7px;font-weight:600;color:var(--muted);text-align:center;line-height:1.2;max-width:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname.cur{color:var(--navy);font-weight:700}
+.sline{flex:1;height:2px;background:var(--border);min-width:5px;margin:0 1px;align-self:flex-start;margin-top:3.5px}
+.sline.done{background:var(--green)}
+
+/* VD tabs */
+.vdtabs{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+.vdtabs::-webkit-scrollbar{display:none}
+.vdt{padding:9px 13px;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.13s;flex-shrink:0}
+.vdt.active{color:var(--navy);border-bottom-color:var(--navy)}
+
+/* VD body */
+.vdbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.vdbody::-webkit-scrollbar{display:none}
+.vtc{display:none;padding:13px;animation:fadeUp .18s ease}
+.vtc.active{display:block}
+
+/* Form sections */
+.fs{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:11px}
+.fsh{padding:9px 13px;background:var(--bg);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.fsb{padding:12px;display:flex;flex-direction:column;gap:10px}
+.ff{display:flex;flex-direction:column;gap:4px}
+.ff label{font-size:10px;font-weight:700;color:var(--text2)}
+.ff input,.ff select,.ff textarea{
+  background:var(--bg);border:1.5px solid var(--border);border-radius:8px;
+  padding:10px 11px;font-size:13px;font-family:"DM Sans",sans-serif;color:var(--text);outline:none;width:100%;transition:.18s}
+.ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--navy);background:#fff;box-shadow:0 0 0 3px rgba(0,61,165,.07)}
+.ff textarea{resize:none}
+.ffrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ff-warn label{color:var(--red)}
+.ff-warn input,.ff-warn textarea{border-color:rgba(200,16,46,.2)}
+
+/* Checklist */
+.ci{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s}
+.ci:last-child{border-bottom:none}
+.cib{width:20px;height:20px;border-radius:5px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.13s;background:#fff}
+.cib.on{background:var(--navy);border-color:var(--navy)}
+.cil{font-size:12px;color:var(--text2);flex:1;line-height:1.3}
+.cil.on{color:var(--muted);text-decoration:line-through}
+
+/* Damage zones */
+.dmgg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.dmgz{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:10px 7px;text-align:center;cursor:pointer;transition:.13s;position:relative}
+.dmgz:active{transform:scale(.97)}
+.dmgz.hit{border-color:var(--red);background:rgba(200,16,46,.04)}
+.dzico{font-size:20px;margin-bottom:3px}
+.dzname{font-size:9px;font-weight:600;color:var(--text2)}
+.dzpip{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--red);display:none}
+.dmgz.hit .dzpip{display:block}
+.dmgnote{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12px;font-family:"DM Sans",sans-serif;color:var(--text);outline:none;resize:none;transition:.18s;display:none;margin-top:7px}
+.dmgnote:focus{border-color:var(--navy);background:#fff}
+.dmgnote.show{display:block}
+
+/* Photos */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.pslot{aspect-ratio:1;border-radius:9px;border:2px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;background:var(--bg);transition:.13s;overflow:hidden;position:relative}
+.pslot:active{background:var(--border)}
+.pslot.taken{border-style:solid;border-color:var(--green)}
+.pstick{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center}
+.pslot.taken .pstick{display:flex}
+.psico{font-size:18px;color:var(--muted)}
+.pslbl{font-size:8px;color:var(--muted);font-weight:600;text-align:center;padding:0 3px;line-height:1.3}
+.pslot.taken .psico,.pslot.taken .pslbl{opacity:.3}
+
+/* Notes thread */
+.nthread{display:flex;flex-direction:column;gap:0;margin-bottom:11px}
+.nitem{display:flex;gap:8px}
+.nline{display:flex;flex-direction:column;align-items:center}
+.ndot{width:7px;height:7px;border-radius:50%;background:var(--navy);flex-shrink:0;margin-top:4px}
+.nvline{flex:1;width:2px;background:var(--border);margin:3px 0}
+.ncontent{flex:1;padding-bottom:10px}
+.nmeta{font-size:9px;color:var(--muted);margin-bottom:3px;display:flex;gap:5px}
+.nwho{font-weight:700;color:var(--text2)}
+.ntext{font-size:12px;color:var(--text2);background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 10px;line-height:1.5}
+.nadd{display:flex;gap:7px;align-items:flex-start}
+.ninput{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12px;font-family:"DM Sans",sans-serif;color:var(--text);outline:none;resize:none;transition:.18s}
+.ninput:focus{border-color:var(--navy);background:#fff}
+.nsend{background:var(--navy);color:#fff;border:none;border-radius:9px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;margin-top:1px}
+
+/* Handover */
+.hocard{background:linear-gradient(135deg,var(--navy),#001f6a);border-radius:var(--r);padding:14px;color:#fff;margin-bottom:11px}
+.hotitle{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.horow{display:flex;align-items:center;gap:7px;margin-bottom:11px}
+.hofrom{font-size:13px;font-weight:800;color:#fff}
+.hoarr{font-size:11px;color:rgba(255,255,255,.32)}
+.hoto{font-size:13px;font-weight:800;color:var(--gold)}
+.hoflds{display:flex;flex-direction:column;gap:7px;margin-bottom:11px}
+.hofl label{font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+.hofl select,.hofl textarea{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.13);border-radius:7px;padding:9px 11px;font-size:12px;font-family:"DM Sans",sans-serif;color:#fff;outline:none;transition:.18s}
+.hofl select option{color:var(--text);background:#fff}
+.hofl textarea{resize:none}
+.hobtn{width:100%;background:#fff;color:var(--navy);border:none;border-radius:9px;padding:12px;font-size:12px;font-weight:800;font-family:"DM Sans",sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.18s}
+.hobtn:active{opacity:.9}
+
+/* Complete button */
+.completebtn{width:100%;background:linear-gradient(135deg,var(--green),#14803d);color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:13px;font-weight:800;font-family:"DM Sans",sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 4px 14px rgba(22,163,74,.28);transition:.18s;margin-bottom:11px}
+.completebtn:active{transform:scale(.98)}
+
+/* Read-only notice */
+.readonly-notice{background:rgba(100,116,139,.07);border:1px solid rgba(100,116,139,.18);border-radius:var(--rsm);padding:10px 12px;font-size:11px;color:var(--muted);display:flex;align-items:flex-start;gap:7px;margin-bottom:11px}
+
+/* Success */
+.sucsc{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:28px;text-align:center;background:linear-gradient(160deg,#061506,#083508)}
+.sucsc.active{display:flex}
+.sucico{font-size:56px;margin-bottom:14px;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.such{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.sucs{font-size:11px;color:rgba(255,255,255,.4);line-height:1.7;margin-bottom:22px;max-width:230px}
+.sucback{background:#22c55e;color:#fff;border:none;border-radius:var(--r);padding:12px 22px;font-size:13px;font-weight:700;font-family:"DM Sans",sans-serif;cursor:pointer}
+
+/* Toast */
+.toast{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);
+  background:rgba(10,15,28,.92);color:#fff;padding:8px 15px;border-radius:20px;
+  font-size:11px;font-weight:600;z-index:9999;white-space:nowrap;backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.09);animation:tin .18s ease}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(7px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Alert banner */
+.abanner{border-radius:var(--rsm);padding:9px 12px;font-size:11px;display:flex;align-items:flex-start;gap:7px;margin-bottom:8px;line-height:1.5}
+.abanner.urgent{background:rgba(200,16,46,.07);border:1px solid rgba(200,16,46,.18);color:var(--red)}
+.abanner.warn{background:rgba(212,152,10,.07);border:1px solid rgba(212,152,10,.18);color:var(--gold)}
+.abanner.info{background:rgba(0,61,165,.07);border:1px solid rgba(0,61,165,.18);color:var(--navy)}
+
+/* Dept badge */
+.dbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:9px;font-weight:700}
+
+/* Mobile full-screen */
+@media(max-width:420px){
+  .outer{padding:0;background:#fff}
+  .infop,.phonel{display:none}
+  .phonew{padding:0}
+  .phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}
+  .di{display:none}
+  .sb{height:36px;padding:0 16px 6px}
+}
+</style>
 </head>
 <body>
-  <p style="font-family:sans-serif;padding:24px">Redirecting to CapEye… <a href="index.html">tap here</a> if it doesn't load.</p>
+<div class="outer">
+
+<!-- INFO PANEL -->
+<div class="infop">
+  <a href="./index.html" class="ip-back"><i class="fas fa-arrow-left"></i> Back to CapEye</a>
+  <div class="ip-lr">
+    <img src="./auto-capital-logo.png" class="ip-logo" onerror="this.style.display='none'">
+    <div class="ip-sep"></div>
+    <div class="ip-ce">CAPEYE</div>
+  </div>
+  <div>
+    <div class="ip-h">Staff<br><em>Login</em></div>
+    <div class="ip-d">Select a team member below to auto-fill the login. All demo passwords are <strong style="color:rgba(255,255,255,.55)">demo123</strong>.</div>
+  </div>
+  <div class="ip-div"></div>
+  <div class="ip-sl">Operational Team</div>
+  <div id="selectorCards"></div>
+  <div class="ip-div"></div>
+  <div class="ip-sl">Management</div>
+  <div id="selectorMgmt"></div>
+  <div class="ip-note" style="margin-top:8px">Each role sees only their own department queue and relevant stage forms. Management see everything.</div>
+</div>
+
+<!-- PHONE -->
+<div class="phonew">
+  <div class="phonel">Live interactive demo</div>
+  <div class="phone" id="thePhone">
+    <div class="di"><div class="di-cam"></div></div>
+    <div class="sb"><span id="phoneTime">9:41</span><div class="sb-r"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-three-quarters"></i></div></div>
+
+    <!-- LOGIN -->
+    <div class="screen active" id="sc-login">
+      <div class="lhero">
+        <div class="lhero-g"></div><div class="lhero-glow"></div>
+        <div class="lhero-c">
+          <div class="lhero-lr">
+            <img src="./auto-capital-logo.png" class="lhero-logo" onerror="this.style.display='none'">
+            <div class="lhero-s"></div>
+            <div class="lhero-ce">CAPEYE</div>
+          </div>
+          <div class="lhero-t">Staff <em>Portal</em></div>
+          <div class="lhero-sub">Auto Capital Command Centre</div>
+        </div>
+      </div>
+      <div class="lform">
+        <div class="lg">Welcome back</div>
+        <div class="lgs">Sign in to see your tasks and vehicles</div>
+        <div class="lfg">
+          <label>Username</label>
+          <div class="lfiw"><i class="fas fa-user lfii"></i><input class="lfi" id="loginUser" placeholder="e.g. keith" autocomplete="off"></div>
+        </div>
+        <div class="lfg">
+          <label>Password</label>
+          <div class="lfiw"><i class="fas fa-lock lfii"></i><input class="lfi" id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        </div>
+        <div class="lerr" id="loginErr"><i class="fas fa-exclamation-circle"></i> Incorrect username or password</div>
+        <button class="lbtn" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+        <div class="lql">Quick login</div>
+        <div class="lchips" id="loginChips"></div>
+      </div>
+    </div>
+
+    <!-- APP SHELL -->
+    <div class="appsh" id="appShell">
+      <div class="ahdr">
+        <div class="ahdr-top">
+          <div class="ahdr-l">
+            <img src="./auto-capital-logo.png" class="ahdr-logo" onerror="this.style.display='none'">
+            <div class="ahdr-sep"></div>
+            <div class="ahdr-ce">CE</div>
+          </div>
+          <div class="ahdr-r">
+            <div class="ahdr-user">
+              <div class="ahdr-name" id="hdrName"></div>
+              <div class="ahdr-role" id="hdrRole"></div>
+            </div>
+            <div class="nbtn" onclick="showToast('No new notifications')">
+              <i class="fas fa-bell"></i>
+              <div class="nbadge" id="nbadge"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="abody" id="abody">
+        <div class="pv active" id="pv-home"></div>
+        <div class="pv" id="pv-tasks"></div>
+        <div class="pv" id="pv-keys"></div>
+        <div class="pv" id="pv-me"></div>
+      </div>
+      <div class="bnav">
+        <div class="bn active" id="bn-home" onclick="setTab('home')"><i class="fas fa-home"></i>Home</div>
+        <div class="bn" id="bn-tasks" onclick="setTab('tasks')"><i class="fas fa-tasks"></i>Tasks<div class="bn-pip" id="taskpip"></div></div>
+        <div class="bn" id="bn-keys" onclick="setTab('keys')"><i class="fas fa-key"></i>Keys</div>
+        <div class="bn" id="bn-me" onclick="setTab('me')"><i class="fas fa-user"></i>Me</div>
+      </div>
+    </div>
+
+    <!-- VEHICLE DETAIL -->
+    <div class="vds" id="vdScreen">
+      <div class="vdhdr">
+        <div class="vdhtop">
+          <div class="backbtn" onclick="closeVehicle()"><i class="fas fa-chevron-left"></i></div>
+          <div class="vdhi">
+            <div class="vdhtitle" id="vdTitle"></div>
+            <div class="vdhsub" id="vdSub"></div>
+          </div>
+          <div class="vdreg" id="vdReg"></div>
+        </div>
+      </div>
+      <div class="vhero">
+        <div class="vhero-g"></div>
+        <div class="vhero-c">
+          <div class="vhero-row">
+            <div><div class="vhero-make" id="vhMake"></div><div class="vhero-var" id="vhVar"></div></div>
+            <div><div class="vhero-price" id="vhPrice"></div><div class="vhero-plbl">Listed price</div></div>
+          </div>
+          <div class="vchips" id="vhChips"></div>
+        </div>
+      </div>
+      <div class="vdprog">
+        <div class="vdprog-lbl">Pipeline progress</div>
+        <div class="strack" id="strack"></div>
+      </div>
+      <div class="vdtabs" id="vdtabs"></div>
+      <div class="vdbody" id="vdbody"></div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="sucsc" id="sucScreen">
+      <div class="sucico">✅</div>
+      <div class="such" id="sucH">Stage Complete!</div>
+      <div class="sucs" id="sucS">Handed over successfully. Audit trail updated.</div>
+      <button class="sucback" onclick="afterSuccess()">← Back to Tasks</button>
+    </div>
+
+  </div><!-- /phone -->
+</div><!-- /phonew -->
+</div><!-- /outer -->
+
+<script>
+// ════════════════════════════════════════════════════
+// USERS & CONSTANTS
+// ════════════════════════════════════════════════════
+const USERS = {
+  keith:    { name:'Keith Hardy',       role:'General Manager',   dept:'Management', pass:'demo123', admin:true  },
+  ibrahim:  { name:'Ibrahim Ata',       role:'Sales Manager',     dept:'Sales',      pass:'demo123', admin:true  },
+  stanslaw: { name:'Stanslaw Marzec',   role:'Intake',            dept:'Intake',     pass:'demo123', admin:false },
+  morteza:  { name:'Morteza Rahamian',  role:'Mechanic',          dept:'Workshop',   pass:'demo123', admin:false },
+  marcin:   { name:'Marcin Kiljan',     role:'Mechanic',          dept:'Workshop',   pass:'demo123', admin:false },
+  sia:      { name:'Sia Vajihi',        role:'Mechanic',          dept:'Workshop',   pass:'demo123', admin:false },
+  gorgino:  { name:'Gorgino Barnes',    role:'Valeter',           dept:'Valeting',   pass:'demo123', admin:false },
+  germaine: { name:'Germaine Dua',      role:'Sales',             dept:'Sales',      pass:'demo123', admin:false },
+};
+
+const DEPT_COLOR = {
+  Management:'#64748b', Sales:'#3b82f6', Workshop:'#ef4444',
+  Valeting:'#10b981',   Bodyshop:'#f97316', Intake:'#6366f1',
+  'Dent Repair':'#06b6d4'
+};
+
+const STAGE_COLOR = {
+  'Intake':'#6366f1','Bodywork':'#f59e0b','Paint':'#f97316',
+  'Dent Repair':'#06b6d4','Mechanical':'#ef4444','External Work':'#dc2626',
+  'Valeting':'#10b981','Fault Overview':'#0891b2','Test Drive':'#84cc16',
+  'Legal & Docs':'#8b5cf6','Management':'#64748b','Advertising':'#3b82f6',
+  'Accounts':'#a855f7'
+};
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let CU = null;    // current user object
+let CV = null;    // current vehicle object
+let activeTab = 'home';
+let STATE = { notes:{}, chk:{}, photos:{}, dmg:{} };
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function getVehicles() {
+  try { const s = JSON.parse(localStorage.getItem('ac_vehicles')||'[]'); return s.length ? s : AC_VEHICLES; }
+  catch(e) { return AC_VEHICLES; }
+}
+function getMyVehicles() {
+  if (!CU) return [];
+  const vs = getVehicles();
+  if (CU.admin) return vs;
+  // Sales staff can see Test Drive stage
+  const deptMap = { Workshop: ['Workshop','Bodyshop','Dent Repair'] };
+  const myDepts = deptMap[CU.dept] || [CU.dept];
+  return vs.filter(v => {
+    const st = AC_WORKFLOW_STAGES.find(s => s.name === v.workflowStage);
+    return st && myDepts.includes(st.dept);
+  });
+}
+function getPrio(v) {
+  if (v.blocked)          return ['BLOCKED', '#ea580c'];
+  if (v.daysInStock > 60) return ['URGENT',  '#C8102E'];
+  if (v.daysInStage > 5)  return ['PRIORITY','#d4980a'];
+  return                         ['NORMAL',  '#16a34a'];
+}
+function fmt(n) { return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(n||0); }
+function ini(n) { return (n||'').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2); }
+function ts()   { const d=new Date(); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function getCurStage() { return AC_WORKFLOW_STAGES.find(s => s.name === CV.workflowStage); }
+function getNextStage() { const c=getCurStage(); return c ? AC_WORKFLOW_STAGES.find(s=>s.id===c.id+1) : null; }
+
+// ════════════════════════════════════════════════════
+// SELECTOR CARDS (desktop info panel)
+// ════════════════════════════════════════════════════
+(function buildSelectorCards() {
+  const ops = ['stanslaw','morteza','marcin','sia','gorgino','germaine'];
+  const mgmt = ['keith','ibrahim'];
+  function makeCard(key) {
+    const u = USERS[key];
+    const dc = DEPT_COLOR[u.dept] || '#888';
+    const initials = u.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    const d = document.createElement('div');
+    d.className = 'selcard';
+    d.id = 'sc_' + key;
+    d.style.setProperty('--sc', dc);
+    d.innerHTML = `
+      <div class="selcard-av" style="background:${dc}">${initials}</div>
+      <div class="selcard-info">
+        <div class="selcard-name">${u.name}</div>
+        <div class="selcard-role">${u.role} · ${u.dept}</div>
+      </div>
+      <div class="selcard-tick"><i class="fas fa-check"></i></div>`;
+    d.onclick = () => selectUser(key);
+    return d;
+  }
+  const opEl = document.getElementById('selectorCards');
+  const mgEl = document.getElementById('selectorMgmt');
+  if (opEl) ops.forEach(k => opEl.appendChild(makeCard(k)));
+  if (mgEl) {
+    mgmt.forEach(k => mgEl.appendChild(makeCard(k)));
+    // Add login button after mgmt
+    const btn = document.createElement('button');
+    btn.className = 'login-as-btn';
+    btn.id = 'loginAsBtn';
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> <span id="loginAsBtnLabel">Sign In</span>';
+    btn.onclick = () => { if (window._selectedUser) quickLogin(window._selectedUser, 'demo123'); };
+    mgEl.parentNode.insertBefore(btn, mgEl.nextSibling);
+  }
+})();
+
+function selectUser(key) {
+  window._selectedUser = key;
+  // Highlight selected card
+  document.querySelectorAll('.selcard').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('sc_' + key);
+  if (card) card.classList.add('selected');
+  // Update button
+  const btn = document.getElementById('loginAsBtn');
+  const lbl = document.getElementById('loginAsBtnLabel');
+  if (btn && lbl) {
+    lbl.textContent = 'Sign in as ' + USERS[key].name.split(' ')[0];
+    btn.classList.add('show');
+  }
+  // Also fill the phone login form
+  document.getElementById('loginUser').value = key;
+  document.getElementById('loginPass').value = 'demo123';
+}
+
+// ════════════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════════════
+(function tick() {
+  const d=new Date(),el=document.getElementById('phoneTime');
+  if(el) el.textContent = d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes();
+  setTimeout(tick,15000);
+})();
+
+// ════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════
+function showToast(msg, ms=2200) {
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.getElementById('thePhone').appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+// ════════════════════════════════════════════════════
+// LOGIN CHIPS
+// ════════════════════════════════════════════════════
+(function buildChips() {
+  const w = document.getElementById('loginChips');
+  if (!w) return;
+  const order = ['keith','ibrahim','stanslaw','morteza','gorgino','germaine'];
+  order.forEach(k => {
+    if (!USERS[k]) return;
+    const u = USERS[k];
+    const c = document.createElement('div');
+    c.className = 'lchip';
+    c.innerHTML = `<span class="lchip-dot" style="background:${DEPT_COLOR[u.dept]||'#888'}"></span>${u.name.split(' ')[0]}`;
+    c.onclick = () => { selectUser(k); quickLogin(k, 'demo123'); };
+    w.appendChild(c);
+  });
+})();
+
+function quickLogin(u, p) {
+  selectUser(u);
+  document.getElementById('loginUser').value = u;
+  document.getElementById('loginPass').value = p;
+  doLogin();
+}
+
+// ════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ════════════════════════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p = document.getElementById('loginPass').value;
+  const user = USERS[u];
+  const err = document.getElementById('loginErr');
+  if (!user || user.pass !== p) {
+    err.style.display = 'block';
+    setTimeout(() => err.style.display='none', 2500);
+    return;
+  }
+  CU = user;
+  document.getElementById('hdrName').textContent = CU.name;
+  document.getElementById('hdrRole').textContent = CU.role + ' · ' + CU.dept;
+  // Urgent badge
+  const urg = getMyVehicles().filter(v=>v.daysInStock>60||v.blocked);
+  if (urg.length) {
+    document.getElementById('nbadge').style.display = 'block';
+    document.getElementById('taskpip').style.display = 'block';
+  }
+  document.getElementById('sc-login').classList.remove('active');
+  document.getElementById('appShell').classList.add('active');
+  setTab('home');
+}
+
+function doLogout() {
+  CU = null; CV = null; activeTab = 'home';
+  window._selectedUser = null;
+  ['appShell','vdScreen','sucScreen'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('sc-login').classList.add('active');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('nbadge').style.display = 'none';
+  document.getElementById('taskpip').style.display = 'none';
+  // Clear selector
+  document.querySelectorAll('.selcard').forEach(c => c.classList.remove('selected'));
+  const btn = document.getElementById('loginAsBtn');
+  if (btn) btn.classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.bn').forEach(b => b.classList.remove('active'));
+  document.getElementById('bn-'+tab).classList.add('active');
+  document.querySelectorAll('.pv').forEach(p => p.classList.remove('active'));
+  const pv = document.getElementById('pv-'+tab);
+  if (pv) pv.classList.add('active');
+  document.getElementById('abody').scrollTop = 0;
+  ({ home:renderHome, tasks:renderTasks, keys:renderKeys, me:renderMe })[tab]?.();
+}
+
+// ════════════════════════════════════════════════════
+// HOME TAB
+// ════════════════════════════════════════════════════
+function renderHome() {
+  const mine = getMyVehicles();
+  const urg  = mine.filter(v => v.daysInStock>60 || v.blocked);
+  const el   = document.getElementById('pv-home');
+
+  let h = `
+  <div style="background:linear-gradient(135deg,#0B1120,#001750);border-radius:var(--r);padding:14px;color:#fff;margin-bottom:12px;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 50%,rgba(200,16,46,.14),transparent 55%)"></div>
+    <div style="position:relative;z-index:1">
+      <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.35);margin-bottom:2px">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:1px">Hi, ${CU.name.split(' ')[0]} 👋</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.38)">${CU.role} · ${CU.dept}</div>
+    </div>
+  </div>
+  <div class="sumrow">
+    <div class="sumc"><div class="sumbar" style="--sc:var(--navy)"></div><div class="sumv" style="--sc:var(--navy)">${mine.length}</div><div class="suml">My Tasks</div></div>
+    <div class="sumc"><div class="sumbar" style="--sc:var(--red)"></div><div class="sumv" style="--sc:var(--red)">${urg.length}</div><div class="suml">Urgent</div></div>
+    <div class="sumc"><div class="sumbar" style="--sc:var(--green)"></div><div class="sumv" style="--sc:var(--green)">${mine.filter(v=>!v.blocked).length}</div><div class="suml">Active</div></div>
+  </div>`;
+
+  if (urg.length) {
+    h += `<div class="sh">NEEDS ATTENTION <span class="sha" onclick="setTab('tasks')">All tasks →</span></div>`;
+    urg.slice(0,2).forEach(v => { const [pl,pc]=getPrio(v); h += tkCard(v,pl,pc); });
+  }
+
+  if (CU.admin) {
+    // Management overview by department
+    const allV = getVehicles(), byDept = {};
+    allV.forEach(v => {
+      const st = AC_WORKFLOW_STAGES.find(s=>s.name===v.workflowStage);
+      if (st) byDept[st.dept] = (byDept[st.dept]||0) + 1;
+    });
+    h += `<div class="sh">DEPARTMENT OVERVIEW</div>
+    <div class="fs"><div class="fsb" style="padding:9px">`;
+    Object.entries(byDept).sort((a,b)=>b[1]-a[1]).forEach(([d,n]) => {
+      const dc = DEPT_COLOR[d]||'#888', pct = Math.round(n/allV.length*100);
+      h += `<div style="display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="width:6px;height:6px;border-radius:50%;background:${dc};flex-shrink:0"></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);flex:1">${d}</div>
+        <div style="flex:2;background:var(--bg);border-radius:3px;overflow:hidden;height:5px"><div style="width:${pct}%;height:100%;background:${dc}"></div></div>
+        <div style="font-size:11px;font-weight:800;min-width:20px;text-align:right">${n}</div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  } else {
+    h += `<div class="sh">MY QUEUE</div>`;
+    const cur = mine.slice(0,3);
+    if (!cur.length) h += `<div class="emp"><i class="fas fa-inbox"></i><p>Queue is clear</p><span>No vehicles assigned to your department</span></div>`;
+    cur.forEach(v => { const [pl,pc]=getPrio(v); h += tkCard(v,pl,pc); });
+    if (mine.length > 3) h += `<div style="text-align:center;padding:6px 0"><span style="font-size:11px;color:var(--navy);font-weight:700;cursor:pointer" onclick="setTab('tasks')">+${mine.length-3} more vehicles →</span></div>`;
+  }
+  el.innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════
+// TASKS TAB
+// ════════════════════════════════════════════════════
+function renderTasks() {
+  const mine = getMyVehicles();
+  const el   = document.getElementById('pv-tasks');
+  const blkd = mine.filter(v=>v.blocked);
+  const urgnt= mine.filter(v=>v.daysInStock>60);
+
+  let h = `<div class="sumrow">
+    <div class="sumc"><div class="sumbar" style="--sc:var(--red)"></div><div class="sumv" style="--sc:var(--red)">${urgnt.length}</div><div class="suml">Urgent</div></div>
+    <div class="sumc"><div class="sumbar" style="--sc:var(--gold)"></div><div class="sumv" style="--sc:var(--gold)">${blkd.length}</div><div class="suml">Blocked</div></div>
+    <div class="sumc"><div class="sumbar" style="--sc:var(--navy)"></div><div class="sumv" style="--sc:var(--navy)">${mine.length}</div><div class="suml">Total</div></div>
+  </div>`;
+
+  if (!mine.length) {
+    h += `<div class="emp"><i class="fas fa-check-circle"></i><p>Queue is clear</p><span>No vehicles in your workflow queue right now</span></div>`;
+  } else {
+    // Sort: blocked first, then urgent, then by days in stock desc
+    const sorted = [...mine].sort((a,b) => {
+      const scoreA = (a.blocked?3:0) + (a.daysInStock>60?2:0) + (a.daysInStage>5?1:0);
+      const scoreB = (b.blocked?3:0) + (b.daysInStock>60?2:0) + (b.daysInStage>5?1:0);
+      return scoreB - scoreA || b.daysInStock - a.daysInStock;
+    });
+    sorted.forEach(v => { const [pl,pc]=getPrio(v); h += tkCard(v,pl,pc); });
+  }
+  el.innerHTML = h;
+}
+
+function tkCard(v, pl, pc) {
+  const sc   = STAGE_COLOR[v.workflowStage] || '#888';
+  const bord = pc === '#C8102E' ? 'var(--red)' : pc === '#d4980a' ? 'var(--gold)' : pc === '#ea580c' ? 'var(--orange)' : 'var(--green)';
+  return `<div class="tk" style="--tlc:${bord}" onclick="openVehicle('${v.stockNo}')">
+    <div class="tkh">
+      <span class="tkreg">${v.registration}</span>
+      <span class="tkstage" style="background:${sc}18;color:${sc}">${v.workflowStage}</span>
+    </div>
+    <div class="tkb">
+      <div class="tkmake">${v.make} ${v.model}</div>
+      <div class="tkmeta">
+        <span><i class="fas fa-palette" style="font-size:8px"></i> ${v.colour}</span>
+        ${v.mileage ? `<span><i class="fas fa-tachometer-alt" style="font-size:8px"></i> ${Number(v.mileage).toLocaleString('en-GB')} mi</span>` : ''}
+        <span><i class="fas fa-clock" style="font-size:8px"></i> ${v.daysInStock}d in stock</span>
+        ${v.daysInStage ? `<span><i class="fas fa-hourglass-half" style="font-size:8px"></i> ${v.daysInStage}d at stage</span>` : ''}
+      </div>
+    </div>
+    <div class="tkf">
+      <span class="ptag" style="background:${pc}18;color:${pc}">${pl}</span>
+      <button class="obtn"><i class="fas fa-chevron-right" style="font-size:9px"></i> Open</button>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// KEYS TAB
+// ════════════════════════════════════════════════════
+function renderKeys() {
+  const mine = getMyVehicles();
+  const el   = document.getElementById('pv-keys');
+  let h = `<div class="sh">KEYS FOR MY VEHICLES</div>`;
+
+  if (!mine.length) {
+    h += `<div class="emp"><i class="fas fa-key"></i><p>No keys to show</p><span>No vehicles currently in your department</span></div>`;
+  } else {
+    mine.slice(0,8).forEach(v => {
+      h += `<div class="kitem">
+        <span class="kreg">${v.registration}</span>
+        <div class="kinfo">
+          <div class="kdesc">${v.make} ${v.model}</div>
+          <div class="kpos">${v.workflowStage} · ${v.location||'Location TBC'}</div>
+        </div>
+        <span class="kstat" style="background:rgba(22,163,74,.1);color:var(--green)">IN</span>
+      </div>`;
+    });
+    if (mine.length > 8) h += `<div style="text-align:center;padding:6px 0"><span style="font-size:11px;color:var(--navy);font-weight:700;cursor:pointer" onclick="showToast('Showing top 8 — full list in Keys module')">+${mine.length-8} more keys</span></div>`;
+  }
+
+  h += `<div class="sh" style="margin-top:14px">NEW ON-SITE (48H)</div>
+  <div class="abanner info"><i class="fas fa-truck-loading"></i> <span>Keys added in last 48h = stock arrived ON SITE. Check Intake queue for new arrivals needing workflow assignment.</span></div>`;
+  el.innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════
+// ME TAB
+// ════════════════════════════════════════════════════
+function renderMe() {
+  const el   = document.getElementById('pv-me');
+  const mine = getMyVehicles();
+  const dc   = DEPT_COLOR[CU.dept] || '#888';
+
+  el.innerHTML = `
+  <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)">
+    <div style="height:56px;background:linear-gradient(135deg,${dc}22,${dc}0d)"></div>
+    <div style="padding:0 14px 14px;margin-top:-22px">
+      <div style="width:44px;height:44px;border-radius:50%;background:${dc};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.14);margin-bottom:7px">${ini(CU.name)}</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text)">${CU.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:1px">${CU.role}</div>
+      <div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;background:${dc}14;border:1px solid ${dc}28;border-radius:20px;padding:2px 8px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${dc}"></div>
+        <span style="font-size:10px;font-weight:700;color:${dc}">${CU.dept}</span>
+      </div>
+    </div>
+  </div>
+  <div class="fs"><div class="fsh"><i class="fas fa-chart-bar"></i> My Activity</div><div class="fsb">
+    <div class="irow"><span class="irlbl">Vehicles in queue</span><span class="irval">${mine.length}</span></div>
+    <div class="irow"><span class="irlbl">Urgent (60d+)</span><span class="irval" style="color:var(--red)">${mine.filter(v=>v.daysInStock>60).length}</span></div>
+    <div class="irow"><span class="irlbl">Blocked</span><span class="irval" style="color:var(--orange)">${mine.filter(v=>v.blocked).length}</span></div>
+    <div class="irow"><span class="irlbl">Access level</span><span class="irval">${CU.admin?'Full — Management':'Department only'}</span></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-cog"></i> Settings</div><div class="fsb">
+    <div class="irow" style="cursor:pointer" onclick="showToast('Notifications are on')"><span class="irlbl"><i class="fas fa-bell"></i> Push Notifications</span><span class="irval" style="color:var(--green)">On</span></div>
+    <div class="irow" style="cursor:pointer" onclick="showToast('Biometric login coming in v2')"><span class="irlbl"><i class="fas fa-fingerprint"></i> Biometric Login</span><span class="irval" style="color:var(--muted)">Soon</span></div>
+    <div class="irow" style="cursor:pointer" onclick="showToast('Dark mode coming in v2')"><span class="irlbl"><i class="fas fa-moon"></i> Dark Mode</span><span class="irval">Off</span></div>
+    <div class="irow" style="cursor:pointer" onclick="doLogout()"><span class="irlbl" style="color:var(--red)"><i class="fas fa-sign-out-alt"></i> Sign Out</span><span class="irval" style="color:var(--muted);font-size:10px">Tap to logout</span></div>
+  </div></div>
+  <div style="text-align:center;font-size:9px;color:var(--muted);padding:8px 0 16px">CapEye v1.0 — Auto Capital Internal Tool</div>`;
+}
+
+// ════════════════════════════════════════════════════
+// OPEN VEHICLE DETAIL
+// ════════════════════════════════════════════════════
+function openVehicle(sn) {
+  const vs = getVehicles();
+  CV = vs.find(v => v.stockNo === sn);
+  if (!CV) return;
+
+  // Init state for this vehicle
+  if (!STATE.notes[sn])  STATE.notes[sn]  = [{ who:'System', ts:'On arrival', text:`Vehicle added to CapEye — assigned to ${CV.workflowStage}.` }];
+  if (!STATE.chk[sn])    STATE.chk[sn]    = {};
+  if (!STATE.photos[sn]) STATE.photos[sn] = {};
+  if (!STATE.dmg[sn])    STATE.dmg[sn]    = {};
+
+  const curSt = getCurStage();
+
+  // Header
+  document.getElementById('vdTitle').textContent = CV.make + ' ' + CV.model;
+  document.getElementById('vdSub').textContent   = (curSt ? 'Stage '+curSt.id+' · ' : '') + CV.workflowStage;
+  document.getElementById('vdReg').textContent   = CV.registration;
+  // Hero
+  document.getElementById('vhMake').textContent  = CV.make + ' ' + CV.model;
+  document.getElementById('vhVar').textContent   = CV.variant || '';
+  document.getElementById('vhPrice').textContent = CV.price ? fmt(CV.price) : '—';
+  document.getElementById('vhChips').innerHTML   = [
+    `<div class="vchip">${CV.colour}</div>`,
+    CV.mileage  ? `<div class="vchip">${Number(CV.mileage).toLocaleString('en-GB')} mi</div>` : '',
+    `<div class="vchip">${CV.daysInStock}d in stock</div>`,
+    CV.fuel     ? `<div class="vchip">${CV.fuel}</div>` : '',
+    CV.gearbox  ? `<div class="vchip">${CV.gearbox}</div>` : '',
+  ].join('');
+
+  buildStageTrack();
+  buildVdTabs();
+
+  document.getElementById('appShell').classList.remove('active');
+  document.getElementById('vdScreen').classList.add('active');
+}
+
+function buildStageTrack() {
+  const curId = getCurStage()?.id || 1;
+  let h = '';
+  AC_WORKFLOW_STAGES.forEach((st,i) => {
+    const state = st.id < curId ? 'done' : st.id === curId ? 'cur' : 'nxt';
+    if (i > 0) h += `<div class="sline ${st.id <= curId ? 'done' : ''}"></div>`;
+    h += `<div class="sstep">
+      <div class="sdot ${state}" style="${state==='cur' ? 'background:'+STAGE_COLOR[st.name] : ''}" title="${st.name}"></div>
+      <div class="sname ${state}">${st.name.split(' ')[0]}</div>
+    </div>`;
+  });
+  document.getElementById('strack').innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════
+// VD TABS — role-aware
+// ════════════════════════════════════════════════════
+function buildVdTabs() {
+  const tabs = [
+    { id:'stage',    l:'📋 Stage' },
+    { id:'damage',   l:'⚠️ Damage' },
+    { id:'photos',   l:'📸 Photos' },
+    { id:'notes',    l:'💬 Notes' },
+    { id:'handover', l:'🔄 Handover' },
+  ];
+  if (CU.admin) tabs.push({ id:'info', l:'ℹ️ Info' });
+
+  document.getElementById('vdtabs').innerHTML = tabs.map((t,i) =>
+    `<div class="vdt ${i===0?'active':''}" id="vdt-${t.id}" onclick="switchVdt('${t.id}')">${t.l}</div>`
+  ).join('');
+  document.getElementById('vdbody').innerHTML = tabs.map((t,i) =>
+    `<div class="vtc ${i===0?'active':''}" id="vtc-${t.id}"></div>`
+  ).join('');
+
+  renderStageForm();
+  renderDamageTab();
+  renderPhotosTab();
+  renderNotesTab();
+  renderHandoverTab();
+  if (CU.admin) renderInfoTab();
+}
+
+function switchVdt(id) {
+  document.querySelectorAll('.vdt').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.vtc').forEach(t=>t.classList.remove('active'));
+  document.getElementById('vdt-'+id).classList.add('active');
+  document.getElementById('vtc-'+id).classList.add('active');
+  document.getElementById('vdbody').scrollTop = 0;
+}
+
+// ════════════════════════════════════════════════════
+// STAGE FORM — role + stage routing
+// ════════════════════════════════════════════════════
+function renderStageForm() {
+  const el    = document.getElementById('vtc-stage');
+  if (!el) return;
+  const stage = CV.workflowStage;
+  const dept  = CU.dept;
+
+  let formHtml = '';
+  let canComplete = true;
+
+  if      (stage==='Intake'                                                                       ) formHtml = fIntake();
+  else if ((stage==='Bodywork'||stage==='Paint')    && (dept==='Bodyshop'||dept==='Workshop'||CU.admin) ) formHtml = fBodyshop();
+  else if (stage==='Dent Repair'                    && (dept==='Workshop'||dept==='Bodyshop'||CU.admin) ) formHtml = fDentRepair();
+  else if ((stage==='Mechanical'||stage==='External Work'||stage==='Fault Overview')
+                                                    && (dept==='Workshop'||CU.admin)                    ) formHtml = fMechanical();
+  else if (stage==='Valeting'                       && (dept==='Valeting'||CU.admin)                    ) formHtml = fValeting();
+  else if (stage==='Test Drive'                     && (dept==='Sales'||CU.admin)                       ) formHtml = fTestDrive();
+  else if (stage==='Management'                     && CU.admin                                         ) formHtml = fManagement();
+  else if ((stage==='Legal & Docs')                 && CU.admin                                         ) formHtml = fLegal();
+  else { formHtml = fReadOnly(); canComplete = false; }
+
+  el.innerHTML = formHtml + (canComplete
+    ? `<button class="completebtn" onclick="completeStage()"><i class="fas fa-check-circle"></i> Complete Stage & Hand Over</button>`
+    : '');
+
+  // Attach checklist listeners
+  el.querySelectorAll('.ci').forEach(ci => {
+    ci.onclick = () => toggleChk(ci.dataset.k, ci.dataset.sn);
+  });
+}
+
+function toggleChk(k, sn) {
+  if (!STATE.chk[sn]) STATE.chk[sn] = {};
+  STATE.chk[sn][k] = !STATE.chk[sn][k];
+  const box = document.getElementById('cb_'+k);
+  const lbl = document.getElementById('cl_'+k);
+  const on  = STATE.chk[sn][k];
+  box.className = 'cib' + (on?' on':'');
+  box.innerHTML = on ? '<span style="color:#fff;font-size:10px;font-weight:700">✓</span>' : '';
+  lbl.className = 'cil' + (on?' on':'');
+}
+
+// checklist builder — uses vehicle stockNo as namespace
+function bChk(items) {
+  const sn = CV.stockNo;
+  return items.map((item,i) => {
+    const k  = sn+'_'+i;
+    const on = STATE.chk[sn]?.[k] || false;
+    return `<div class="ci" data-k="${k}" data-sn="${sn}">
+      <div class="cib ${on?'on':''}" id="cb_${k}">${on?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}</div>
+      <div class="cil ${on?'on':''}" id="cl_${k}">${item}</div>
+    </div>`;
+  }).join('');
+}
+
+function staffOpts(depts) {
+  return AC_STAFF.filter(s => depts.includes(s.dept)).map(s=>`<option>${s.name}</option>`).join('');
+}
+
+// ─── INTAKE FORM ───
+function fIntake() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-clipboard-list"></i> Vehicle Intake Details</div><div class="fsb">
+    <div class="ff"><label>Date Acquired</label><input type="date"></div>
+    <div class="ffrow">
+      <div class="ff"><label>Source</label><select><option>Auction</option><option>Trade</option><option>Part Exchange</option><option>Private</option><option>Finance Return</option><option>Fleet</option></select></div>
+      <div class="ff"><label>Purchase Price £</label><input type="number" placeholder="0"></div>
+    </div>
+    <div class="ffrow">
+      <div class="ff"><label>Mileage at Intake</label><input type="number" value="${CV.mileage||''}"></div>
+      <div class="ff"><label>Overall Condition</label><select><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option></select></div>
+    </div>
+    <div class="ff"><label>Received By</label><select>${staffOpts(['Intake','Management'])}</select></div>
+    <div class="ff"><label>Initial Notes</label><textarea rows="2" placeholder="Observations on arrival — any issues, missing items..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Intake Checklist</div><div class="fsb">
+    ${bChk(['V5 / Logbook present and verified','MOT certificate received','Service history present','All spare keys handed over','HPI check completed — clear','Purchase invoice received','No outstanding finance confirmed','Mileage cross-checked against history','Vehicle photographed on arrival','Condition report completed'])}
+  </div></div>`;
+}
+
+// ─── BODYSHOP / PAINT FORM ───
+function fBodyshop() {
+  const isPaint = CV.workflowStage === 'Paint';
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-paint-roller"></i> ${isPaint?'Paint':'Bodywork'} Details</div><div class="fsb">
+    <div class="ff"><label>Assigned To</label><select>${staffOpts(['Bodyshop','Workshop'])}</select></div>
+    <div class="ff"><label>Work Type</label><select><option>Minor Repair</option><option>Major Repair</option><option>Full Respray</option><option>Panel Replacement</option><option>Touch Up Only</option><option>PDR (Paintless Dent Repair)</option></select></div>
+    <div class="ffrow">
+      <div class="ff"><label>Labour Cost £</label><input type="number" placeholder="0"></div>
+      <div class="ff"><label>Parts Cost £</label><input type="number" placeholder="0"></div>
+    </div>
+    <div class="ff"><label>Expected Completion</label><input type="date"></div>
+    <div class="ff"><label>Work Description</label><textarea rows="3" placeholder="Describe bodywork required in detail..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> ${isPaint?'Paint':'Bodyshop'} Checklist</div><div class="fsb">
+    ${bChk(isPaint
+      ? ['Panel prep / rust treatment complete','Primer applied and cured','Masking applied correctly','Base coat applied evenly','Clear coat applied','Finish quality checked — no orange peel','Colour match confirmed in daylight','Dry / cure time fully observed','Final polish applied']
+      : ['Damage assessment documented','Job card raised and costed','Structural integrity verified','Parts ordered and received','Dents and creases repaired','Panel alignment checked','Ready for paint or sign-off']
+    )}
+  </div></div>`;
+}
+
+// ─── DENT REPAIR (PDR) FORM ───
+function fDentRepair() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-car-crash"></i> Dent Repair / PDR Details</div><div class="fsb">
+    <div class="ff"><label>Assigned Technician</label><select>${staffOpts(['Workshop','Bodyshop'])}</select></div>
+    <div class="ff"><label>Repair Method</label><select><option>PDR — Paintless Dent Repair</option><option>Traditional Body Filler</option><option>Panel Replacement</option><option>Stud Welding</option><option>Hot Glue Pulling</option></select></div>
+    <div class="ffrow">
+      <div class="ff"><label>Labour Cost £</label><input type="number" placeholder="0"></div>
+      <div class="ff"><label>Parts Cost £</label><input type="number" placeholder="0"></div>
+    </div>
+    <div class="ff"><label>Panels Worked On</label><textarea rows="2" placeholder="List each panel — e.g. O/S front door, N/S rear quarter..."></textarea></div>
+    <div class="ff"><label>Before Condition</label><select><option>Multiple dents — poor</option><option>Several dents — fair</option><option>Minor dents only</option><option>Single dent</option></select></div>
+    <div class="ff"><label>Work Notes</label><textarea rows="2" placeholder="Techniques used, any complications, residual marks..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> PDR / Dent Repair Checklist</div><div class="fsb">
+    ${bChk(['All dents assessed and photographed','Repair method agreed and documented','Panel access confirmed — no obstructions','Dents fully worked out — no residual marks','Paint surface intact — no cracks or chips','Result inspected under lighting','Any non-repairable dents noted for panel replacement','Ready for paint or valeting'])}
+  </div></div>`;
+}
+
+// ─── LEGAL & DOCS FORM ───
+function fLegal() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-file-contract"></i> Legal & Documentation</div><div class="fsb">
+    <div class="ff"><label>V5 / Logbook Status</label><select><option>V5 Received</option><option>V5 Applied For (V62)</option><option>V5 Not Present — Action Required</option></select></div>
+    <div class="ff"><label>HPI Check Reference No.</label><input type="text" placeholder="HPI check reference number"></div>
+    <div class="ff"><label>Outstanding Finance</label><select><option>None — Clear</option><option>Finance Settled — Confirmation Received</option><option>Outstanding — Action Required</option></select></div>
+    <div class="ff"><label>DVLA Notes</label><textarea rows="2" placeholder="DVLA correspondence, V5 queries..."></textarea></div>
+    <div class="ff"><label>Assigned To</label><select>${staffOpts(['Management'])}</select></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Legal Checklist</div><div class="fsb">
+    ${bChk(['V5 / logbook verified and correct','DVLA check completed','Finance fully settled — evidence received','HPI clear — no write-off, stolen or finance markers','Mileage discrepancy investigated if flagged','Previous keeper history reviewed','Any recalls checked and noted','Ready to proceed to next stage'])}
+  </div></div>`;
+}
+
+// ─── MECHANICAL FORM ───
+function fMechanical() {
+  const isFault = CV.workflowStage === 'Fault Overview';
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-wrench"></i> ${isFault?'Fault Overview':'Mechanical Work'}</div><div class="fsb">
+    <div class="ff"><label>Assigned Mechanic</label><select>${staffOpts(['Workshop'])}</select></div>
+    <div class="ffrow">
+      <div class="ff"><label>Labour Cost £</label><input type="number" placeholder="0"></div>
+      <div class="ff"><label>Parts Cost £</label><input type="number" placeholder="0"></div>
+    </div>
+    ${isFault ? `<div class="ff"><label>Faults Identified</label><textarea rows="3" placeholder="List all faults found during inspection..."></textarea></div>
+    <div class="ff"><label>Recommended Action</label><select><option>Complete in-house</option><option>External specialist required</option><option>Parts on order</option><option>Sign-off — no action needed</option></select></div>` : `
+    <div class="ff"><label>Faults Found</label><textarea rows="2" placeholder="Any faults discovered during work..."></textarea></div>
+    <div class="ff"><label>Work Carried Out</label><textarea rows="3" placeholder="Describe all work completed in detail..."></textarea></div>`}
+    ${CV.workflowStage === 'External Work' ? `<div class="ff"><label>External Supplier</label><input type="text" placeholder="Name of external garage / supplier"></div>` : ''}
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Workshop Checklist</div><div class="fsb">
+    ${bChk(['Full mechanical inspection completed','Service carried out if due','Brake test passed — front and rear','Tyre check — depth, pressure, condition','All fluid levels correct and topped up','Engine warning lights cleared','AC / heating checked','Steering and suspension checked','Road test completed','PDI sheet signed off'])}
+  </div></div>`;
+}
+
+// ─── VALETING FORM ───
+function fValeting() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-spray-can"></i> Valet Details</div><div class="fsb">
+    <div class="ff"><label>Valeter</label><select>${staffOpts(['Valeting'])}</select></div>
+    <div class="ff"><label>Valet Type</label><select><option>Full Valet</option><option>Mini Valet</option><option>Detail & Machine Polish</option><option>Showroom Prep</option><option>Collection Valet</option></select></div>
+    <div class="ff"><label>Additional Notes</label><textarea rows="2" placeholder="Special requests, problem areas, additional products used..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Full Valet Checklist</div><div class="fsb">
+    ${bChk(['Pre-wash foam applied and rinsed','Exterior hand wash and dry','Wheel arches and alloys cleaned','Tyre dressing applied','Exterior glass cleaned — no smears','Door shuts, boot shut, bonnet shut wiped','Interior fully hoovered — under seats, mats, boot','Dashboard, trim and vents wiped clean','Leather / fabric seats cleaned','Centre console and cupholders cleaned','Interior glass cleaned — no smears','Air freshener applied','Exterior wax or sealant applied','Final walk-round inspection — ready for photos'])}
+  </div></div>`;
+}
+
+// ─── MARKETING FORM ───
+function fMarketing() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-bullhorn"></i> Advertising Details</div><div class="fsb">
+    <div class="ff"><label>Retail Price £</label><input type="number" value="${CV.price||''}" placeholder="0"></div>
+    <div class="ff"><label>Assigned To</label><select>${staffOpts(['Sales','Marketing'])}</select></div>
+    <div class="ff"><label>Key Selling Points</label><textarea rows="2" placeholder="Low mileage, FSH, recent service, new MOT, tow bar..."></textarea></div>
+    <div class="ff"><label>Photo Status</label><select><option>Photos not yet taken</option><option>Photos taken — uploading</option><option>Photos live on platform</option></select></div>
+    <div class="ff"><label>Listing Notes</label><textarea rows="2" placeholder="Any notes for the listing team..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Advertising Checklist</div><div class="fsb">
+    ${bChk(['Minimum 20 photos taken','Photos uploaded to ClickDealer','Listing description written and proofed','Price agreed and set on ClickDealer','Listed on Auto Trader','Listed on eBay Motors','Listed on Facebook Marketplace','Company website updated','Sales team briefed on vehicle'])}
+  </div></div>`;
+}
+
+// ─── TEST DRIVE FORM ───
+function fTestDrive() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-car"></i> Test Drive Record</div><div class="fsb">
+    <div class="ffrow">
+      <div class="ff"><label>Date</label><input type="date"></div>
+      <div class="ff"><label>Time</label><input type="time"></div>
+    </div>
+    <div class="ff"><label>Driver (Staff Member)</label><select>${staffOpts(['Sales','Management'])}</select></div>
+    <div class="ff"><label>Customer Full Name</label><input type="text" placeholder="Customer's full name"></div>
+    <div class="ff"><label>Driving Licence No.</label><input type="text" placeholder="Verified licence number"></div>
+    <div class="ffrow">
+      <div class="ff"><label>Mileage Before</label><input type="number" value="${CV.mileage||''}"></div>
+      <div class="ff"><label>Mileage After</label><input type="number" placeholder="Post-drive reading"></div>
+    </div>
+    <div class="ff"><label>Duration (minutes)</label><input type="number" placeholder="e.g. 30"></div>
+    <div class="ff"><label>Outcome</label><select><option value="">— Select outcome —</option><option>Customer Proceeding to Purchase</option><option>Customer Considering</option><option>Customer Declined</option><option>Internal Drive Only</option></select></div>
+    <div class="ff"><label>Customer Feedback</label><textarea rows="2" placeholder="Notes from the customer, likes, concerns..."></textarea></div>
+    <div class="ff ff-warn"><label>⚠️ Incidents or Damage?</label><textarea rows="2" placeholder="Leave blank if none — note any incidents here..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Pre-Drive Checklist</div><div class="fsb">
+    ${bChk(['Fuel level confirmed adequate','Tyre pressures checked','No active warning lights','Vehicle insurance confirmed for test drive','Customer ID (driving licence) verified and photo taken','Key signed out from eTrack board','Vehicle photographed before drive — all angles'])}
+  </div></div>`;
+}
+
+// ─── ACCOUNTS FORM ───
+function fAccounts() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-file-invoice-pound"></i> Accounts & Finance</div><div class="fsb">
+    <div class="ff"><label>Invoice Number</label><input type="text" placeholder="INV-0000"></div>
+    <div class="ffrow">
+      <div class="ff"><label>Sale Price £</label><input type="number" value="${CV.price||''}"></div>
+      <div class="ff"><label>Purchase Price £</label><input type="number" placeholder="Paid to acquire"></div>
+    </div>
+    <div class="ff"><label>Finance Company</label><input type="text" placeholder="e.g. Close Brothers, Black Horse"></div>
+    <div class="ffrow">
+      <div class="ff"><label>Finance Payout £</label><input type="number" placeholder="Amount to pay out"></div>
+      <div class="ff"><label>Commission £</label><input type="number" placeholder="Finance commission"></div>
+    </div>
+    <div class="ff"><label>Part Exchange (if applicable)</label><input type="text" placeholder="PX registration and agreed value"></div>
+    <div class="ff"><label>Notes</label><textarea rows="2" placeholder="Accounting notes, VAT, SORN, any anomalies..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Finance Checklist</div><div class="fsb">
+    ${bChk(['Invoice raised and sent to customer','Finance payout confirmed and arranged','VAT margin accounted for correctly','Profit / loss recorded in system','V5 transfer completed and sent off','Full payment received and cleared','Part exchange paperwork completed','Deal fully closed and filed'])}
+  </div></div>`;
+}
+
+// ─── MANAGEMENT FORM ───
+function fManagement() {
+  return `
+  <div class="fs"><div class="fsh"><i class="fas fa-user-tie"></i> Management Review</div><div class="fsb">
+    <div class="ff"><label>Management Decision</label><select><option>Approve for sale — all clear</option><option>Hold — further work required</option><option>Reduce asking price</option><option>Consign to auction</option><option>Write off — uneconomical</option></select></div>
+    <div class="ff"><label>Approved Sale Price £</label><input type="number" value="${CV.price||''}"></div>
+    <div class="ff"><label>Target Margin £</label><input type="number" placeholder="Target profit margin"></div>
+    <div class="ff"><label>Assigned Sales Person</label><select>${staffOpts(['Sales','Management'])}</select></div>
+    <div class="ff"><label>Manager Notes</label><textarea rows="3" placeholder="Decision rationale, pricing notes, instructions for the team..."></textarea></div>
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-check-square"></i> Management Checklist</div><div class="fsb">
+    ${bChk(['All prior workflow stages completed','Vehicle personally inspected','Pricing reviewed and approved','Profit margin acceptable','Marketing materials ready','Vehicle on forecourt / showroom ready','Sales team fully briefed','Handover pack prepared for buyer'])}
+  </div></div>`;
+}
+
+// ─── READ-ONLY VIEW (wrong dept / stage) ───
+function fReadOnly() {
+  const st = AC_WORKFLOW_STAGES.find(s=>s.name===CV.workflowStage);
+  return `
+  <div class="readonly-notice">
+    <i class="fas fa-eye" style="margin-top:1px;flex-shrink:0"></i>
+    <div>This vehicle is currently in the <strong>${CV.workflowStage}</strong> stage (${st?.dept||'—'} department). You can view details, add notes and report damage, but completing this stage is handled by the assigned team.</div>
+  </div>
+  <div class="fs"><div class="fsh"><i class="fas fa-info-circle"></i> Current Stage: ${CV.workflowStage}</div><div class="fsb">
+    <div class="irow"><span class="irlbl">Department</span><span class="irval">${st?.dept||'—'}</span></div>
+    <div class="irow"><span class="irlbl">Days at this stage</span><span class="irval" style="color:${(CV.daysInStage||0)>5?'var(--red)':'var(--text)'}">${CV.daysInStage||0}d</span></div>
+    <div class="irow"><span class="irlbl">Days in stock</span><span class="irval" style="color:${CV.daysInStock>60?'var(--red)':CV.daysInStock>30?'var(--gold)':'var(--text)'}">${CV.daysInStock}d</span></div>
+    <div class="irow"><span class="irlbl">Status</span><span class="irval">${CV.blocked?'⚠ Blocked':'Active'}</span></div>
+  </div></div>`;
+}
+
+// ════════════════════════════════════════════════════
+// DAMAGE TAB
+// ════════════════════════════════════════════════════
+function renderDamageTab() {
+  const el = document.getElementById('vtc-damage');
+  if (!el) return;
+  const sn = CV.stockNo;
+  const zones = [
+    { id:'front',  ico:'🚐', n:'Front' },
+    { id:'rear',   ico:'🔙', n:'Rear' },
+    { id:'driver', ico:'↖️', n:'Driver' },
+    { id:'pass',   ico:'↗️', n:'Passenger' },
+    { id:'roof',   ico:'⬆️', n:'Roof' },
+    { id:'int',    ico:'🪑', n:'Interior' },
+  ];
+  let h = `<div class="sh">TAP AREA TO REPORT DAMAGE</div><div class="dmgg">`;
+  zones.forEach(z => {
+    const hit = STATE.dmg[sn]?.[z.id] || false;
+    h += `<div class="dmgz ${hit?'hit':''}" id="dz_${z.id}" onclick="toggleDmg('${z.id}')">
+      <div class="dzpip"></div>
+      <div class="dzico">${z.ico}</div>
+      <div class="dzname">${z.n}</div>
+    </div>`;
+  });
+  h += `</div>
+  <textarea class="dmgnote ${Object.values(STATE.dmg[sn]||{}).some(Boolean)?'show':''}" id="dmnote_${sn}" placeholder="Describe damage — panels, scratches, dents, glass cracks, interior tears..." rows="3"></textarea>
+  <div class="fs" style="margin-top:10px"><div class="fsh"><i class="fas fa-history"></i> Prior Damage Records</div><div class="fsb">
+    <div style="font-size:11px;color:var(--muted);text-align:center;padding:6px">No prior damage records on file for this vehicle</div>
+  </div></div>`;
+  el.innerHTML = h;
+}
+
+window.toggleDmg = function(id) {
+  const sn = CV.stockNo;
+  if (!STATE.dmg[sn]) STATE.dmg[sn] = {};
+  STATE.dmg[sn][id] = !STATE.dmg[sn][id];
+  const z = document.getElementById('dz_'+id);
+  z.classList.toggle('hit', STATE.dmg[sn][id]);
+  const n = document.getElementById('dmnote_'+sn);
+  n.classList.toggle('show', Object.values(STATE.dmg[sn]).some(Boolean));
+  if (STATE.dmg[sn][id]) showToast('Damage flagged — ' + id);
+};
+
+// ════════════════════════════════════════════════════
+// PHOTOS TAB
+// ════════════════════════════════════════════════════
+function renderPhotosTab() {
+  const el = document.getElementById('vtc-photos');
+  if (!el) return;
+  const sn = CV.stockNo;
+  const slots = [
+    'Front','Rear','Driver side','Passenger side',
+    'Dashboard','Odometer','Engine bay','Boot / load area',
+    'Damage 1','Damage 2','Interior','Windscreen'
+  ];
+  let h = `<div class="sh">TAP SLOT TO CONFIRM PHOTO TAKEN</div><div class="pgrid">`;
+  slots.forEach((s,i) => {
+    const taken = STATE.photos[sn]?.[i] || false;
+    h += `<div class="pslot ${taken?'taken':''}" id="ps_${sn}_${i}" onclick="togglePhoto(${i})">
+      <div class="pstick">✓</div>
+      <div class="psico"><i class="fas fa-${taken?'check-circle':'camera'}" style="color:${taken?'var(--green)':'var(--muted)'}"></i></div>
+      <div class="pslbl">${s}</div>
+    </div>`;
+  });
+  h += `</div>
+  <div class="abanner info"><i class="fas fa-info-circle"></i> <span>In production, tapping opens the camera. Photos are timestamped and permanently stored against this vehicle and your name.</span></div>`;
+  el.innerHTML = h;
+}
+
+window.togglePhoto = function(i) {
+  const sn = CV.stockNo;
+  if (!STATE.photos[sn]) STATE.photos[sn] = {};
+  STATE.photos[sn][i] = !STATE.photos[sn][i];
+  const s = document.getElementById(`ps_${sn}_${i}`);
+  s.classList.toggle('taken', STATE.photos[sn][i]);
+  s.querySelector('.psico i').style.color = STATE.photos[sn][i] ? 'var(--green)' : 'var(--muted)';
+  if (STATE.photos[sn][i]) showToast('📸 Photo captured');
+};
+
+// ════════════════════════════════════════════════════
+// NOTES TAB
+// ════════════════════════════════════════════════════
+function renderNotesTab() {
+  const el = document.getElementById('vtc-notes');
+  if (!el) return;
+  const sn = CV.stockNo;
+  const nl = STATE.notes[sn] || [];
+  let h = `<div class="nthread">`;
+  nl.forEach((n,i) => {
+    const last = i === nl.length-1;
+    h += `<div class="nitem">
+      <div class="nline">
+        <div class="ndot" style="background:${i===0?'var(--muted)':'var(--navy)'}"></div>
+        ${!last ? '<div class="nvline"></div>' : ''}
+      </div>
+      <div class="ncontent">
+        <div class="nmeta"><span class="nwho">${n.who}</span><span>${n.ts}</span></div>
+        <div class="ntext">${n.text}</div>
+      </div>
+    </div>`;
+  });
+  h += `</div>
+  <div class="nadd">
+    <textarea class="ninput" id="ni_${sn}" rows="2" placeholder="Add a note..."></textarea>
+    <button class="nsend" onclick="addNote('${sn}')"><i class="fas fa-paper-plane"></i></button>
+  </div>`;
+  el.innerHTML = h;
+}
+
+window.addNote = function(sn) {
+  const inp  = document.getElementById('ni_'+sn);
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!STATE.notes[sn]) STATE.notes[sn] = [];
+  STATE.notes[sn].push({ who:CU.name, ts:ts(), text });
+  inp.value = '';
+  renderNotesTab();
+  showToast('Note added');
+};
+
+// ════════════════════════════════════════════════════
+// HANDOVER TAB
+// ════════════════════════════════════════════════════
+function renderHandoverTab() {
+  const el  = document.getElementById('vtc-handover');
+  if (!el) return;
+  const cur = getCurStage();
+  const nxt = getNextStage();
+
+  let h = `<div class="hocard">
+    <div class="hotitle">Stage Handover</div>
+    <div class="horow">
+      <span class="hofrom">${cur?.name||'—'}</span>
+      <span class="hoarr"><i class="fas fa-arrow-right"></i></span>
+      <span class="hoto">${nxt?.name||'Complete'}</span>
+    </div>`;
+
+  if (nxt) {
+    h += `<div class="hoflds">
+      <div class="hofl"><label>Assign To</label><select id="ho_asgn"><option value="">Any in ${nxt.dept}</option>${staffOpts([nxt.dept])}</select></div>
+      <div class="hofl"><label>Priority</label><select id="ho_pri"><option>Normal</option><option>Urgent</option><option>Critical — do today</option></select></div>
+      <div class="hofl"><label>Handover Note</label><textarea id="ho_note" rows="3" placeholder="What does the ${nxt.dept} team need to know?"></textarea></div>
+    </div>
+    <button class="hobtn" onclick="completeStage()"><i class="fas fa-check-circle"></i> Complete & Hand to ${nxt.dept}</button>`;
+  } else {
+    h += `<div style="text-align:center;padding:18px 0;font-size:13px;font-weight:700;color:rgba(255,255,255,.6)">
+      🎉 Final stage<br>
+      <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,.38)">Completing will mark this vehicle as fully processed</span>
+    </div>
+    <button class="hobtn" onclick="completeStage()"><i class="fas fa-check-circle"></i> Mark Vehicle Complete</button>`;
+  }
+  h += `</div>`;
+
+  // Stage history
+  const past = AC_WORKFLOW_STAGES.filter(s => s.id < (cur?.id||1));
+  h += `<div class="fs"><div class="fsh"><i class="fas fa-history"></i> Stage History</div><div class="fsb">`;
+  if (!past.length) {
+    h += `<div style="font-size:11px;color:var(--muted)">No prior stages</div>`;
+  } else {
+    past.forEach(s => {
+      h += `<div class="irow">
+        <span class="irlbl">
+          <span style="width:7px;height:7px;border-radius:50%;background:${STAGE_COLOR[s.name]||'#888'};display:inline-block"></span>
+          ${s.name}
+        </span>
+        <span class="irval" style="color:var(--green);font-size:10px">✓ Complete</span>
+      </div>`;
+    });
+  }
+  h += `</div></div>`;
+  el.innerHTML = h;
+}
+
+// ════════════════════════════════════════════════════
+// INFO TAB (admin only)
+// ════════════════════════════════════════════════════
+function renderInfoTab() {
+  const el = document.getElementById('vtc-info');
+  if (!el) return;
+  el.innerHTML = `
+  <div class="fs"><div class="fsh"><i class="fas fa-car"></i> Vehicle Details</div><div class="fsb">
+    ${[['Stock No.', CV.stockNo],['Registration', CV.registration],['Make & Model', CV.make+' '+CV.model],
+       ['Colour', CV.colour],['Fuel', CV.fuel||'—'],['Gearbox', CV.gearbox||'—'],
+       ['Mileage', CV.mileage ? Number(CV.mileage).toLocaleString('en-GB')+' mi' : '—'],
+       ['Reg Date', CV.regDate||'—'],['MOT Expiry', CV.mot||'—'],['Body Type', CV.body||'—'],
+       ['Doors', CV.doors||'—'],['FSH', CV.fsh==='Y'?'✓ Yes':'No'],
+    ].map(([l,v]) => `<div class="irow"><span class="irlbl">${l}</span><span class="irval" ${l==='Registration'?'style="font-family:DM Mono,monospace;font-size:11px"':''}>${v}</span></div>`).join('')}
+  </div></div>
+  <div class="fs"><div class="fsh"><i class="fas fa-pound-sign"></i> Financials & Status</div><div class="fsb">
+    <div class="irow"><span class="irlbl">Listed Price</span><span class="irval">${CV.price ? fmt(CV.price) : 'Not set'}</span></div>
+    <div class="irow"><span class="irlbl">Road Tax (RFL)</span><span class="irval">${CV.rfl ? fmt(CV.rfl)+'/yr' : '—'}</span></div>
+    <div class="irow"><span class="irlbl">Days In Stock</span><span class="irval" style="color:${CV.daysInStock>60?'var(--red)':CV.daysInStock>30?'var(--gold)':'var(--green)'}">${CV.daysInStock}d</span></div>
+    <div class="irow"><span class="irlbl">Days at Stage</span><span class="irval" style="color:${(CV.daysInStage||0)>5?'var(--orange)':'var(--text)'}">${CV.daysInStage||0}d</span></div>
+    <div class="irow"><span class="irlbl">Location</span><span class="irval">${CV.location||'—'}</span></div>
+    <div class="irow"><span class="irlbl">Status</span><span class="irval">${CV.status||'—'}</span></div>
+    <div class="irow"><span class="irlbl">Blocked</span><span class="irval" style="color:${CV.blocked?'var(--red)':'var(--green)'}">${CV.blocked?'⚠ Yes':'No'}</span></div>
+  </div></div>`;
+}
+
+// ════════════════════════════════════════════════════
+// COMPLETE STAGE
+// ════════════════════════════════════════════════════
+function completeStage() {
+  const cur = getCurStage();
+  const nxt = getNextStage();
+  const hn  = document.getElementById('ho_note')?.value || '';
+  const hp  = document.getElementById('ho_pri')?.value  || 'Normal';
+  const ha  = document.getElementById('ho_asgn')?.value || '';
+
+  // Log to notes
+  if (!STATE.notes[CV.stockNo]) STATE.notes[CV.stockNo] = [];
+  STATE.notes[CV.stockNo].push({
+    who: CU.name,
+    ts:  ts(),
+    text: `Stage "${cur?.name}" completed and handed over${hn?' — '+hn:''} [${hp} priority]${ha?' → '+ha:''}`
+  });
+
+  // Success screen
+  document.getElementById('sucH').textContent = nxt ? 'Stage Complete!' : 'Vehicle Complete!';
+  document.getElementById('sucS').textContent = nxt
+    ? `"${cur?.name}" signed off. ${ha||nxt.dept} assigned for "${nxt.name}" [${hp}]. Audit trail updated.`
+    : `${CV.registration} has completed all ${AC_WORKFLOW_STAGES.length} workflow stages. Ready for handover to customer. 🎉`;
+
+  document.getElementById('vdScreen').classList.remove('active');
+  document.getElementById('sucScreen').classList.add('active');
+}
+
+function afterSuccess() {
+  document.getElementById('sucScreen').classList.remove('active');
+  document.getElementById('appShell').classList.add('active');
+  CV = null;
+  setTab('tasks');
+}
+
+function closeVehicle() {
+  document.getElementById('vdScreen').classList.remove('active');
+  document.getElementById('appShell').classList.add('active');
+}
+</script>
 </body>
 </html>

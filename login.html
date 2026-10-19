@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In | CapEye Auto Capital</title>
+<title>CapEye Final — Sign In</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,8 +18,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20260824"></script>
+<script src="ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <style>
 :root{--red:#C8102E;--blue:#003DA5;--dark:#001a4d}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -185,10 +186,9 @@ function doLogin() {
   if (!auth)  { showErr('System error — please contact your administrator'); return; }
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Signing in...';
-  // Persist the Firebase auth session locally so it survives tab/browser
-  // restarts on desktop (prevents the "logged in but no data" drift).
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){})
-    .then(function() {
+  // Persist the Firebase session locally so it survives tab/browser restarts
+  // (prevents the "logged in but no data" drift on desktop).
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){}).then(function() {
   auth.signInWithEmailAndPassword(email, pass)
     .then(function(r) { setSession(r.user.email); window.location.href = 'index.html'; })
     .catch(function(e) {
@@ -203,7 +203,7 @@ function doLogin() {
         showErr('Too many attempts — please wait a few minutes');
       } else { showErr(e.message); }
     });
-    });
+  });
 }
 setTimeout(function(){ document.getElementById('hintNote').style.display = 'block'; }, 5000);
 

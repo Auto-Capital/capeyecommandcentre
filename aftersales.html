@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye v1.9 — Aftersales</title>
+<title>CapEye Final — Aftersales</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -15,8 +15,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20260824"></script>
+<script src="ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <script src="live-sync.js?v=20260824"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
@@ -284,7 +285,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20260930b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -298,7 +299,7 @@ input, select, textarea {
     <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
-    <a class="nav-link" href="aftersales.html" class="nav-link active"><i class="fas fa-headset"></i> Aftersales</a>
+    <a class="nav-link active" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
     <a class="nav-link" href="staff-jobs.html"><i class="fas fa-clipboard-list"></i> Staff Jobs</a>
     <a class="nav-link" href="import.html"><i class="fas fa-file-import"></i> Import</a>
     <a class="nav-link" href="audit.html"><i class="fas fa-list-check"></i> Audit</a>
@@ -393,10 +394,10 @@ refreshAfKpis();
 renderFaultsList();
 
 function openLogFault() {
-  // af-reg is a free-text input (type any reg), so nothing to populate there.
+  // af-reg is a free-text input (type any reg) — nothing to populate there.
   var regEl = document.getElementById('af-reg');
   if (regEl) regEl.value = '';
-  // Populate technician list (guard against AC_STAFF being unavailable).
+  // Populate technician dropdown if present (guard AC_STAFF).
   var techSel = document.getElementById('af-tech');
   if (techSel && typeof AC_STAFF !== 'undefined') {
     techSel.innerHTML = '<option value="">Select technician...</option>';
@@ -472,12 +473,7 @@ function renderFaultsList() {
       '</select>'+
       '<button onclick="deleteFaultEntry('+i+')" style="border:1px solid #fecaca;border-radius:5px;background:#fff;color:#C8102E;padding:3px 8px;font-size:11px;cursor:pointer">✕</button></div></div>'+
       '<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+f.issue+'</div>'+
-      '<div style="font-size:10px;color:var(--ink3)">'+
-        (f.reportedBy?('Reported by '+f.reportedBy+' · '):'')+
-        (f.assignedTo?('Assigned: '+f.assignedTo+' · '):'')+
-        f.loggedBy+' · '+new Date(f.loggedAt).toLocaleDateString('en-GB')+
-        (f.priority && f.priority!=='Normal'?(' · <span style="color:#C8102E;font-weight:700">'+f.priority+'</span>'):'')+
-      '</div></div>';
+      '<div style="font-size:10px;color:var(--ink3)">'+f.loggedBy+' · '+new Date(f.loggedAt).toLocaleDateString('en-GB')+'</div></div>';
   }).join('');
 }
 function updateFaultStat(idx,status) {
@@ -502,24 +498,12 @@ function logFault() {
   var reg = (document.getElementById('af-reg').value||'').trim().toUpperCase();
   var issue = (document.getElementById('af-issue').value||'').trim();
   if (!reg || !issue) { showToast('Please fill in registration and issue','error'); return; }
-  var reportedBy = (document.getElementById('af-reported-by')||{}).value || '';
-  var assignedTo = (document.getElementById('af-tech')||{}).value || '';
-  var priority   = (document.getElementById('af-priority')||{}).value || 'Normal';
-  var fault = {
-    reg:reg, issue:issue, status:'Open',
-    reportedBy:reportedBy.trim(),
-    assignedTo:assignedTo,
-    priority:priority,
-    loggedAt:new Date().toISOString(),
-    loggedBy:getCurrentUser?getCurrentUser().name:'Unknown'
-  };
+  var fault = { reg:reg, issue:issue, status:'Open', loggedAt:new Date().toISOString(), loggedBy:getCurrentUser?getCurrentUser().name:'Unknown' };
   _afEnsureId(fault);
   var faults = loadFaultsData(); faults.unshift(fault); saveFaultsData(faults);
   afWriteFault(fault);   // push to Firestore so all users see it live
   showToast('Fault logged for '+reg,'success');
   document.getElementById('fault-modal').classList.remove('open');
-  // Clear the form for next time
-  ['af-reg','af-issue','af-reported-by'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   renderFaultsList();
   refreshAfKpis();
 }
@@ -619,6 +603,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20260930b"></script>
+<script src="mobile-menu.js?v=20261019"></script>
 </body>
 </html>

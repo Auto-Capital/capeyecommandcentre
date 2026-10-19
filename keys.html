@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Key Dashboard | Auto Capital</title>
+<title>CapEye Final — Keys</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -372,7 +372,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20260930b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
 </head>
 <body>
 <nav class="nav">
@@ -384,7 +384,7 @@ input, select, textarea {
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
-    <a class="nav-link" href="keys.html" class="nav-link active"><i class="fas fa-key"></i> Keys</a>
+    <a class="nav-link active" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
     <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
@@ -812,8 +812,9 @@ function doLogout(){window.location.href='./login.html';}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20260824"></script>
+<script src="ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -922,6 +923,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20260930b"></script>
+<script src="mobile-menu.js?v=20261019"></script>
 </body>
 </html>

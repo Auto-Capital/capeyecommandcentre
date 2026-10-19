@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Team | CapeEye Auto Capital</title>
+<title>CapEye Final — Team</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,8 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js"></script>
+<script src="./ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="live-sync.js?v=20261019"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -339,7 +341,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20260930b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
 </head>
 <body>
 <nav class="nav">
@@ -358,7 +360,7 @@ input, select, textarea {
     <a class="nav-link" href="staff-jobs.html"><i class="fas fa-clipboard-list"></i> Staff Jobs</a>
     <a class="nav-link" href="import.html"><i class="fas fa-file-import"></i> Import</a>
     <a class="nav-link" href="audit.html"><i class="fas fa-list-check"></i> Audit</a>
-    <a class="nav-link" href="team.html" class="nav-link active"><i class="fas fa-users"></i> Team</a>
+    <a class="nav-link active" href="team.html"><i class="fas fa-users"></i> Team</a>
     <a class="nav-link" href="admin.html"><i class="fas fa-cog"></i> Admin</a>
   </div>
   <div class="nav-bell" id="navBell" onclick="openNotifPanel()" title="Notifications">
@@ -598,6 +600,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20260930b"></script>
+<script src="mobile-menu.js?v=20261019"></script>
 </body>
 </html>

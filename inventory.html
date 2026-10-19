@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye v1.9 — Inventory</title>
+<title>CapEye Final — Inventory</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -15,8 +15,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20260824"></script>
+<script src="ac-data.js?v=20261019b"></script>
 <script src="firebase-init.js?v=20260824"></script>
+<script src="live-sync.js?v=20261019"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -295,7 +297,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20260930b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -303,7 +305,7 @@ input, select, textarea {
   <div class="nav-links">
     <a class="nav-link" href="index.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
     <a class="nav-link" href="workflow.html"><i class="fas fa-arrows-rotate"></i> Workflow</a>
-    <a class="nav-link" href="inventory.html" class="nav-link active"><i class="fas fa-car"></i> Inventory</a>
+    <a class="nav-link active" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
     <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
@@ -611,6 +613,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20260930b"></script>
+<script src="mobile-menu.js?v=20261019"></script>
 </body>
 </html>

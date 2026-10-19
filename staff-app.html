@@ -11,10 +11,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapeEye Staff">
 <meta name="theme-color" content="#0b0e15">
-<title>CapeEye Staff App</title>
+<title>CapEye Final — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="./ac-data.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js?v=20261019"></script>
+<script src="./ac-data.js?v=20261019b"></script>
+<script src="firebase-init.js?v=20261019"></script>
+<script src="jobs-sync.js?v=20261019"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -312,6 +318,41 @@ let currentStaff = null;
 let taskFilter = 'pending';
 let inspVehicle = null;
 let signoffTaskId = null;
+
+// ── SHARED JOBS: read jobs assigned to me from the shared store ──────────
+// Maps the shared job shape onto the fields this app's cards expect.
+function getMyTasks(staffName) {
+  if (!staffName || typeof CE_JOBS === 'undefined') return [];
+  return CE_JOBS.forStaff(staffName).map(function (j) {
+    return {
+      id: j.id,
+      stockNo: j.stockNo,
+      stageId: j.stageId,
+      stageName: j.stageName,
+      note: j.note,
+      priority: (j.priority || 'normal').toLowerCase(),
+      status: (j.status === 'done' || j.status === 'Done') ? 'done' : 'pending',
+      assignedAt: j.assignedAt || j.createdAt || Date.now(),
+      completedAt: j.completedAt || null
+    };
+  });
+}
+
+// Mark a shared job complete (works with string or numeric id).
+function completeTask(staffName, jobId) {
+  if (typeof CE_JOBS === 'undefined') return;
+  CE_JOBS.complete(String(jobId), staffName);
+}
+
+// Go live: when jobs change anywhere, refresh this staff member's screens.
+function attachJobsLive() {
+  if (typeof CE_JOBS === 'undefined') return;
+  CE_JOBS.subscribe(function () {
+    if (!currentStaff) return;
+    try { buildDash(); } catch (e) {}
+    try { buildTasks(); } catch (e) {}
+  });
+}
 let photos = {};
 let sigDrawing = false;
 let sigCtx = null;
@@ -336,7 +377,8 @@ let damagePins = [];
   // Check saved session
   const saved = localStorage.getItem('ac_staff_session');
   if (saved && AC_STAFF.find(s=>s.name===saved)) {
-    currentStaff = saved; launchApp();
+    currentStaff = saved;
+    _ensureFirebaseSession(launchApp);
   }
 })();
 
@@ -346,7 +388,21 @@ function doLogin() {
   if (!name) { alert('Please select your name'); return; }
   currentStaff = name;
   localStorage.setItem('ac_staff_session', name);
-  launchApp();
+  // Establish a Firebase session so Firestore reads are allowed (rules
+  // require request.auth != null). Anonymous sign-in keeps the quick
+  // name-picker UX while giving a valid auth session for live sync.
+  _ensureFirebaseSession(launchApp);
+}
+
+// Sign in anonymously if not already signed in, then run cb().
+function _ensureFirebaseSession(cb) {
+  try {
+    if (typeof AUTH === 'undefined' || !AUTH) { cb(); return; }
+    if (AUTH.currentUser) { cb(); return; }
+    AUTH.signInAnonymously()
+      .then(function(){ cb(); })
+      .catch(function(e){ console.warn('[CapEye] anon sign-in failed', e); cb(); });
+  } catch (e) { cb(); }
 }
 
 function launchApp() {
@@ -354,6 +410,7 @@ function launchApp() {
   document.getElementById('appShell').style.display = 'flex';
   document.getElementById('staffPill').textContent = currentStaff.split(' ')[0];
   buildDash(); buildTasks();
+  attachJobsLive();   // live updates when jobs are assigned/changed
   initSigCanvas();
   // Push notification permission
   if ('Notification' in window && Notification.permission === 'default') {
@@ -636,7 +693,7 @@ function submitInspection() {
       stockNo: inspVehicle.stockNo});
   }
   // Mark task done if applicable
-  if (signoffTaskId) completeTask(currentStaff, parseInt(signoffTaskId));
+  if (signoffTaskId) completeTask(currentStaff, signoffTaskId);
   showToast('✓ Inspection saved!');
   setTimeout(()=>{ showScreen('dash'); buildDash(); buildTasks(); }, 1500);
 }
@@ -708,7 +765,7 @@ function submitSignoff() {
   const canvas = document.getElementById('sigCanvas');
   const sig = canvas ? canvas.toDataURL() : null;
   if (!note && !sig) { showToast('Add a note or signature first'); return; }
-  if (signoffTaskId) completeTask(currentStaff, parseInt(signoffTaskId));
+  if (signoffTaskId) completeTask(currentStaff, signoffTaskId);
   // Save signoff record
   const records = JSON.parse(localStorage.getItem('ac_signoffs')||'[]');
   records.unshift({staffName:currentStaff, taskId:signoffTaskId, note, sig, signedAt:new Date().toISOString()});
