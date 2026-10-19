@@ -99,3 +99,28 @@
   .welcome h1, .welcome-bar h1 { font-size: 20px !important; }
   .card { padding: 14px !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESKTOP / TABLET NAV FIX (769px and up)
+   Stops the top nav overflowing: "Admin" being cut off and the HPI/
+   Website/Finance badges running off the right edge on laptop widths.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  /* Let the links take the flexible middle space and scroll within it,
+     instead of being the single shrinkable child that clips its own tail. */
+  nav.nav .nav-links { flex: 1 1 auto !important; min-width: 0 !important; }
+  /* Keep the right-hand cluster from being pinned hard to the edge. */
+  nav.nav .nav-right { margin-left: 8px !important; }
+  /* Style the HPI / Website / Finance tool badges consistently on the
+     pages that render them without their own CSS, so they don't run
+     together or add uncontrolled width. */
+  nav.nav .nav-tools { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  nav.nav .nav-tool {
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    padding: 4px 8px; border-radius: 6px; text-decoration: none;
+    color: #003DA5; background: rgba(0,61,213,.08);
+  }
+  nav.nav .nav-tool:hover { background: rgba(0,61,213,.16); }
+  /* Tighten link padding slightly so all 14 fit more often before scrolling. */
+  nav.nav .nav-link { padding: 5px 8px !important; }
+}

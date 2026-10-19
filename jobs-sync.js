@@ -50,6 +50,7 @@ var CE_JOBS = (function () {
       title: (opts.stageName || 'Stage') + ' — ' + (opts.vehicle || opts.stockNo),
       note: opts.note || '',
       assignedTo: opts.assignedTo || '',
+      assignedToDept: opts.assignedToDept || '',
       assignedBy: opts.assignedBy || '',
       priority: opts.priority || 'Normal',
       status: 'pending',
@@ -74,13 +75,18 @@ var CE_JOBS = (function () {
   // All jobs (local cache). Use subscribe() for live.
   function all() { return _lsLoad(); }
 
-  // Jobs assigned to a given staff NAME.
-  function forStaff(name) {
+  // Jobs assigned to a given staff NAME — or to that person's DEPARTMENT
+  // (team handovers). Pass the person's dept as the 2nd argument.
+  function forStaff(name, dept) {
     if (!name) return [];
     var first = name.split(' ')[0].toLowerCase();
+    var d = (dept || '').toLowerCase();
     return _lsLoad().filter(function (j) {
       var a = (j.assignedTo || '').toLowerCase();
-      return a === name.toLowerCase() || a.split(' ')[0] === first;
+      var jd = (j.assignedToDept || '').toLowerCase();
+      var mine = a === name.toLowerCase() || a.split(' ')[0] === first;
+      var teamMine = d && (jd === d || a === (d + ' team'));
+      return mine || teamMine;
     });
   }
 

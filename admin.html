@@ -727,11 +727,37 @@ function renderSystem(){
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Data size</span><strong>${(bytes/1024).toFixed(1)} KB</strong></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Staff records</span><strong>${staff.length}</strong></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Departments</span><strong>${depts.length}</strong></div>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="if(confirm('Clear ALL local data?')){localStorage.clear();location.reload();}"><i class="fas fa-trash"></i> Clear All Local Data</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="clearTestData()"><i class="fas fa-broom"></i> Clear Test Data (jobs & issues)</button>
+    <button class="btn btn-danger" style="margin-top:8px;opacity:.8" onclick="if(confirm('Clear ALL local data on THIS device?')){localStorage.clear();location.reload();}"><i class="fas fa-trash"></i> Clear All Local Data (this device)</button>
   </div>`;
   document.getElementById('sessionInfo').innerHTML=`<div style="padding:10px;background:var(--bg3);border-radius:8px;font-size:13px"><strong>Mode:</strong> Review (No Auth)<br><strong>Data:</strong> localStorage<br><strong>Version:</strong> CapeEye v5</div>`;
 }
 function runSeed(){toast('Data loaded from ac-data.js — no Firestore in review mode','#7a8fa6');}
+
+// Wipe test jobs & aftersales issues from the SHARED store (all users), plus
+// local mirrors, so the demo starts clean. Does NOT touch stock or staff.
+function clearTestData(){
+  if(!confirm('Delete ALL staff jobs and aftersales issues for everyone? Stock and staff are NOT affected.')) return;
+  // Local mirrors + flag so sample jobs don't auto-re-seed after a clear.
+  ['ce_staff_jobs','ce_aftersales_faults','ac_alerts'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+  try { localStorage.setItem('ce_jobs_cleared','1'); } catch(e){}
+  var done = 0, cols = ['staff_jobs','aftersales'];
+  if (typeof FS !== 'undefined' && FS) {
+    var pending = cols.length;
+    cols.forEach(function(col){
+      FS.collection(col).get().then(function(snap){
+        var batch = FS.batch();
+        snap.forEach(function(d){ batch.delete(d.ref); done++; });
+        return batch.commit();
+      }).catch(function(e){ console.warn('clear '+col, e); }).then(function(){
+        pending--;
+        if(pending===0){ toast('Cleared '+done+' test records','#1a7f37'); setTimeout(function(){location.reload();},1200); }
+      });
+    });
+  } else {
+    toast('Local test data cleared','#1a7f37'); setTimeout(function(){location.reload();},1000);
+  }
+}
 
 function toast(msg,bg){document.querySelectorAll('.admin-toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast admin-toast';t.style.cssText=`background:${bg};color:#fff`;t.innerHTML=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 

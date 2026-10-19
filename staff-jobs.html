@@ -486,7 +486,9 @@ function loadJobs() {
   try {
     jobs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   } catch(e) { jobs = []; }
-  if (!jobs.length) seedDemoJobs();
+  // Seed sample jobs only on a genuine first run — not after a deliberate
+  // "Clear Test Data" (which sets this flag so the board stays clean).
+  if (!jobs.length && !localStorage.getItem('ce_jobs_cleared')) seedDemoJobs();
   // LIVE sync via the shared jobs layer — jobs assigned in Workflow (or by
   // other users) appear here in real time, cross-device.
   if (typeof CE_JOBS !== 'undefined') {

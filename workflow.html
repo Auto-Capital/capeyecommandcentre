@@ -738,10 +738,11 @@ function loadVehicle(stockNo) {
 function updateCompleteBtn(stageId) {
   var btn = document.getElementById('completeStageBtn');
   if (!btn) return;
-  if (stageId >= 6) {
-    // Valeting, Advertising, Legal & Docs, Test Drive, Ready for Sale, Sold,
-    // Aftersales — no handover, just tick complete and record who did it.
-    btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="completeJobOnly()"><i class="fas fa-check-circle"></i> Mark Stage Complete</button>';
+  // Every stage hands over to a person OR a department.
+  // The final stage (Aftersales) just marks complete — nothing to hand to.
+  var lastId = AC_WORKFLOW_STAGES[AC_WORKFLOW_STAGES.length-1].id;
+  if (stageId >= lastId) {
+    btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="completeJobOnly()"><i class="fas fa-check-circle"></i> Mark Complete</button>';
   } else {
     btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="openHandoverModal()"><i class="fas fa-arrow-right"></i> Complete Stage & Handover</button>';
   }
@@ -1291,27 +1292,35 @@ function openHandoverModal() {
       <div><div style="font-weight:700;font-size:13px">${currentVehicle.make} ${currentVehicle.model}</div>
       <div style="font-size:11px;color:var(--ink3)">${stage.name} → ${nextStage?nextStage.name:'Final Stage'}</div></div>
     </div>`;
-  // Populate handover target — restricted by stage
+  // Populate handover target — any PERSON or any DEPARTMENT, all stages.
   const hoSel = document.getElementById('hoTarget');
-  hoSel.innerHTML = '<option value="">— Select person —</option>';
-  const sid4 = AC_WORKFLOW_STAGES[currentStageIdx].id;
-  let allowedStaff = [];
-  const mgmt = AC_STAFF.filter(s=>s.dept==='Management');
-  const mechanics = AC_STAFF.filter(s=>s.dept==='Workshop'||s.dept==='Checklist');
-  const valeters = AC_STAFF.filter(s=>s.dept==='Valeting');
-  const advertisers = AC_STAFF.filter(s=>s.dept==='Advertising');
-  const sales = AC_STAFF.filter(s=>s.dept==='Sales');
-  const bodyshop = AC_STAFF.filter(s=>s.dept==='Bodyshop');
-  if (sid4===1||sid4===2||sid4===3) { allowedStaff=[...mechanics,...mgmt]; }
-  else if (sid4===4||sid4===5) { allowedStaff=[...mechanics,...mgmt]; }
-  else if (sid4===6) { allowedStaff=[...advertisers,...mgmt]; }
-  else if (sid4===7) { allowedStaff=[...sales,...mgmt]; }
-  else { allowedStaff=[...AC_STAFF]; }
-  allowedStaff.forEach(s => {
-    const o=document.createElement('option');
-    o.value=s.name;
-    o.textContent=s.name+' — '+s.role;
-    hoSel.appendChild(o);
+  hoSel.innerHTML = '<option value="">— Select person or department —</option>';
+  // 1) Departments group (hand a job to a whole team)
+  const depts = (typeof AC_DEPARTMENTS !== 'undefined' && AC_DEPARTMENTS.length)
+    ? AC_DEPARTMENTS.map(d => (typeof d === 'string' ? d : d.name))
+    : Array.from(new Set(AC_STAFF.map(s => s.dept)));
+  const dgroup = document.createElement('optgroup');
+  dgroup.label = 'Departments';
+  depts.filter(Boolean).forEach(d => {
+    const o = document.createElement('option');
+    o.value = 'dept:' + d;              // "dept:" prefix marks a department target
+    o.textContent = d + ' (whole team)';
+    dgroup.appendChild(o);
+  });
+  hoSel.appendChild(dgroup);
+  // 2) People, grouped by department
+  depts.filter(Boolean).forEach(d => {
+    const people = AC_STAFF.filter(s => s.dept === d && s.role !== 'Test User' && s.id !== 'master');
+    if (!people.length) return;
+    const g = document.createElement('optgroup');
+    g.label = d;
+    people.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.name;
+      o.textContent = s.name + ' — ' + s.role;
+      g.appendChild(o);
+    });
+    hoSel.appendChild(g);
   });
   // History
   const wf = getWorkflow(currentVehicle.stockNo);
@@ -1350,10 +1359,14 @@ function writeAuditLog(type, reg, title, desc, staff, priority) {
   } catch(e) {}
 }
 function confirmHandover() {
-  const toName = document.getElementById('hoTarget').value;
+  const rawTarget = document.getElementById('hoTarget').value;
   const priority = document.getElementById('hoPriority').value;
   const note = document.getElementById('hoNote').value.trim();
-  if (!toName) { showToast('Select who to hand over to','error'); return; }
+  if (!rawTarget) { showToast('Select who to hand over to','error'); return; }
+  // Resolve a department target ("dept:Valeting") to a readable label.
+  const isDept = rawTarget.indexOf('dept:') === 0;
+  const toName = isDept ? (rawTarget.slice(5) + ' Team') : rawTarget;
+  const toDept = isDept ? rawTarget.slice(5) : '';
   const stage = AC_WORKFLOW_STAGES[currentStageIdx];
   const wf = getWorkflow(currentVehicle.stockNo);
   const sid = stage.id;
@@ -1368,6 +1381,7 @@ function confirmHandover() {
       stageId: sid + 1,
       stageName: (AC_WORKFLOW_STAGES[sid] ? AC_WORKFLOW_STAGES[sid].name : stage.name),
       assignedTo: toName,
+      assignedToDept: toDept,   // set when handed to a whole department
       assignedBy: getCurrentUser().name,
       note: note,
       priority: priority,
@@ -1419,7 +1433,8 @@ function openSkipModal() {
   if (!currentVehicle) return;
   const skipSel = document.getElementById('skipTarget');
   skipSel.innerHTML = '';
-  AC_WORKFLOW_STAGES.slice(currentStageIdx+2).forEach(s => {
+  // Allow skipping to any later stage (e.g. Intake straight to Valeting).
+  AC_WORKFLOW_STAGES.slice(currentStageIdx+1).forEach(s => {
     const o=document.createElement('option'); o.value=s.id; o.textContent='Stage '+s.id+': '+s.name; skipSel.appendChild(o);
   });
   document.getElementById('skipReason').value='';

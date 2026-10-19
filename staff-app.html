@@ -323,7 +323,10 @@ let signoffTaskId = null;
 // Maps the shared job shape onto the fields this app's cards expect.
 function getMyTasks(staffName) {
   if (!staffName || typeof CE_JOBS === 'undefined') return [];
-  return CE_JOBS.forStaff(staffName).map(function (j) {
+  // Include jobs handed to this person's whole department (team handovers).
+  var me = (typeof AC_STAFF !== 'undefined') ? AC_STAFF.find(function(s){ return s.name === staffName; }) : null;
+  var dept = me ? me.dept : '';
+  return CE_JOBS.forStaff(staffName, dept).map(function (j) {
     return {
       id: j.id,
       stockNo: j.stockNo,
