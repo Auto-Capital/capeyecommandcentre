@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Final — Team</title>
+<title>CapEye Final V1.1 — Team</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=20261019b"></script>
-<script src="firebase-init.js?v=20260824"></script>
-<script src="live-sync.js?v=20261019"></script>
-<script src="jobs-sync.js?v=20261019"></script>
+<script src="./ac-data.js?v=20261020"></script>
+<script src="firebase-init.js?v=20261020"></script>
+<script src="live-sync.js?v=20261020"></script>
+<script src="jobs-sync.js?v=20261020"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20260824"></script>
+<script src="notifications.js?v=20261020"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -341,7 +341,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020">
 </head>
 <body>
 <nav class="nav">
@@ -353,7 +353,6 @@ input, select, textarea {
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
-    <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
     <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
@@ -416,7 +415,7 @@ function avatarColor(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffffff
 function renderTeam(){
   const q=(document.getElementById('teamSearch').value||'').toLowerCase();
   const list=AC_STAFF.filter(s=>{
-    if(s.role==='Test User'||s.id==='master')return false;        // hide test/master accounts
+    if(s.role==='Test User'||s.id==='master'||s.archived)return false;   // hide test/master/archived
     if(activeDept!=='all'&&s.dept!==activeDept)return false;
     if(q&&!`${s.name} ${s.role} ${s.dept} ${s.email||''} ${s.phone||''}`.toLowerCase().includes(q))return false;
     return true;
@@ -474,8 +473,11 @@ function openProfile(name){
         <div class="info-field"><div class="info-label">Role</div><div class="info-val">${s.role}</div></div>
         <div class="info-field"><div class="info-label">Phone</div><div class="info-val">${s.phone||'Not set'}</div></div>
         <div class="info-field"><div class="info-label">Email</div><div class="info-val">${s.email||'Not set'}</div></div>
-        <div class="info-field"><div class="info-label">Start Date</div><div class="info-val">${s.startDate||'Not set'}</div></div>
-        <div class="info-field"><div class="info-label">Emergency Contact</div><div class="info-val">${s.emergency||'Not set'}</div></div>
+        <div class="info-field"><div class="info-label">Start Date</div><div class="info-val">${s.startDate||'—'}</div></div>
+        <div class="info-field"><div class="info-label">Date of Birth</div><div class="info-val">${s.dob||'—'}</div></div>
+        <div class="info-field" style="grid-column:1/-1"><div class="info-label">Home Address</div><div class="info-val">${s.address||'—'}</div></div>
+        <div class="info-field"><div class="info-label">Emergency Contact 1</div><div class="info-val">${s.ec1name?s.ec1name+(s.ec1phone?' · '+s.ec1phone:''):(s.emergency||'—')}</div></div>
+        <div class="info-field"><div class="info-label">Emergency Contact 2</div><div class="info-val">${s.ec2name?s.ec2name+(s.ec2phone?' · '+s.ec2phone:''):'—'}</div></div>
       </div>
       ${tasks.length?`<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Tasks (${tasks.filter(t=>!t.done).length} pending)</div>
       ${tasks.slice(0,8).map(t=>`<div class="task-list-item"><i class="fas ${t.done?'fa-check-circle task-done':'fa-clock task-pending'}"></i><span>${t.stageName||'Task'}${t.stockNo?' — '+t.stockNo:''}</span><span style="margin-left:auto;font-size:11px">${t.priority==='critical'?'🔴':t.priority==='urgent'?'🟡':''}</span></div>`).join('')}</div>`:
@@ -609,6 +611,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261019"></script>
+<script src="mobile-menu.js?v=20261020"></script>
 </body>
 </html>

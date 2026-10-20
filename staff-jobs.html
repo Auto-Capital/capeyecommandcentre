@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Final — Staff Jobs</title>
+<title>CapEye Final V1.1 — Staff Jobs</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -17,11 +17,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20261019b"></script>
-<script src="firebase-init.js?v=20260824"></script>
-<script src="live-sync.js?v=20261019"></script>
-<script src="jobs-sync.js?v=20261019"></script>
+<script src="firebase-config.js?v=20261020"></script>
+<script src="ac-data.js?v=20261020"></script>
+<script src="firebase-init.js?v=20261020"></script>
+<script src="live-sync.js?v=20261020"></script>
+<script src="jobs-sync.js?v=20261020"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20260824"></script>
+<script src="notifications.js?v=20261020"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -137,7 +137,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .sel-filter:focus{outline:none;border-color:var(--blue)}
 
 /* JOB GRID */
-.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.job-grid{display:flex;flex-direction:column;gap:10px}
 
 /* JOB CARD */
 .job-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:box-shadow .15s}
@@ -345,7 +345,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020">
 </head>
 <body>
 
@@ -358,7 +358,6 @@ input, select, textarea {
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
-    <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
     <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
@@ -488,7 +487,8 @@ function loadJobs() {
   } catch(e) { jobs = []; }
   // Seed sample jobs only on a genuine first run — not after a deliberate
   // "Clear Test Data" (which sets this flag so the board stays clean).
-  if (!jobs.length && !localStorage.getItem('ce_jobs_cleared')) seedDemoJobs();
+  // Start clean: no demo jobs are seeded. Real jobs come from Workflow
+  // handovers and the Accessories section. (seedDemoJobs kept for reference.)
   // LIVE sync via the shared jobs layer — jobs assigned in Workflow (or by
   // other users) appear here in real time, cross-device.
   if (typeof CE_JOBS !== 'undefined') {
@@ -611,6 +611,24 @@ function renderJobs() {
 
   let filtered = jobs.slice();
 
+  // ── PERMISSION FILTER ──────────────────────────────────────────────
+  // Managers/admin see every job. Everyone else sees ONLY jobs assigned to
+  // them personally OR to their whole department.
+  var cu = (typeof getCurrentUser==='function') ? getCurrentUser() : null;
+  var isMgr = cu && (cu.admin || cu.dept==='Management' || cu.canSkipStages);
+  if (cu && !isMgr) {
+    var myName = (cu.name||'').toLowerCase();
+    var myFirst = myName.split(' ')[0];
+    var myDept = (cu.dept||'').toLowerCase();
+    filtered = filtered.filter(function(j){
+      var a = (j.assignedTo||'').toLowerCase();
+      var jd = (j.assignedToDept||'').toLowerCase();
+      var mine = a===myName || a.split(' ')[0]===myFirst;
+      var teamMine = myDept && (jd===myDept || a===(myDept+' team'));
+      return mine || teamMine;
+    });
+  }
+
   // Status filter
   if (activeFilter === 'todo') filtered = filtered.filter(j => j.status === 'To Do');
   else if (activeFilter === 'progress') filtered = filtered.filter(j => j.status === 'In Progress');
@@ -628,13 +646,8 @@ function renderJobs() {
   if (assignF !== 'all') filtered = filtered.filter(j => j.assignedTo === assignF);
   if (priF !== 'all') filtered = filtered.filter(j => j.priority === priF);
 
-  // Sort: overdue first, then by created desc
-  filtered.sort((a, b) => {
-    const aOver = isOverdue(a) ? 1 : 0;
-    const bOver = isOverdue(b) ? 1 : 0;
-    if (bOver !== aOver) return bOver - aOver;
-    return b.created - a.created;
-  });
+  // Sort strictly by date added — newest first.
+  filtered.sort((a, b) => (b.created||b.createdAt||0) - (a.created||a.createdAt||0));
 
   const grid = document.getElementById('job-grid');
   if (!filtered.length) {
@@ -882,6 +895,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261019"></script>
+<script src="mobile-menu.js?v=20261020"></script>
 </body>
 </html>

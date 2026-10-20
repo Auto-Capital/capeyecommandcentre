@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Final — Admin</title>
+<title>CapEye Final V1.1 — Admin</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=20261019b"></script>
-<script src="firebase-init.js?v=20260824"></script>
-<script src="live-sync.js?v=20261019"></script>
-<script src="jobs-sync.js?v=20261019"></script>
+<script src="./ac-data.js?v=20261020"></script>
+<script src="firebase-init.js?v=20261020"></script>
+<script src="live-sync.js?v=20261020"></script>
+<script src="jobs-sync.js?v=20261020"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20260824"></script>
+<script src="notifications.js?v=20261020"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -365,7 +365,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020">
 </head>
 <body>
 <nav class="nav">
@@ -377,7 +377,6 @@ input, select, textarea {
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
-    <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
     <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
@@ -474,8 +473,32 @@ input, select, textarea {
               <input class="form-control" id="staffStart" type="date">
             </div>
             <div class="form-field">
-              <label class="form-label">Emergency Contact</label>
-              <input class="form-control" id="staffEmergency" placeholder="Name & number">
+              <label class="form-label">Date of Birth</label>
+              <input class="form-control" id="staffDob" placeholder="DD/MM/YYYY">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Home Address</label>
+            <textarea class="form-control" id="staffAddress" rows="2" placeholder="Full home address..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Emergency Contact 1 (name)</label>
+              <input class="form-control" id="staffEc1Name" placeholder="e.g. Wife: Meriam">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Contact 1 phone</label>
+              <input class="form-control" id="staffEc1Phone" placeholder="07700 000000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Emergency Contact 2 (name)</label>
+              <input class="form-control" id="staffEc2Name" placeholder="e.g. Brother: Mahmoud">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Contact 2 phone</label>
+              <input class="form-control" id="staffEc2Phone" placeholder="07700 000000">
             </div>
           </div>
           <div class="form-field">
@@ -633,6 +656,7 @@ function renderStaff(){
       </div>
       <div class="staff-card-actions">
         <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editStaff(${s.id})"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="archiveStaff(${s.id})" title="${s.archived?'Un-archive':'Archive'}"><i class="fas fa-box-archive"></i></button>
         <button class="btn btn-danger btn-sm" onclick="deleteStaff(${s.id})"><i class="fas fa-trash"></i></button>
       </div>
     </div>`;
@@ -641,10 +665,14 @@ function renderStaff(){
 function saveStaff(){
   const first=document.getElementById('staffFirst').value.trim(),last=document.getElementById('staffLast').value.trim();
   if(!first||!last){toast('Enter first and last name','#C8102E');return;}
-  const s={id:editingStaffId||Date.now(),name:first+' '+last,role:document.getElementById('staffRole').value.trim()||'Staff',
-    dept:document.getElementById('staffDept').value,phone:document.getElementById('staffPhone').value.trim(),
-    email:document.getElementById('staffEmail').value.trim(),startDate:document.getElementById('staffStart').value,
-    emergency:document.getElementById('staffEmergency').value.trim(),notes:document.getElementById('staffNotes').value.trim(),photo:avatarData||null};
+  const g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  const s={id:editingStaffId||Date.now(),name:first+' '+last,role:g('staffRole')||'Staff',
+    dept:document.getElementById('staffDept').value,phone:g('staffPhone'),
+    email:g('staffEmail'),startDate:g('staffStart'),
+    dob:g('staffDob'),address:g('staffAddress'),
+    ec1name:g('staffEc1Name'),ec1phone:g('staffEc1Phone'),ec2name:g('staffEc2Name'),ec2phone:g('staffEc2Phone'),
+    notes:g('staffNotes'),photo:avatarData||null,
+    archived:(editingStaffId?(staff.find(x=>x.id===editingStaffId)||{}).archived:false)||false};
   if(editingStaffId){staff=staff.map(x=>x.id===editingStaffId?s:x);toast('Staff updated','#1a7f37');}
   else{staff.push(s);toast('Staff member added','#003DA5');}
   save('staff',staff);clearStaffForm();renderStaff();
@@ -656,7 +684,11 @@ function editStaff(id){
   document.getElementById('staffFirst').value=first;document.getElementById('staffLast').value=rest.join(' ');
   document.getElementById('staffRole').value=s.role||'';document.getElementById('staffDept').value=s.dept||'';
   document.getElementById('staffPhone').value=s.phone||'';document.getElementById('staffEmail').value=s.email||'';
-  document.getElementById('staffStart').value=s.startDate||'';document.getElementById('staffEmergency').value=s.emergency||'';
+  document.getElementById('staffStart').value=s.startDate||'';
+  var sv=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
+  sv('staffDob',s.dob);sv('staffAddress',s.address);
+  sv('staffEc1Name',s.ec1name);sv('staffEc1Phone',s.ec1phone);
+  sv('staffEc2Name',s.ec2name);sv('staffEc2Phone',s.ec2phone);
   document.getElementById('staffNotes').value=s.notes||'';
   if(s.photo){avatarData=s.photo;document.getElementById('avatarWrap').innerHTML=`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><input type="file" id="avatarFile" accept="image/*" onchange="previewAvatar(this)">`;}
   document.getElementById('staffFormTitle').textContent='Edit Staff Member';
@@ -665,9 +697,10 @@ function editStaff(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function deleteStaff(id){if(!confirm('Remove this staff member?'))return;staff=staff.filter(s=>s.id!==id);save('staff',staff);renderStaff();toast('Removed','#C8102E');}
+function archiveStaff(id){var s=staff.find(x=>x.id===id);if(!s)return;s.archived=!s.archived;save('staff',staff);renderStaff();toast(s.archived?'Archived':'Un-archived','#003DA5');}
 function clearStaffForm(){
   editingStaffId=null;avatarData=null;
-  ['staffFirst','staffLast','staffRole','staffPhone','staffEmail','staffStart','staffEmergency','staffNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['staffFirst','staffLast','staffRole','staffPhone','staffEmail','staffStart','staffDob','staffAddress','staffEc1Name','staffEc1Phone','staffEc2Name','staffEc2Phone','staffNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('avatarWrap').innerHTML='<i class="fas fa-camera" style="color:var(--muted);font-size:20px"></i><span style="font-size:10px;color:var(--muted);margin-top:4px">Photo</span><input type="file" id="avatarFile" accept="image/*" onchange="previewAvatar(this)">';
   document.getElementById('staffFormTitle').textContent='Add New Staff Member';
   document.getElementById('staffSaveLbl').textContent='Add Staff Member';
@@ -767,6 +800,26 @@ renderStaff();
 
 <script>
 document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('userBadge');if(b)b.textContent='AUTO CAPITAL';});
+
+// ── ADMIN ACCESS: restricted to Keith, Ibrahim and Ajay ───────────────
+(function(){
+  try {
+    var u = (typeof getCurrentUser==='function') ? getCurrentUser() : null;
+    if (!u) return; // review mode / no session — let through
+    var allowed = ['keith','ibrahim','ajay','master'];
+    var id = (u.id||'').toLowerCase();
+    var email = (u.email||'').toLowerCase();
+    var ok = u.admin || allowed.indexOf(id)>=0 ||
+             /keith|ibrahim|ajay|hello@capeye/.test(email) ||
+             /keith|ibrahim|ajay/.test((u.name||'').toLowerCase());
+    if (!ok) {
+      document.body.innerHTML = '<div style="font-family:sans-serif;max-width:420px;margin:80px auto;text-align:center;padding:24px">'+
+        '<h2 style="color:#C8102E">Admin access only</h2>'+
+        '<p style="color:#555">This area is restricted to Keith, Ibrahim and Ajay.</p>'+
+        '<a href="index.html" style="color:#003DA5;font-weight:600">← Back to Dashboard</a></div>';
+    }
+  } catch(e){}
+})();
 function doLogout(){window.location.href='./login.html';}
 </script>
 
@@ -936,6 +989,6 @@ function declineRequest(idx) {
   }
 }
 </script>
-<script src="mobile-menu.js?v=20261019"></script>
+<script src="mobile-menu.js?v=20261020"></script>
 </body>
 </html>

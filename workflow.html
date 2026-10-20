@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final — Workflow</title>
+<title>CapEye Final V1.1 — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20260824"></script>
-<script src="ac-data.js?v=20261019b"></script>
-<script src="firebase-init.js?v=20260824"></script>
-<script src="jobs-sync.js?v=20261019"></script>
-<script src="live-sync.js?v=20260824"></script>
+<script src="firebase-config.js?v=20261020"></script>
+<script src="ac-data.js?v=20261020"></script>
+<script src="firebase-init.js?v=20261020"></script>
+<script src="jobs-sync.js?v=20261020"></script>
+<script src="live-sync.js?v=20261020"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20260824"></script>
+<script src="notifications.js?v=20261020"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261019">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020">
 </head><body>
 
 <nav class="nav">
@@ -381,7 +381,6 @@ input, select, textarea {
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
-    <a class="nav-link" href="keys.html"><i class="fas fa-key"></i> Keys</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
     <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
     <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
@@ -578,6 +577,21 @@ input, select, textarea {
   </div>
 </div>
 
+<!-- COMPLETE SALE — Customer Handover digital form -->
+<div class="modal-bg" id="completeSaleModal">
+  <div class="modal" style="max-width:640px;max-height:92vh;overflow-y:auto">
+    <div class="modal-hdr" style="background:var(--navy,#001a4d)">
+      <div class="modal-title" style="color:#fff">Complete Sale — Customer Handover</div>
+      <button class="modal-close" style="color:rgba(255,255,255,.8)" onclick="closeModal('completeSaleModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="completeSaleBody" style="max-height:72vh;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('completeSaleModal')">Cancel</button>
+      <button class="btn btn-green" onclick="submitCompleteSale()"><i class="fas fa-check-circle"></i> Confirm & Complete Sale</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const vehicles = JSON.parse(JSON.stringify(AC_VEHICLES));
 let currentVehicle = null;
@@ -755,29 +769,129 @@ function completeJobOnly() {
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString(),completedBy:getCurrentUser().name};
   saveWorkflow(currentVehicle.stockNo, wf);
-  writeAuditLog('complete', currentVehicle.registration, stage.name+' — Job Complete', currentVehicle.registration+' '+currentVehicle.make+' '+currentVehicle.model, getCurrentUser().name, 'normal');
-  // Stage 8 (Legal & Docs) = job complete: if mechanic completed repairs, notify valeters
-  // Stage 4 mechanic job complete: open handover to pass to valeting
-  if (sid === 8) {
-    // Notify checklist person and valeters that mechanic work is done
-    const notifyList = [...AC_STAFF.filter(s=>s.dept==='Valeting'), ...AC_STAFF.filter(s=>s.dept==='Management')];
-    notifyList.forEach(function(sp) {
-      sendNotification('handover', {
-        toName: sp.name,
-        reg: currentVehicle.registration,
-        vehicle: currentVehicle.make+' '+currentVehicle.model,
-        stage: 'Mechanical Complete',
-        fromName: getCurrentUser().name,
-        note: 'Mechanical work complete — vehicle ready to be washed and valeted.',
-        priority: 'Normal',
-        link: 'https://www.capeye.co.uk/workflow.html?stock='+currentVehicle.stockNo,
-      });
-    });
-    showToast('Mechanical complete — Valeters notified ✓', 'success');
-  } else {
-    showToast('Stage '+sid+' marked complete ✓', 'success');
+  // Final "Sold" stage: mark the vehicle Sold so it filters in inventory.
+  if (stage.name === 'Sold') {
+    currentVehicle.status = 'Sold';
+    currentVehicle.workflowStage = 'Sold';
+    currentVehicle.soldAt = new Date().toISOString();
+    currentVehicle.soldBy = getCurrentUser().name;
+    if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
   }
+  writeAuditLog('complete', currentVehicle.registration, stage.name+' — Complete', currentVehicle.registration+' '+currentVehicle.make+' '+currentVehicle.model, getCurrentUser().name, 'normal');
+  showToast(stage.name+' marked complete ✓', 'success');
   if (currentStageIdx < AC_WORKFLOW_STAGES.length-1) { currentStageIdx++; loadVehicle(currentVehicle.stockNo); }
+  renderPipeline(); buildKPIs(); buildDeptStrip();
+}
+
+// ══ COMPLETE SALE — Customer Handover digital form ════════════════════
+function openCompleteSale() {
+  if (!currentVehicle) return;
+  var v = currentVehicle;
+  function row(label, inner){ return '<div class="mf-row" style="margin-bottom:12px"><label class="mf-label" style="display:block;margin-bottom:4px">'+label+'</label>'+inner+'</div>'; }
+  function yesno(id){ return '<select class="mf-input" id="'+id+'"><option value="Yes">Yes</option><option value="No">No</option><option value="N/A">N/A</option></select>'; }
+  function photo(id,label){ return '<div class="mf-row" style="margin-bottom:10px"><label class="mf-label" style="display:block;margin-bottom:4px">'+label+'</label>'+
+    '<input type="file" accept="image/*" capture="environment" id="'+id+'" style="font-size:13px"></div>'; }
+
+  var checklist = [
+    ['cs_breakdown','Breakdown cover provided?'],
+    ['cs_breakdown_setup','Customer set up breakdown cover?'],
+    ['cs_roadtax','Customer set up road tax?'],
+    ['cs_insurance','Customer set up insurance?'],
+    ['cs_bluetooth','Help set up Bluetooth?'],
+    ['cs_howto','Explained how to use / drive vehicle?'],
+    ['cs_adblue','Explained AdBlue (if applicable)?'],
+    ['cs_gearbox','Explained manual / automatic gearbox?'],
+    ['cs_spare','Shown spare wheel (if applicable)?'],
+    ['cs_tools','Shown vehicle tools?'],
+  ];
+
+  var html = '';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--navy,#001a4d);margin-bottom:10px">'+v.registration+' · '+v.make+' '+v.model+'</div>';
+
+  // Collection or delivery
+  html += row('Collection or Delivery?', '<select class="mf-input" id="cs_method" onchange="document.getElementById(\'cs_addr_wrap\').style.display=this.value===\'Delivery\'?\'block\':\'none\'"><option value="Collection">Collection</option><option value="Delivery">Delivery</option></select>');
+  html += '<div id="cs_addr_wrap" style="display:none">'+row('Delivery Address', '<textarea class="mf-textarea" id="cs_address" placeholder="Full delivery address..."></textarea>')+'</div>';
+
+  // Handover checklist
+  html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin:14px 0 8px">Handover Checklist</div>';
+  checklist.forEach(function(c){ html += row(c[1], yesno(c[0])); });
+  html += row('Vehicle fuel range / level', '<input class="mf-input" id="cs_fuel" placeholder="e.g. 25% / 180 miles">');
+
+  // Photos / video
+  html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin:14px 0 8px">Photos & Video</div>';
+  html += photo('cs_warn','Any warning lights — take image');
+  html += photo('cs_acc','Any accessories fitted — take image');
+  html += photo('cs_keys','Photo of the keys');
+  html += photo('cs_side1','Photo — Front');
+  html += photo('cs_side2','Photo — Rear');
+  html += photo('cs_side3','Photo — Driver side');
+  html += photo('cs_side4','Photo — Passenger side');
+  html += '<div class="mf-row" style="margin-bottom:10px"><label class="mf-label" style="display:block;margin-bottom:4px">Walkaround video (up to 60 sec)</label>'+
+    '<input type="file" accept="video/*" capture="environment" id="cs_video" style="font-size:13px"><div style="font-size:11px;color:var(--ink3);margin-top:3px">Recorded on the device; full upload is wired once Storage is enabled.</div></div>';
+
+  // Warranty dates
+  html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin:14px 0 8px">Warranty</div>';
+  html += row('3-month dealer warranty start date', '<input class="mf-input" type="date" id="cs_warr_start" value="'+new Date().toISOString().split('T')[0]+'">');
+  html += row('RAC warranty start date (if purchased)', '<input class="mf-input" type="date" id="cs_rac_start">');
+
+  // Signature + confirmation
+  html += row('Customer name', '<input class="mf-input" id="cs_custname" placeholder="Customer full name">');
+  html += row('Customer signature', '<canvas id="cs_sig" width="560" height="120" style="border:1px dashed var(--border);border-radius:8px;width:100%;touch-action:none;background:#fff"></canvas><button type="button" class="btn btn-ghost" style="margin-top:6px;font-size:12px" onclick="clearSaleSig()">Clear signature</button>');
+  html += row('Confirmation note', '<textarea class="mf-textarea" id="cs_confirm" placeholder="Information the customer is agreeing to...">Thank you for your purchase from Auto Capital.</textarea>');
+
+  document.getElementById('completeSaleBody').innerHTML = html;
+  document.getElementById('completeSaleModal').classList.add('open');
+  setTimeout(initSaleSig, 100);
+}
+
+var _saleSig=null,_saleSigDrawing=false;
+function initSaleSig(){
+  var c=document.getElementById('cs_sig'); if(!c)return; var ctx=c.getContext('2d'); ctx.strokeStyle='#001a4d'; ctx.lineWidth=2; ctx.lineCap='round';
+  function pos(e){ var r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e; return {x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}; }
+  function start(e){ _saleSigDrawing=true; var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!_saleSigDrawing)return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ _saleSigDrawing=false; }
+  c.onmousedown=start; c.onmousemove=move; c.onmouseup=end; c.onmouseleave=end;
+  c.ontouchstart=start; c.ontouchmove=move; c.ontouchend=end;
+  _saleSig=c;
+}
+function clearSaleSig(){ if(_saleSig){ _saleSig.getContext('2d').clearRect(0,0,_saleSig.width,_saleSig.height); } }
+
+function submitCompleteSale(){
+  if (!currentVehicle) return;
+  var get=function(id){ var el=document.getElementById(id); return el?el.value:''; };
+  var sale = {
+    reg: currentVehicle.registration,
+    stockNo: currentVehicle.stockNo,
+    vehicle: currentVehicle.make+' '+currentVehicle.model,
+    method: get('cs_method'),
+    deliveryAddress: get('cs_method')==='Delivery'?get('cs_address'):'',
+    checklist: {
+      breakdown:get('cs_breakdown'), breakdownSetup:get('cs_breakdown_setup'), roadtax:get('cs_roadtax'),
+      insurance:get('cs_insurance'), bluetooth:get('cs_bluetooth'), howto:get('cs_howto'),
+      adblue:get('cs_adblue'), gearbox:get('cs_gearbox'), spare:get('cs_spare'), tools:get('cs_tools')
+    },
+    fuel: get('cs_fuel'),
+    warrantyStart: get('cs_warr_start'),
+    racStart: get('cs_rac_start'),
+    customerName: get('cs_custname'),
+    confirmation: get('cs_confirm'),
+    signature: (_saleSig ? _saleSig.toDataURL() : ''),
+    completedBy: getCurrentUser().name,
+    completedAt: new Date().toISOString(),
+  };
+  // Persist on the workflow record and mark the vehicle Sold.
+  var wf = getWorkflow(currentVehicle.stockNo);
+  var sid = AC_WORKFLOW_STAGES[currentStageIdx].id;
+  wf[sid] = Object.assign({}, wf[sid], { completed:true, completedAt:sale.completedAt, completedBy:sale.completedBy, saleForm: sale });
+  saveWorkflow(currentVehicle.stockNo, wf);
+  currentVehicle.status='Sold'; currentVehicle.workflowStage='Sold'; currentVehicle.soldAt=sale.completedAt; currentVehicle.soldBy=sale.completedBy;
+  if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(currentVehicle,function(){}); }catch(e){} }
+  // Save the sale record to its own Firestore collection for the Sold section.
+  if (typeof FS!=='undefined' && FS){ try{ FS.collection('sales').doc(String(currentVehicle.stockNo)).set(sale); }catch(e){} }
+  writeAuditLog('complete', currentVehicle.registration, 'Sale completed — Customer Handover', currentVehicle.registration+' · '+sale.method+' · by '+sale.completedBy, sale.completedBy, 'normal');
+  closeModal('completeSaleModal');
+  showToast('Sale completed & handover saved ✓','success');
   renderPipeline(); buildKPIs(); buildDeptStrip();
 }
 
@@ -812,10 +926,12 @@ function renderStageDots(done) {
   document.getElementById('stageLabels').innerHTML = AC_WORKFLOW_STAGES.map(s=>
     `<div class="stage-label">${s.name}</div>`).join('');
   document.getElementById('stageDots').innerHTML = AC_WORKFLOW_STAGES.map((s,i)=>{
-    const isDone = done.includes(i+1), isCurrent = i===currentStageIdx;
-    return `<div class="stage-dot ${isDone?'completed':''} ${isCurrent&&!isDone?'current':''}"
-      style="background:${isDone?s.color:isCurrent?s.color:'var(--border)'};"
-      title="Stage ${i+1}: ${s.name}" onclick="jumpToStage(${i})"></div>`;
+    // Match completion by the stage's real id, and highlight the stage the
+    // user is actually on (currentStageIdx) — not the one after it.
+    const isDone = done.includes(s.id), isCurrent = i===currentStageIdx;
+    return `<div class="stage-dot ${isDone?'completed':''} ${isCurrent?'current':''}"
+      style="background:${isDone?s.color:isCurrent?s.color:'var(--border)'};${isCurrent?'box-shadow:0 0 0 3px '+s.color+'44;':''}"
+      title="Stage ${s.id}: ${s.name}" onclick="jumpToStage(${i})"></div>`;
   }).join('');
 }
 
@@ -1215,27 +1331,19 @@ function buildForm(stage, ex) {
     </div>
     <div class="form-field full"><div class="form-label">Notes</div><textarea class="form-control" id="f_notes" rows="2">${v('f_notes')}</textarea></div>`;
 
-  } else if (stage.id===9) { // TEST DRIVE
-    f+=`<div class="form-field"><div class="form-label">Customer Name</div><input class="form-control" type="text" id="f_customerName" value="${v('f_customerName')}" placeholder="Full name"></div>
-    <div class="form-field"><div class="form-label">Driving Licence Number</div><input class="form-control" type="text" id="f_licenceNo" value="${v('f_licenceNo')}" placeholder="e.g. SMITH801212AB9IJ"></div>
-    <div class="form-field"><div class="form-label">Licence Expiry Date</div><input class="form-control" type="date" id="f_licenceExpiry" value="${v('f_licenceExpiry')}"></div>
-    <div class="form-field"><div class="form-label">Sales Person</div><select class="form-control" id="f_salesPerson">${AC_STAFF.filter(s=>s.dept==='Sales').map(s=>`<option>${s.name}</option>`).join('')}</select></div>
-    <div class="form-field full"><div class="form-label">Notes / Outcome</div><textarea class="form-control" id="f_notes" rows="2" placeholder="Customer feedback, outcome...">${v('f_notes')}</textarea></div>`;
-
-  } else if (stage.id===10) { // READY FOR SALE
-    f+=`<div class="form-field full"><div class="form-label">Ready for Sale Confirmation</div>
-    ${[['rfs_price','Retail price confirmed'],['rfs_docs','All documents in order'],['rfs_clean','Vehicle clean and presentable'],['rfs_keys','Keys on board'],['rfs_adv','Live on all platforms']].map(([id,label])=>`
-      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer">
-        <input type="checkbox" id="${id}" ${ck(id)} style="width:16px;height:16px;accent-color:var(--navy)">
-        <span style="font-size:13px;font-weight:500">${label}</span>
-      </label>`).join('')}
+  } else if (stage.id===9) { // SOLD — tick + Complete Sale digital form
+    var canSell = (function(){ var u=getCurrentUser(); return u.dept==='Sales'||u.dept==='Management'||u.admin; })();
+    f+=`<div class="form-field full">
+      <div class="form-label">Sale Date</div>
+      <input class="form-control" type="date" id="f_saleDate" value="${v('f_saleDate')||new Date().toISOString().split('T')[0]}">
     </div>
-    <div class="form-field"><div class="form-label">Retail Price (£)</div><input class="form-control" type="number" id="f_retailPrice" value="${v('f_retailPrice')||currentVehicle.price||''}"></div>
-    <div class="form-field"><div class="form-label">Authorised By</div><select class="form-control" id="f_authorisedBy">${AC_STAFF.filter(s=>s.dept==='Management').map(s=>`<option>${s.name}</option>`).join('')}</select></div>`;
-
-  } else if (stage.id===11) { // SOLD
-    f+=`<div class="form-field"><div class="form-label">Sale Date</div><input class="form-control" type="date" id="f_saleDate" value="${v('f_saleDate')||new Date().toISOString().split('T')[0]}"></div>
-    <div class="form-field"><div class="form-label">Sold By</div><select class="form-control" id="f_soldBy">${AC_STAFF.filter(s=>s.dept==='Sales'||s.dept==='Management').map(s=>`<option>${s.name}</option>`).join('')}</select></div>
+    <div class="form-field full"><div class="form-label">Sold By</div>
+      <input class="form-control" type="text" id="f_soldBy" value="${v('f_soldBy')||getCurrentUser().name}" readonly style="background:var(--bg)"></div>
+    <div class="form-field full">
+      ${canSell
+        ? '<button type="button" class="btn btn-navy" style="width:100%;justify-content:center" onclick="openCompleteSale()"><i class="fas fa-file-signature"></i> Complete Sale — Customer Handover Form</button>'
+        : '<div style="font-size:12px;color:var(--ink3);padding:8px;background:var(--bg);border-radius:8px">The Complete Sale handover form is available to Sales and Management.</div>'}
+    </div>
     <div class="form-field full"><div class="form-label">Sale Notes</div><textarea class="form-control" id="f_notes" rows="2">${v('f_notes')}</textarea></div>`;
 
   } else {
@@ -1372,6 +1480,12 @@ function confirmHandover() {
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString()};
   if (sid < AC_WORKFLOW_STAGES.length) { if(!wf[sid+1])wf[sid+1]={}; wf[sid+1].startedAt=new Date().toISOString(); }
+  // Completing Advertising auto-sets the "Ready for Sale" status.
+  if (stage.name === 'Advertising') {
+    currentVehicle.readyForSale = true;
+    currentVehicle.advertised = true;
+    if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
+  }
   saveWorkflow(currentVehicle.stockNo, wf);
   saveHandover(currentVehicle.stockNo, sid, {toName, priority, note, fromStage:stage.name});
   // Create a SHARED job so the assignee sees it live on their own login / phone.
@@ -1724,6 +1838,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261019"></script>
+<script src="mobile-menu.js?v=20261020"></script>
 </body>
 </html>

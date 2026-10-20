@@ -8,19 +8,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CapeEye Staff">
-<meta name="theme-color" content="#0b0e15">
-<title>CapEye Final — Staff App</title>
+<meta name="apple-mobile-web-app-title" content="CapEye Staff">
+<meta name="theme-color" content="#C8102E">
+<link rel="manifest" href="staff-manifest.json?v=20261020">
+<link rel="apple-touch-icon" href="auto-capital-logo.png">
+<title>CapEye Final V1.1 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261019"></script>
-<script src="./ac-data.js?v=20261019b"></script>
-<script src="firebase-init.js?v=20261019"></script>
-<script src="jobs-sync.js?v=20261019"></script>
+<script src="firebase-config.js?v=20261020"></script>
+<script src="./ac-data.js?v=20261020"></script>
+<script src="firebase-init.js?v=20261020"></script>
+<script src="jobs-sync.js?v=20261020"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -191,6 +194,13 @@ html,
 
 <!-- MAIN APP -->
 <div class="app-shell" id="appShell" style="display:none">
+  <!-- ADD TO HOME SCREEN BAR -->
+  <div id="installBar" style="display:none;align-items:center;gap:10px;background:#C8102E;color:#fff;padding:10px 14px;font-size:13px;font-weight:600">
+    <i class="fas fa-mobile-screen"></i>
+    <span style="flex:1">Add CapEye to your Home Screen</span>
+    <button onclick="doInstall()" style="background:#fff;color:#C8102E;border:none;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px">Add</button>
+    <button onclick="dismissInstall()" style="background:transparent;color:#fff;border:none;font-size:16px">&times;</button>
+  </div>
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-logo">
@@ -415,11 +425,48 @@ function launchApp() {
   buildDash(); buildTasks();
   attachJobsLive();   // live updates when jobs are assigned/changed
   initSigCanvas();
-  // Push notification permission
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+  requestAppPermissions();
+  maybeShowInstallPrompt();
+}
+
+// Ask for notifications, location and camera — the PWA "app-like" permissions.
+function requestAppPermissions() {
+  try {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  } catch(e){}
+  try {
+    // Location (one-off prompt; result cached by the browser)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(){}, function(){}, {timeout:8000});
+    }
+  } catch(e){}
+  // Camera is requested at the moment a photo slot is tapped (capture input),
+  // which is the correct time to ask — no pre-emptive getUserMedia needed.
+}
+
+// "Add to Home Screen" — Android/Chrome shows a native prompt we can trigger;
+// iOS Safari needs a manual hint (no programmatic API).
+var _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredInstall = e; });
+function maybeShowInstallPrompt() {
+  if (localStorage.getItem('ce_install_dismissed')) return;
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return; // already installed
+  var bar = document.getElementById('installBar');
+  if (bar) bar.style.display = 'flex';
+}
+function doInstall() {
+  if (_deferredInstall) {
+    _deferredInstall.prompt();
+    _deferredInstall.userChoice.then(function(){ _deferredInstall=null; dismissInstall(); });
+  } else {
+    // iOS: show how-to
+    alert('To add CapEye to your Home Screen:\n\nTap the Share button, then “Add to Home Screen”.');
   }
 }
+function dismissInstall(){ try{localStorage.setItem('ce_install_dismissed','1');}catch(e){} var b=document.getElementById('installBar'); if(b) b.style.display='none'; }
 
 /* ── SCREENS ── */
 function showScreen(name) {
@@ -471,7 +518,8 @@ function buildDash() {
 /* ── TASKS ── */
 function buildTasks() {
   const myTasks = getMyTasks(currentStaff);
-  const filtered = myTasks.filter(t=>t.status===taskFilter);
+  const filtered = myTasks.filter(t=>t.status===taskFilter)
+    .sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));   // newest first, by date added
   document.getElementById('taskList').innerHTML = filtered.map(t=>renderTaskCard(t,false)).join('')
     || `<div class="empty"><i class="fas fa-${taskFilter==='pending'?'tasks':'check-double'}"></i><p>${taskFilter==='pending'?'No pending tasks! 🎉':'No completed tasks yet.'}</p></div>`;
 }
@@ -805,6 +853,14 @@ document.addEventListener('DOMContentLoaded',function(){
   var b=document.getElementById('userBadge');if(b)b.textContent='AUTO CAPITAL';
 });
 function doLogout(){window.location.href='./login.html';}
+</script>
+<script>
+// Register the service worker so the staff app installs as a PWA.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>

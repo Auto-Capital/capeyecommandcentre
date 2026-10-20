@@ -41,7 +41,7 @@
     if (!built) {
       [['index.html','fa-gauge-high','Dashboard'],['workflow.html','fa-arrows-rotate','Workflow'],
        ['inventory.html','fa-car','Inventory'],['alerts.html','fa-bell','Alerts'],
-       ['analytics.html','fa-chart-bar','Analytics'],['keys.html','fa-key','Keys'],
+       ['analytics.html','fa-chart-bar','Analytics'],
        ['auction.html','fa-gavel','Auction'],['accessories.html','fa-wrench','Accessories'],
        ['aftersales.html','fa-headset','Aftersales'],['staff-jobs.html','fa-clipboard-list','Staff Jobs'],
        ['import.html','fa-file-import','Import'],['audit.html','fa-list-check','Audit'],

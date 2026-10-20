@@ -26,8 +26,9 @@ function getStaffEmail(nameOrDept) {
   });
   if (byName && byName.email) return { name: byName.name, email: byName.email };
 
-  // Try department match — return all staff in that dept
-  var nameClean = nameOrDept.replace(' dept','').replace(' Department','').trim();
+  // Try department match — return all staff in that dept.
+  // Handles "Valeting Team", "Valeting dept", "Valeting Department".
+  var nameClean = nameOrDept.replace(/ team$/i,'').replace(/ dept(artment)?$/i,'').trim();
   var byDept = AC_STAFF.filter(function(s) {
     return s.dept && s.dept.toLowerCase() === nameClean.toLowerCase();
   });

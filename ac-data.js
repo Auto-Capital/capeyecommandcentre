@@ -6318,26 +6318,26 @@ const AC_AUCTION_VEHICLES = [
 ];
 
 const AC_STAFF = [
-  {id:'sol', name:'Sol Adam', role:'Senior Management', dept:'Management', email:'sol@autocapital.co.uk', phone:'+44 7984 403318', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
+{id:'sol', name:'Sol Adam', role:'Senior Management', dept:'Management', email:'sol@autocapital.co.uk', phone:'+44 7984 403318', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
   {id:'ali', name:'Ali Amood', role:'Senior Management', dept:'Management', email:'aftersales@autocapital.co.uk', phone:'+44 7944 858453', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
-  {id:'keith', name:'Keith Hardy', role:'Senior Management', dept:'Management', email:'keith@autocapital.co.uk', phone:'+44 7760 621111', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
-  {id:'ibrahim', name:'Ibrahim Ata', role:'Management', dept:'Management', email:'ibrahim@autocapital.co.uk', phone:'+44 7778 880990', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
-  {id:'abu', name:'Abu Amar', role:'Accounts', dept:'Accounts', email:'accounts@autocapital.co.uk', phone:'+44 7717 244971', canSeePurchasePrice:true, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'germaine', name:'Germaine Dua', role:'Sales', dept:'Sales', email:'germaine@autocapital.co.uk', phone:'+44 7926 840186', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'keith', name:'Keith Hardy', role:'Senior Management', dept:'Management', email:'keith@autocapital.co.uk', phone:'+44 7760 621111', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, dob:'12/07/1988', address:"Lansdown Road", ec1name:"Wife : Saira", ec1phone:'07495373216', ec2name:"", ec2phone:''},
+  {id:'ibrahim', name:'Ibrahim Ata', role:'Management', dept:'Management', email:'ibrahim@autocapital.co.uk', phone:'+44 7778 880990', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, dob:'25/06/1990', address:"119 Meadway, Bushey, WD23 2DJ", ec1name:"Wife: Meriam", ec1phone:'07300011102', ec2name:"Brother : Mahmoud", ec2phone:'07788137131'},
+  {id:'abu', name:'Abu Amar', role:'Accounts', dept:'Accounts', email:'accounts@autocapital.co.uk', phone:'+44 7717 244971', canSeePurchasePrice:true, canSkipStages:false, canSendBack:false, admin:false, dob:'', address:"", ec1name:"Son : Amar", ec1phone:'07543831392', ec2name:"", ec2phone:''},
+  {id:'germaine', name:'Germaine Dua', role:'Sales', dept:'Sales', email:'germaine@autocapital.co.uk', phone:'+44 7926 840186', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'02/06/1994', address:"18 Hirst Crescent, Wembley, HA9 7HA", ec1name:"Father : Emmanuel", ec1phone:'07481313881', ec2name:"Mother : Benedicta", ec2phone:'07908218044'},
   {id:'haider', name:'Haider Ahmed', role:'Sales', dept:'Sales', email:'haider@autocapital.co.uk', phone:'+44 7859 332335', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'moamel', name:'Moamel Al Ameri', role:'Sales', dept:'Sales', email:'moamel@autocapital.co.uk', phone:'+44 7853 355505', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'mustafa', name:'Mustafa Naama', role:'Advertising', dept:'Advertising', email:'mustafa@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'moamel', name:'Moamel Al Ameri', role:'Sales', dept:'Sales', email:'moamel@autocapital.co.uk', phone:'+44 7853 355505', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'28/01/2003', address:"34 Rydal Crescent Perivale, UB6 8EG", ec1name:"Father : Hassib", ec1phone:'07985350224', ec2name:"", ec2phone:''},
+  {id:'mustafa', name:'Mustafa Naama', role:'Advertising', dept:'Advertising', email:'mustafa@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'10/11/1981', address:"12 Artic Street, NW5 4DJ", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"Family : Anwar", ec2phone:'07886638372'},
   {id:'ismael', name:'Ismael Al Ameri', role:'Advertising', dept:'Advertising', email:'ismael@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'david', name:'David', role:'AA Checklist', dept:'Checklist', email:'david@autocapital.co.uk', phone:'+44 7584 871763', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'marcin', name:'Marcin', role:'Mechanic', dept:'Workshop', email:'marcin@autocapital.co.uk', phone:'+44 7511 697942', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'sia', name:'Sia', role:'Mechanic', dept:'Workshop', email:'sia@autocapital.co.uk', phone:'+44 7962 070596', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'david', name:'David', role:'AA Checklist', dept:'Checklist', email:'david@autocapital.co.uk', phone:'+44 7584 871763', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'20/03/2004', address:"125, Rydens Way, Woking, Surrey, GU22 9DG", ec1name:"Mum", ec1phone:'07958532812', ec2name:"Dad", ec2phone:'07960221413'},
+  {id:'marcin', name:'Marcin', role:'Mechanic', dept:'Workshop', email:'marcin@autocapital.co.uk', phone:'+44 7511 697942', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'07/04/1989', address:"17 Church Street, Hemel Hampstead, HP2 5AS", ec1name:"Brother : Stash", ec1phone:'07913821294', ec2name:"Girlfriend : Carolina", ec2phone:'07470325918'},
+  {id:'sia', name:'Sia', role:'Mechanic', dept:'Workshop', email:'sia@autocapital.co.uk', phone:'+44 7962 070596', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'05/06/1968', address:"335, Mays Lane, EN5 2QF", ec1name:"Wife", ec1phone:'07773065390', ec2name:"Son : Rosh", ec2phone:'07482716963'},
   {id:'alvaro', name:'Alvaro', role:'Mechanic', dept:'Workshop', email:'alvaro@autocapital.co.uk', phone:'+44 7941 531948', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'iman', name:'Morteza', role:'Mechanic', dept:'Workshop', email:'iman@autocapital.co.uk', phone:'+44 7446 622944', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'iman', name:'Morteza', role:'Mechanic', dept:'Workshop', email:'iman@autocapital.co.uk', phone:'+44 7446 622944', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'10/09/1983', address:"Flat 8, Catleden House, 83 Finchley Road, London, NW3 6HX", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"", ec2phone:''},
   {id:'gorgino', name:'Gorgino', role:'Valeting', dept:'Valeting', email:'gorgino@autocapital.co.uk', phone:'+44 7706 513140', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'fred', name:'Fred', role:'Valeting', dept:'Valeting', email:'fred@autocapital.co.uk', phone:'+44 7494 276826', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'isaac', name:'Isaac', role:'Valeting', dept:'Valeting', email:'isaac@autocapital.co.uk', phone:'+44 7883 387286', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'fred', name:'Fred', role:'Valeting', dept:'Valeting', email:'fred@autocapital.co.uk', phone:'+44 7494 276826', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'14/03/1974', address:"Flat 7, Kenwood Court, 1 Elm wood Crescent, NW9 9AB", ec1name:"Sister", ec1phone:'07518344540', ec2name:"Wife", ec2phone:'07950717526'},
+  {id:'isaac', name:'Isaac', role:'Valeting', dept:'Valeting', email:'isaac@autocapital.co.uk', phone:'+44 7883 387286', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'03/03/1985', address:"57 Langham Road, Edgware, HA8 9EH", ec1name:"Sister : Gifty", ec1phone:'07415931253', ec2name:"", ec2phone:''},
   {id:'ghazi', name:'Ghazi', role:'Valeting', dept:'Valeting', email:'ghazi@autocapital.co.uk', phone:'+44 7393 592364', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
-  {id:'kasdin', name:'Kas Din', role:'Valeting', dept:'Valeting', email:'kasdin@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
+  {id:'kasdin', name:'Kas Din', role:'Valeting', dept:'Valeting', email:'kasdin@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'12/03/2002', address:"103, Sudbury Heights Avenue, UB6 0NF", ec1name:"Dad", ec1phone:'07956436106', ec2name:"", ec2phone:''},
   {id:'stanislaw', name:'Stanislaw', role:'Pre-Inspection / Intake', dept:'Bodyshop', email:'stash@autocapital.co.uk', phone:'+44 7913 821294', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
   {id:'jay', name:'Jay', role:'Dent Repair', dept:'Bodyshop', email:'jay@autocapital.co.uk', phone:'+44 7956 145518', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false},
   {id:'test1', name:'Test 1', role:'Test User', dept:'Management', email:'limliwenbackup@gmail.com', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true},
@@ -6364,12 +6364,14 @@ const AC_WORKFLOW_STAGES = [
   {id:5,  name:"External Work",   dept:"Workshop",     color:"#dc2626", assignedTo:"Keith Hardy",     handoverTo:"Valeting",        optional:true},
   {id:6,  name:"Valeting",        dept:"Valeting",     color:"#10b981", assignedTo:"Valeting Team",   handoverTo:"Advertising",     optional:false},
   {id:7,  name:"Advertising",     dept:"Advertising",  color:"#8b5cf6", assignedTo:"Mustafa Naama",   handoverTo:"Legal & Docs",    optional:false},
-  {id:8,  name:"Legal & Docs",    dept:"Sales",        color:"#3b82f6", assignedTo:"Sales Team",      handoverTo:"Test Drive",      optional:false},
-  {id:9,  name:"Test Drive",      dept:"Sales",        color:"#84cc16", assignedTo:"Sales Team",      handoverTo:"Ready for Sale",  optional:false},
-  {id:10, name:"Ready for Sale",  dept:"Management",   color:"#0891b2", assignedTo:"Management",      handoverTo:"Sold",            optional:false},
-  {id:11, name:"Sold",            dept:"Management",   color:"#64748b", assignedTo:"Management",      handoverTo:"Aftersales",      optional:false},
-  {id:12, name:"Aftersales",      dept:"Workshop",     color:"#f43f5e", assignedTo:"Workshop Team",   handoverTo:null,              optional:false},
+  {id:8,  name:"Legal & Docs",    dept:"Sales",        color:"#3b82f6", assignedTo:"Sales Team",      handoverTo:"Sold",            optional:false},
+  {id:9,  name:"Sold",            dept:"Sales",        color:"#64748b", assignedTo:"Sales Team",      handoverTo:null,              optional:false, tickOnly:true},
 ];
+// NOTE: Test Drive, Ready for Sale and Aftersales removed as stages.
+//  - "Ready for Sale" is now a STATUS, auto-set when Advertising completes.
+//  - Aftersales is handled by the Aftersales section (not a pipeline stage).
+//  - "Sold" is the final tick-only stage (no handover); then the vehicle is
+//    in inventory filterable by status = Sold.
 
 const AA_INSPECTION_CHECKLIST = {
   "Exterior Condition": ["Bonnet","Front Bumper Grille","Front Panel","Nearside Front Wing","Nearside Front Door","Nearside Rear Wing","Offside Front Wing","Offside Front Door","Offside Rear Wing","Rear Bumper","Rear Panel","Tailgate/Boot","Roof","Glass","Body Damage","Body Panels","Bonnet Catch","Bonnet Hinges","Exterior Trim/Grille","Fuel Filler/Cover/Cap","Bumpers/Number Plates"],
