@@ -12,21 +12,21 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020">
-<link rel="apple-touch-icon" href="auto-capital-logo.png">
-<link rel="icon" type="image/png" href="auto-capital-logo.png">
+<link rel="manifest" href="staff-manifest.json?v=20261020b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
 <!-- Link preview (WhatsApp, iMessage, etc.) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="CapEye — Auto Capital">
 <meta property="og:title" content="CapEye Staff App">
 <meta property="og:description" content="Your jobs and tasks for Auto Capital. Log in to see what's assigned to you.">
-<meta property="og:image" content="https://www.capeye.co.uk/auto-capital-logo.png">
+<meta property="og:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
 <meta property="og:url" content="https://www.capeye.co.uk/staff-app.html">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
-<meta name="twitter:image" content="https://www.capeye.co.uk/auto-capital-logo.png">
+<meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
 <title>CapEye Final V1.1 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -371,13 +371,54 @@ function completeTask(staffName, jobId) {
 }
 
 // Go live: when jobs change anywhere, refresh this staff member's screens.
+let _knownJobIds = null;   // tracks jobs already seen, to detect NEW ones
 function attachJobsLive() {
   if (typeof CE_JOBS === 'undefined') return;
   CE_JOBS.subscribe(function () {
     if (!currentStaff) return;
     try { buildDash(); } catch (e) {}
     try { buildTasks(); } catch (e) {}
+    // Detect newly-assigned jobs for this person and notify.
+    try {
+      var mine = getMyTasks(currentStaff).filter(function(t){ return t.status==='pending'; });
+      var ids = mine.map(function(t){ return t.id; });
+      if (_knownJobIds !== null) {
+        var fresh = mine.filter(function(t){ return _knownJobIds.indexOf(t.id) === -1; });
+        fresh.forEach(function(t){ notifyNewJob(t); });
+      }
+      _knownJobIds = ids;
+    } catch(e) {}
   });
+}
+
+// Pop a notification (device + in-app) when a new job is assigned to me.
+function notifyNewJob(task) {
+  var title = 'New job assigned';
+  var body  = (task.stageName||'Task') + (task.stockNo?(' — '+task.stockNo):'');
+  // Device notification (if permission granted)
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      var n = new Notification(title, { body: body, icon: 'capeye-icon-192.png', tag: 'job-'+task.id });
+      n.onclick = function(){ window.focus(); showScreen('tasks'); };
+    }
+  } catch(e) {}
+  // Always show an in-app banner too
+  showJobBanner(title + ': ' + body);
+}
+
+function showJobBanner(msg){
+  var b = document.getElementById('jobBanner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'jobBanner';
+    b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:5000;background:#C8102E;color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center;cursor:pointer';
+    b.onclick = function(){ showScreen('tasks'); b.remove(); };
+    document.body.appendChild(b);
+  }
+  b.innerHTML = '<i class="fas fa-bell"></i> ' + msg;
+  b.style.display = 'block';
+  clearTimeout(window._jobBannerT);
+  window._jobBannerT = setTimeout(function(){ if(b) b.style.display='none'; }, 6000);
 }
 let photos = {};
 let sigDrawing = false;

@@ -1,15 +1,16 @@
 {
   "name": "CapEye Staff",
-  "short_name": "CapEye Staff",
+  "short_name": "CapEye",
   "description": "Auto Capital — my jobs & tasks",
   "start_url": "staff-app.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0e15",
-  "theme_color": "#C8102E",
+  "background_color": "#0a1a4d",
+  "theme_color": "#0a1a4d",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "auto-capital-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "auto-capital-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "capeye-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "capeye-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "capeye-icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
