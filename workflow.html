@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.2 — Workflow</title>
+<title>CapEye Final V1.3 — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020b"></script>
-<script src="ac-data.js?v=20261020b"></script>
-<script src="firebase-init.js?v=20261020b"></script>
-<script src="jobs-sync.js?v=20261020b"></script>
-<script src="live-sync.js?v=20261020b"></script>
+<script src="firebase-config.js?v=20261020c"></script>
+<script src="ac-data.js?v=20261020c"></script>
+<script src="firebase-init.js?v=20261020c"></script>
+<script src="jobs-sync.js?v=20261020c"></script>
+<script src="live-sync.js?v=20261020c"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020b"></script>
+<script src="notifications.js?v=20261020c"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020c">
 </head><body>
 
 <nav class="nav">
@@ -538,6 +538,24 @@ input, select, textarea {
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('handoverModal')">Cancel</button>
       <button class="btn btn-green" onclick="confirmHandover()"><i class="fas fa-check"></i> Confirm Handover</button>
+    </div>
+  </div>
+</div>
+
+<!-- READY FOR SALE CONFIRMATION MODAL -->
+<div class="modal-bg" id="readyModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-body" style="text-align:center;padding:30px 24px">
+      <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <i class="fas fa-check" style="font-size:28px;color:#16a34a"></i>
+      </div>
+      <div style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px">Ready for Sale</div>
+      <div id="readyModalReg" style="font-family:'IBM Plex Mono',monospace;font-weight:700;background:#f5c518;color:#000;display:inline-block;padding:3px 10px;border-radius:5px;margin-bottom:12px"></div>
+      <div style="font-size:14px;color:var(--ink3);line-height:1.5;margin-bottom:22px">Prep for Sale is complete. This vehicle now shows in <b>Inventory</b> and on the <b>Dashboard</b>, and can be sold from the Sales app.</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-ghost" onclick="closeModal('readyModal')">Stay here</button>
+        <button class="btn btn-navy" onclick="location.href='inventory.html?status=Ready%20for%20Sale'"><i class="fas fa-car"></i> See in Inventory</button>
+      </div>
     </div>
   </div>
 </div>
@@ -787,9 +805,10 @@ function completeJobOnly() {
     if (currentVehicle.status !== 'Sold') currentVehicle.status = 'Ready for Sale';
     if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
     writeAuditLog('complete', currentVehicle.registration, 'Prep for Sale complete — Ready for Sale', currentVehicle.registration+' '+currentVehicle.make+' '+currentVehicle.model, getCurrentUser().name, 'normal');
-    showToast('Ready for Sale ✓ — now in Inventory & Dashboard', 'success');
-    loadVehicle(currentVehicle.stockNo);
     renderPipeline(); buildKPIs(); buildDeptStrip();
+    // Clear confirmation — no handover popup, no silent drop back into the pipeline.
+    var rm = document.getElementById('readyModalReg'); if (rm) rm.textContent = currentVehicle.registration;
+    document.getElementById('readyModal').classList.add('open');
     return;
   }
 
@@ -1881,6 +1900,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020b"></script>
+<script src="mobile-menu.js?v=20261020c"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.2 — Dashboard</title>
+<title>CapEye Final V1.3 — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020b"></script>
-<script src="ac-data.js?v=20261020b"></script>
-<script src="firebase-init.js?v=20261020b"></script>
-<script src="jobs-sync.js?v=20261020b"></script>
-<script src="live-sync.js?v=20261020b"></script>
+<script src="firebase-config.js?v=20261020c"></script>
+<script src="ac-data.js?v=20261020c"></script>
+<script src="firebase-init.js?v=20261020c"></script>
+<script src="jobs-sync.js?v=20261020c"></script>
+<script src="live-sync.js?v=20261020c"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,7 +47,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020b"></script>
+<script src="notifications.js?v=20261020c"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -248,7 +248,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020b">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020c">
 </head>
 <body>
 
@@ -772,6 +772,6 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=20261020b"></script>
+<script src="mobile-menu.js?v=20261020c"></script>
 </body>
 </html>
