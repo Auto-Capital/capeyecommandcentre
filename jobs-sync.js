@@ -45,6 +45,7 @@ var CE_JOBS = (function () {
     return upsert({
       id: _id(),
       stockNo: opts.stockNo,
+      reg: opts.reg || '',            // registration — the unique cross-section link
       stageId: opts.stageId,
       stageName: opts.stageName,
       title: (opts.stageName || 'Stage') + ' — ' + (opts.vehicle || opts.stockNo),

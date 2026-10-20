@@ -454,7 +454,8 @@ function _ceRefreshDashboard() {
 function buildReadyForSale() {
   var el = document.getElementById('rfs-list'); if (!el) return;
   var list = getLiveVehicles().filter(function(v){
-    return v.readyForSale || v.status==='Ready for Sale';
+    try { var wf = JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
+      return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed); } catch(e){ return false; }
   });
   var cnt = document.getElementById('rfs-count'); if (cnt) cnt.textContent = list.length + ' vehicle' + (list.length===1?'':'s');
   if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink3);font-size:13px"><i class="fas fa-circle-check" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>No vehicles ready for sale yet</div>'; return; }
@@ -502,27 +503,29 @@ function buildKPIs() {
   var inStock  = v.filter(function(x){ return x.status==='In Stock'; }).length;
   var sold     = v.filter(function(x){ return x.status==='Sold'; }).length;
   var offSite  = v.filter(function(x){ return x.status==='Off-site'; }).length;
-  var ready    = v.filter(function(x){ return x.workflowStage==='Ready for Sale'; }).length;
-  var adv      = v.filter(function(x){ return x.workflowStage==='Advertising'; }).length;
+  function readyFlag(x){ try{ var wf=JSON.parse(localStorage.getItem('ac_wf_'+x.stockNo)||'{}'); return !!(wf[7]&&wf[7].completed)&&!(wf[8]&&wf[8].completed);}catch(e){return false;} }
+  var ready    = v.filter(readyFlag).length;
+  var prep     = v.filter(function(x){ return x.workflowStage==='Prep for Sale'; }).length;
   var overdue  = v.filter(function(x){ return isOverdue(x); }).length;
   var urgent   = v.filter(function(x){ return x.urgent; }).length;
   var noPrice  = v.filter(function(x){ return (!x.price||x.price===0) && x.status==='In Stock'; }).length;
   var motAlert = v.filter(function(x){ var m=getMOTDaysLeft(x.mot); return m<=60&&m>0; }).length;
 
+  // Each KPI links to inventory pre-filtered (?status= or ?stage=).
   var kpis = [
-    {v:inStock, l:'In Stock',      c:'#3b82f6'},
-    {v:ready,   l:'Ready to Sell', c:'#10b981'},
-    {v:adv,     l:'Advertised',    c:'#8b5cf6'},
-    {v:sold,    l:'Sold',          c:'#64748b'},
-    {v:offSite, l:'Off-Site',      c:'#f97316'},
-    {v:overdue, l:'Overdue',       c:'#ef4444'},
-    {v:urgent,  l:'Urgent',        c:'#C8102E'},
-    {v:noPrice, l:'No Price',      c:'#f59e0b'},
-    {v:motAlert,l:'MOT Alert',     c:'#d97706'},
+    {v:inStock, l:'In Stock',       c:'#3b82f6', link:'inventory.html?status=In%20Stock'},
+    {v:ready,   l:'Ready for Sale', c:'#10b981', link:'inventory.html?status=Ready%20for%20Sale'},
+    {v:prep,    l:'Prep for Sale',  c:'#8b5cf6', link:'inventory.html?stage=Prep%20for%20Sale'},
+    {v:sold,    l:'Sold',           c:'#64748b', link:'inventory.html?status=Sold'},
+    {v:offSite, l:'Off-Site',       c:'#f97316', link:'inventory.html?status=Off-site'},
+    {v:overdue, l:'Overdue',        c:'#ef4444', link:'inventory.html'},
+    {v:urgent,  l:'Urgent',         c:'#C8102E', link:'inventory.html'},
+    {v:noPrice, l:'No Price',       c:'#f59e0b', link:'inventory.html'},
+    {v:motAlert,l:'MOT Alert',      c:'#d97706', link:'inventory.html'},
   ];
   var row = document.getElementById('kpi-row');
   row.innerHTML = kpis.map(function(k) {
-    return '<div class="kpi" style="border-top-color:'+k.c+'" onclick="location.href=\'inventory.html\'">' +
+    return '<div class="kpi" style="border-top-color:'+k.c+';cursor:pointer" onclick="location.href=\''+k.link+'\'">' +
       '<div class="kpi-v" style="color:'+k.c+'">'+k.v+'</div>' +
       '<div class="kpi-l">'+k.l+'</div></div>';
   }).join('');

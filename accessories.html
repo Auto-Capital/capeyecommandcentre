@@ -398,6 +398,7 @@ function saveBooking() {
   if (typeof CE_JOBS !== 'undefined' && assignedTo) {
     CE_JOBS.upsert({
       stockNo: reg,
+      reg: reg,
       stageName: 'Accessories',
       title: 'Accessories — ' + (items || 'fitment') + ' · ' + reg,
       note: (items||'') + (supplier?(' · Supplier: '+supplier):'') + (customer?(' · Customer: '+customer):''),

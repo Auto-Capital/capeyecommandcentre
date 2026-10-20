@@ -428,13 +428,24 @@ function getLiveStageName(stockNo) {
   var live = getLiveStage(stockNo);
   return live ? live.name : null;
 }
-let vehicles = JSON.parse(JSON.stringify(AC_VEHICLES)).map(function(v) {
-  var live = getLiveStage(v.stockNo);
-  if (!live) return v;
-  var updated = Object.assign({}, v, {workflowStage: live.name});
-  if (live.enteredAt) updated.stageStarted = live.enteredAt;
-  return updated;
-});
+// Ready for Sale = the "Prep for Sale" stage (id 7) is completed in the workflow.
+function isReadyForSale(stockNo){
+  try {
+    var wf = JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}');
+    return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed);
+  } catch(e){ return false; }
+}
+function buildLiveVehicles(){
+  return JSON.parse(JSON.stringify(AC_VEHICLES)).map(function(v) {
+    var live = getLiveStage(v.stockNo);
+    var ready = isReadyForSale(v.stockNo);
+    var out = Object.assign({}, v);
+    if (live) { out.workflowStage = live.name; if (live.enteredAt) out.stageStarted = live.enteredAt; }
+    if (ready) { out.readyForSale = true; if (out.status!=='Sold') out.status = 'Ready for Sale'; }
+    return out;
+  });
+}
+let vehicles = buildLiveVehicles();
 const showPurchasePrice = canSeePurchasePrice();
 
 if (showPurchasePrice) {
@@ -528,15 +539,21 @@ function applyPriceDrop() {
 
 document.addEventListener("DOMContentLoaded", function() {
   document.getElementById('nav-user').textContent = getCurrentUser().name;
+  // Apply any filter passed from the dashboard (?status=... or ?stage=...).
+  try {
+    var p = new URLSearchParams(location.search);
+    if (p.get('status') && document.getElementById('f-status')) document.getElementById('f-status').value = p.get('status');
+    if (p.get('stage') && document.getElementById('f-stage')) document.getElementById('f-stage').value = p.get('stage');
+  } catch(e){}
   renderTable();
   // Pull live workflow + vehicle data from Firestore, then rebuild the live
   // stages and re-render — so a van moved to Advertising/Sold elsewhere shows.
   if (window.CE_LIVE) {
     CE_LIVE.bootstrap(AC_VEHICLES).then(function(){
-      vehicles = getLiveVehicles();
+      vehicles = buildLiveVehicles();
       renderTable();
       CE_LIVE.attachListeners(AC_VEHICLES, function(){
-        vehicles = getLiveVehicles();
+        vehicles = buildLiveVehicles();
         renderTable();
       });
     });

@@ -594,6 +594,11 @@ input, select, textarea {
 
 <script>
 const vehicles = JSON.parse(JSON.stringify(AC_VEHICLES));
+// Ready for Sale = "Prep for Sale" stage (id 7) completed, not yet Sold (id 8).
+function isReadyForSaleWF(stockNo){
+  try { var wf = getWorkflow(stockNo); return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed); }
+  catch(e){ return false; }
+}
 let currentVehicle = null;
 let currentStageIdx = 0;
 
@@ -634,7 +639,7 @@ function buildKPIs() {
   const v = vehicles;
   const kpis = [
     {v:v.filter(x=>x.status==='In Stock').length, l:'In Stock', c:'#3b82f6'},
-    {v:v.filter(x=>x.readyForSale||x.status==='Ready for Sale').length, l:'Ready for Sale', c:'#0891b2'},
+    {v:v.filter(x=>isReadyForSaleWF(x.stockNo)).length, l:'Ready for Sale', c:'#0891b2'},
     {v:v.filter(x=>x.workflowStage==='Prep for Sale').length, l:'Prep for Sale', c:'#8b5cf6'},
     {v:v.filter(x=>x.status==='Sold').length, l:'Sold', c:'#64748b'},
     {v:v.filter(x=>isOverdue(x)).length, l:'Overdue', c:'#ef4444'},
@@ -888,7 +893,8 @@ function submitCompleteSale(){
   currentVehicle.status='Sold'; currentVehicle.workflowStage='Sold'; currentVehicle.soldAt=sale.completedAt; currentVehicle.soldBy=sale.completedBy;
   if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(currentVehicle,function(){}); }catch(e){} }
   // Save the sale record to its own Firestore collection for the Sold section.
-  if (typeof FS!=='undefined' && FS){ try{ FS.collection('sales').doc(String(currentVehicle.stockNo)).set(sale); }catch(e){} }
+  // Keyed by REGISTRATION (the unique id across all sections).
+  if (typeof FS!=='undefined' && FS){ try{ FS.collection('sales').doc(String(currentVehicle.registration)).set(sale); }catch(e){} }
   writeAuditLog('complete', currentVehicle.registration, 'Sale completed — Customer Handover', currentVehicle.registration+' · '+sale.method+' · by '+sale.completedBy, sale.completedBy, 'normal');
   closeModal('completeSaleModal');
   showToast('Sale completed & handover saved ✓','success');
@@ -1500,6 +1506,7 @@ function confirmHandover() {
   if (typeof CE_JOBS !== 'undefined') {
     CE_JOBS.assignFromHandover({
       stockNo: currentVehicle.stockNo,
+      reg: currentVehicle.registration,
       stageId: sid + 1,
       stageName: (AC_WORKFLOW_STAGES[sid] ? AC_WORKFLOW_STAGES[sid].name : stage.name),
       assignedTo: toName,

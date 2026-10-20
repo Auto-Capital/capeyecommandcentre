@@ -688,10 +688,48 @@ function buildDash() {
 }
 
 /* ── COMPLETE SALE (digital customer handover, Sales/Mgmt) ── */
+// Ready for Sale = "Prep for Sale" (stage 7) complete, not yet Sold (stage 8).
+function appReadyForSaleVehicles(){
+  return vehicles.filter(function(v){
+    try { var wf = JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
+      return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed); } catch(e){ return false; }
+  });
+}
+// Step 1: pick a Ready-for-Sale vehicle from a dropdown (no typing).
 function appStartCompleteSale(){
-  var reg = prompt('Vehicle registration being sold:');
-  if (!reg) return;
-  reg = reg.trim().toUpperCase();
+  var ov = document.getElementById('appSaleOverlay');
+  ov.innerHTML = '<div style="padding:22px;max-width:480px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'+
+      '<div style="font-size:19px;font-weight:800;color:#001a4d">Complete Sale</div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:24px;color:#64748b">&times;</button></div>'+
+    '<label style="display:block;font-size:13px;font-weight:700;color:#475569;margin-bottom:6px">Type the registration</label>'+
+    '<input id="as_search" oninput="appSaleSearch(this.value)" placeholder="Start typing e.g. CJ23…" autocomplete="off" style="width:100%;padding:14px;border:1px solid #d0d5dd;border-radius:10px;font-size:17px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">'+
+    '<div id="as_results" style="margin-top:10px"></div>'+
+  '</div>';
+  ov.style.display='block';
+  setTimeout(function(){ var s=document.getElementById('as_search'); if(s) s.focus(); appSaleSearch(''); }, 100);
+}
+
+// Live search: match Ready-for-Sale vehicles by registration as you type.
+function appSaleSearch(q){
+  q = (q||'').trim().toUpperCase();
+  var ready = appReadyForSaleVehicles();
+  var matches = q ? ready.filter(function(v){ return (v.registration||'').toUpperCase().indexOf(q)===0 || (v.registration||'').toUpperCase().indexOf(q)>-1; }) : ready;
+  var el = document.getElementById('as_results'); if(!el) return;
+  if (!ready.length){ el.innerHTML = '<div style="text-align:center;padding:26px 10px;color:#64748b"><i class="fas fa-circle-check" style="font-size:28px;opacity:.2;display:block;margin-bottom:8px"></i>No vehicles are Ready for Sale yet.<br><span style="font-size:12px">A vehicle appears once its Prep for Sale stage is complete.</span></div>'; return; }
+  if (!matches.length){ el.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:14px">No match for "'+q+'"</div>'; return; }
+  el.innerHTML = matches.slice(0,8).map(function(v){
+    return '<div onclick="appOpenSaleForm(\''+v.registration+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 12px;border:1px solid #e4e7ec;border-radius:12px;margin-bottom:8px;cursor:pointer">'+
+      '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:4px 10px;border-radius:5px">'+v.registration+'</span>'+
+      '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+v.make+' '+v.model+'</div>'+
+      '<div style="font-size:12px;color:#64748b">'+(v.price?('£'+Number(v.price).toLocaleString()):'No price')+'</div></div>'+
+      '<i class="fas fa-chevron-right" style="color:#cbd5e1"></i></div>';
+  }).join('');
+}
+// Step 2: the full handover form for the chosen vehicle.
+function appOpenSaleForm(reg){
+  reg = (reg||'').trim().toUpperCase();
+  if(!reg) return;
   var veh = vehicles.find(function(v){ return (v.registration||'').toUpperCase()===reg; });
   var ov = document.getElementById('appSaleOverlay');
   var yn=function(id){return '<select id="'+id+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px"><option value="Yes">Yes</option><option value="No">No</option><option value="N/A">N/A</option></select>';};
