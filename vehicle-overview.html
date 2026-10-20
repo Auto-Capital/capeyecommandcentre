@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.1 — Vehicle Overview</title>
+<title>CapEye 2.0.1 — Vehicle Overview</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,10 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2"></script>
-<script src="ac-data.js?v=20261020-v2"></script>
-<script src="firebase-init.js?v=20261020-v2"></script>
-<script src="jobs-sync.js?v=20261020-v2"></script>
+<script src="firebase-config.js?v=20261020-v2b"></script>
+<script src="ac-data.js?v=20261020-v2b"></script>
+<script src="firebase-init.js?v=20261020-v2b"></script>
+<script src="jobs-sync.js?v=20261020-v2b"></script>
 <style>
 :root{--red:#C8102E;--navy:#003DA5;--ink:#111827;--ink2:#374151;--ink3:#6B7280;--bg:#F7F8FA;--border:#E5E7EB;--font:'IBM Plex Sans',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -186,7 +186,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2b">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -225,92 +225,156 @@ input, select, textarea {
 </div>
 
 <script>
+var CURRENT_VEHICLE = null;
+var CURRENT_REG = null;
+
+// Find a vehicle by registration across baked stock + Firestore-added vehicles.
+function findVehicleByReg(reg){
+  if(!reg) return null;
+  reg = reg.toUpperCase();
+  var v = AC_VEHICLES.find(function(x){ return (x.registration||'').toUpperCase()===reg; });
+  if (v) return JSON.parse(JSON.stringify(v));
+  try {
+    var added = JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]');
+    var a = added.find(function(x){ return (x.registration||x._id||'').toUpperCase()===reg; });
+    if (a) return JSON.parse(JSON.stringify(a));
+  } catch(e){}
+  return null;
+}
+
+function renderVehicle(vehicle){
+  var stage = AC_WORKFLOW_STAGES.find(function(s){return s.name===vehicle.workflowStage;});
+  var stageColor = stage ? stage.color : '#64748b';
+  var days = getDaysInStage(vehicle.stageStarted);
+  var mot = getMOTDaysLeft(vehicle.mot);
+  var canEdit = (function(){ try { return isManager() || (getCurrentUser().dept==='Sales'); } catch(e){ return true; } })();
+
+  document.getElementById('left-panel').innerHTML =
+    '<div class="card">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div><div class="veh-reg">'+vehicle.registration+'</div>'+
+        '<div class="veh-model">'+(vehicle.make||'')+' '+(vehicle.model||'')+'</div></div>'+
+        (canEdit?'<button onclick="openEditVehicle()" style="background:var(--navy,#001a4d);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap"><i class="fas fa-pen"></i> Edit</button>':'')+
+      '</div>'+
+      '<div class="info-row"><span>Variant</span><strong>'+(vehicle.variant||'—')+'</strong></div>'+
+      '<div class="info-row"><span>Colour</span><strong>'+(vehicle.colour||'—')+'</strong></div>'+
+      '<div class="info-row"><span>Mileage</span><strong>'+parseInt(vehicle.mileage||0).toLocaleString()+' mi</strong></div>'+
+      '<div class="info-row"><span>Fuel</span><strong>'+(vehicle.fuel||'—')+'</strong></div>'+
+      '<div class="info-row"><span>Gearbox</span><strong>'+(vehicle.gearbox||'—')+'</strong></div>'+
+      '<div class="info-row"><span>MOT Expiry</span><strong style="'+(mot<=60?'color:#ef4444':mot<=180?'color:#f59e0b':'')+'">'+(vehicle.mot||'—')+' ('+mot+' days)</strong></div>'+
+      '<div class="info-row"><span>Date In</span><strong>'+(vehicle.dateIn||vehicle.regDate||'—')+'</strong></div>'+
+      '<div class="info-row"><span>Days in Stock</span><strong>'+(vehicle.daysInStock||0)+' days</strong></div>'+
+      '<div class="info-row"><span>Price</span><strong>'+(vehicle.price?'£'+Number(vehicle.price).toLocaleString():'No Price')+'</strong></div>'+
+      ((canSeePurchasePrice()&&vehicle.purchasePrice)?('<div class="info-row"><span>Purchase Price</span><strong style="color:var(--ink3)">£'+Number(vehicle.purchasePrice).toLocaleString()+'</strong></div>'):'')+
+      '<div class="info-row"><span>Status</span><strong>'+(vehicle.status||'—')+'</strong></div>'+
+      '<div class="info-row"><span>Location</span><strong>'+(vehicle.location||'—')+'</strong></div>'+
+      '<div class="info-row"><span>VIN</span><strong style="font-family:\'IBM Plex Mono\',monospace;font-size:10px">'+(vehicle.vin||'—')+'</strong></div>'+
+      '<span class="stage-badge-big" style="background:'+stageColor+'">'+(vehicle.workflowStage||'In Stock')+'</span>'+
+      '<div style="font-size:11px;color:var(--ink3);margin-top:6px">In stage: '+days+' days'+(vehicle.urgent?' · <span style="color:var(--red);font-weight:700">URGENT</span>':'')+'</div>'+
+      '<a href="workflow.html?stock='+vehicle.stockNo+'" style="display:block;text-align:center;margin-top:12px;background:#eef1f5;color:var(--navy,#001a4d);border-radius:8px;padding:9px;font-size:12px;font-weight:700;text-decoration:none"><i class="fas fa-diagram-project"></i> Open in Workflow</a>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-h"><i class="fas fa-stream"></i> Stage Progress</div>'+
+      '<div class="stage-prog">'+
+        AC_WORKFLOW_STAGES.map(function(s){
+          var sIdx = AC_WORKFLOW_STAGES.findIndex(function(x){return x.name===s.name;});
+          var cIdx = AC_WORKFLOW_STAGES.findIndex(function(x){return x.name===vehicle.workflowStage;});
+          var isDone = sIdx < cIdx, isCurrent = sIdx === cIdx;
+          var cls = isDone?'done':isCurrent?'current':'pending';
+          return '<div class="sp-row '+cls+'"><div class="sp-dot" style="background:'+s.color+'"></div>'+
+            '<span class="sp-name">'+s.name+(s.optional?' <span style="font-size:9px;color:var(--ink3)">(opt)</span>':'')+'</span>'+
+            (isDone?'<i class="fas fa-check sp-check"></i>':isCurrent?'<i class="fas fa-arrow-right" style="color:var(--navy);font-size:10px"></i>':'')+'</div>';
+        }).join('')+
+      '</div>'+
+    '</div>';
+
+  // Real history from the audit log (keyed by registration), newest first.
+  var events = [];
+  try {
+    var log = JSON.parse(localStorage.getItem('ac_audit_log')||'[]');
+    events = log.filter(function(e){ return (e.reg||'').toUpperCase()===(vehicle.registration||'').toUpperCase(); })
+                .sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  } catch(e){}
+
+  var historyHtml = events.length ? events.map(function(e){
+    var d = e.ts ? new Date(e.ts) : null;
+    var when = d ? (d.toLocaleDateString('en-GB')+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})) : (e.date||'');
+    return '<div class="tl-item"><div class="tl-dot"></div><div class="tl-date">'+when+'</div>'+
+      '<div class="tl-event">'+(e.title||e.action||'Update')+'</div>'+
+      '<div class="tl-detail">'+(e.desc||e.detail||'')+'</div>'+
+      '<div class="tl-user"><i class="fas fa-user"></i> '+(e.staff||e.user||'')+'</div></div>';
+  }).join('') : '<div style="padding:18px;color:var(--ink3);font-size:13px;font-style:italic">No history logged yet for this vehicle. Actions in Workflow, Handovers and Sales will appear here.</div>';
+
+  document.getElementById('right-panel').innerHTML =
+    '<div class="card"><div class="card-h"><i class="fas fa-timeline"></i> Complete Vehicle History</div>'+
+      '<div class="timeline">'+historyHtml+'</div></div>'+
+    '<div class="card"><div class="card-h"><i class="fas fa-camera"></i> Photos</div>'+
+      '<div style="font-size:12px;color:var(--ink3);font-style:italic">Photos captured on the Sales app (key, 4-side, walkaround) will appear here once Firebase Storage is enabled.</div></div>';
+}
+
+// ── EDIT MODE ──
+function openEditVehicle(){
+  var v = CURRENT_VEHICLE; if(!v) return;
+  var row=function(label,id,val,type){ return '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:var(--ink3,#64748b);margin-bottom:4px">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+(val==null?'':String(val).replace(/"/g,'&quot;'))+'" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></div>'; };
+  var statusSel = '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:var(--ink3,#64748b);margin-bottom:4px">Status</label><select id="ev-status" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px">'+
+    ['In Stock','Ready for Sale','Sale Pending','Sold','Off-site'].map(function(s){return '<option '+(v.status===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+  var m = document.getElementById('editVehModal');
+  m.querySelector('#ev-body').innerHTML =
+    row('Make','ev-make',v.make)+row('Model','ev-model',v.model)+row('Variant','ev-variant',v.variant)+
+    row('Colour','ev-colour',v.colour)+row('Mileage','ev-mileage',v.mileage,'number')+
+    row('Fuel','ev-fuel',v.fuel)+row('Gearbox','ev-gearbox',v.gearbox)+
+    row('MOT Expiry','ev-mot',v.mot)+row('Date In','ev-dateIn',v.dateIn||v.regDate)+
+    row('Price (£)','ev-price',v.price,'number')+
+    (canSeePurchasePrice()?row('Purchase Price (£)','ev-purchasePrice',v.purchasePrice,'number'):'')+
+    statusSel+row('Location','ev-location',v.location)+row('VIN','ev-vin',v.vin);
+  m.classList.add('open');
+}
+function closeEditVeh(){ document.getElementById('editVehModal').classList.remove('open'); }
+function saveEditVehicle(){
+  var v = CURRENT_VEHICLE; if(!v) return;
+  var g=function(id){var e=document.getElementById(id);return e?e.value.trim():undefined;};
+  v.make=g('ev-make'); v.model=g('ev-model'); v.variant=g('ev-variant'); v.colour=g('ev-colour');
+  v.mileage=parseInt(g('ev-mileage'))||0; v.fuel=g('ev-fuel'); v.gearbox=g('ev-gearbox');
+  v.mot=g('ev-mot'); v.dateIn=g('ev-dateIn'); v.price=parseFloat(g('ev-price'))||0;
+  if(document.getElementById('ev-purchasePrice')) v.purchasePrice=parseFloat(g('ev-purchasePrice'))||0;
+  v.status=g('ev-status'); v.location=g('ev-location'); v.vin=g('ev-vin');
+  v.updatedAt=new Date().toISOString(); v.updatedBy=getCurrentUser().name;
+  // Persist reg-keyed to Firestore + local additions cache.
+  if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(v, function(){}); }catch(e){} }
+  try {
+    var added = JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]');
+    var i = added.findIndex(function(x){ return (x.registration||x._id||'').toUpperCase()===(v.registration||'').toUpperCase(); });
+    if (i>=0) added[i]=Object.assign({},added[i],v); else added.push(v);
+    localStorage.setItem('ce_vehicle_additions', JSON.stringify(added));
+  } catch(e){}
+  try { if (typeof writeAuditLog==='function') writeAuditLog('edit', v.registration, 'Vehicle details updated', v.registration+' edited by '+getCurrentUser().name, getCurrentUser().name, 'normal'); } catch(e){}
+  closeEditVeh();
+  CURRENT_VEHICLE = v;
+  renderVehicle(v);
+}
+
 document.addEventListener("DOMContentLoaded", function() {
 document.getElementById('nav-user').textContent = getCurrentUser().name;
-const params = new URLSearchParams(location.search);
-const reg = params.get('reg');
-const vehicle = reg ? AC_VEHICLES.find(v=>v.registration===reg) : null;
+var params = new URLSearchParams(location.search);
+CURRENT_REG = params.get('reg');
+CURRENT_VEHICLE = findVehicleByReg(CURRENT_REG);
 
-if (!vehicle) {
-  document.getElementById('shell').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--ink3)"><i class="fas fa-car-burst" style="font-size:48px;margin-bottom:16px;display:block"></i><div style="font-size:18px;font-weight:700;margin-bottom:8px">No vehicle selected</div><a href="inventory.html" style="color:var(--red)">Go to Inventory</a></div>`;
+if (!CURRENT_VEHICLE) {
+  document.getElementById('shell').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--ink3)"><i class="fas fa-car-burst" style="font-size:48px;margin-bottom:16px;display:block"></i><div style="font-size:18px;font-weight:700;margin-bottom:8px">Vehicle not found</div><a href="inventory.html" style="color:var(--red)">Go to Inventory</a></div>';
 } else {
-  const stage = AC_WORKFLOW_STAGES.find(s=>s.name===vehicle.workflowStage);
-  const stageColor = stage ? stage.color : '#64748b';
-  const days = getDaysInStage(vehicle.stageStarted);
-  const mot = getMOTDaysLeft(vehicle.mot);
-
-  // LEFT
-  document.getElementById('left-panel').innerHTML = `
-    <div class="card">
-      <div class="veh-reg">${vehicle.registration}</div>
-      <div class="veh-model">${vehicle.make} ${vehicle.model}</div>
-      <div class="info-row"><span>Variant</span><strong>${vehicle.variant||'—'}</strong></div>
-      <div class="info-row"><span>Colour</span><strong>${vehicle.colour}</strong></div>
-      <div class="info-row"><span>Mileage</span><strong>${parseInt(vehicle.mileage||0).toLocaleString()} mi</strong></div>
-      <div class="info-row"><span>Fuel</span><strong>${vehicle.fuel}</strong></div>
-      <div class="info-row"><span>Gearbox</span><strong>${vehicle.gearbox}</strong></div>
-      <div class="info-row"><span>MOT Expiry</span><strong style="${mot<=60?'color:#ef4444':mot<=180?'color:#f59e0b':''}">${vehicle.mot||'—'} (${mot} days)</strong></div>
-      <div class="info-row"><span>Date In</span><strong>${vehicle.dateIn||'—'}</strong></div>
-      <div class="info-row"><span>Days in Stock</span><strong>${vehicle.daysInStock||0} days</strong></div>
-      <div class="info-row"><span>Price</span><strong>${vehicle.price?'£'+vehicle.price.toLocaleString():'No Price'}</strong></div>
-      ${canSeePurchasePrice()&&vehicle.purchasePrice?`<div class="info-row"><span>Purchase Price</span><strong style="color:var(--ink3)">£${vehicle.purchasePrice.toLocaleString()}</strong></div>`:''}
-      <div class="info-row"><span>Status</span><strong>${vehicle.status}</strong></div>
-      <div class="info-row"><span>VIN</span><strong style="font-family:'IBM Plex Mono',monospace;font-size:10px">${vehicle.vin||'—'}</strong></div>
-      <span class="stage-badge-big" style="background:${stageColor}">${vehicle.workflowStage}</span>
-      <div style="font-size:11px;color:var(--ink3);margin-top:6px">In stage: ${days} days${vehicle.urgent?' · <span style="color:var(--red);font-weight:700">URGENT</span>':''}</div>
-    </div>
-    <div class="card">
-      <div class="card-h"><i class="fas fa-stream"></i> Stage Progress</div>
-      <div class="stage-prog">
-        ${AC_WORKFLOW_STAGES.map(s => {
-          const sIdx = AC_WORKFLOW_STAGES.findIndex(x=>x.name===s.name);
-          const cIdx = AC_WORKFLOW_STAGES.findIndex(x=>x.name===vehicle.workflowStage);
-          const isDone = sIdx < cIdx;
-          const isCurrent = sIdx === cIdx;
-          const cls = isDone?'done':isCurrent?'current':'pending';
-          return `<div class="sp-row ${cls}">
-            <div class="sp-dot" style="background:${s.color}"></div>
-            <span class="sp-name">${s.name}${s.optional?' <span style="font-size:9px;color:var(--ink3)">(opt)</span>':''}</span>
-            ${isDone?'<i class="fas fa-check sp-check"></i>':isCurrent?'<i class="fas fa-arrow-right" style="color:var(--navy);font-size:10px"></i>':''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-
-  // DEMO timeline events
-  const events = [
-    {date:'19/02/2026',time:'09:15',event:'Vehicle Received',detail:`Intake completed by Stanslaw Marzec. Notes: Clean, one small dent nearside.`,user:'Stanslaw Marzec'},
-    {date:'22/02/2026',time:'14:30',event:'Bodywork Started',detail:`Assigned to Stanslaw. Repair cost estimated: £320.`,user:'Stanslaw Marzec'},
-    {date:'24/02/2026',time:'10:00',event:'Mechanical Inspection',detail:`Full AA-style checklist complete. Parts required: air filter, wiper blades.`,user:'David'},
-    {date:'01/03/2026',time:'11:45',event:'Valeting Complete',detail:`Before/after photos uploaded. Handed over to Advertising.`,user:'Gorgino Barnes'},
-    {date:'02/03/2026',time:'09:00',event:'Advertising — Live Online',detail:`Turntable video, walk-around, photos all complete. Confirmed live by Ismael.`,user:'Mustafa Naama'},
-    {date:'05/03/2026',time:'16:00',event:'Stage Skip — Skipped Legal & Docs',detail:`Reason: V5 already confirmed at intake. Signed off by Keith Hardy.`,user:'Keith Hardy'},
-  ];
-
-  document.getElementById('right-panel').innerHTML = `
-    <div class="card">
-      <div class="card-h"><i class="fas fa-timeline"></i> Complete Vehicle History</div>
-      <div class="timeline">
-        ${events.map(e=>`
-          <div class="tl-item">
-            <div class="tl-dot"></div>
-            <div class="tl-date">${e.date} at ${e.time}</div>
-            <div class="tl-event">${e.event}</div>
-            <div class="tl-detail">${e.detail}</div>
-            <div class="tl-user"><i class="fas fa-user"></i> ${e.user}</div>
-          </div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-h"><i class="fas fa-camera"></i> Photos</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-        ${[1,2,3,4,5,6,7,8].map(n=>`<div style="aspect-ratio:4/3;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink3);flex-direction:column;gap:4px"><i class="fas fa-image" style="font-size:18px"></i>Photo ${n}</div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-h"><i class="fas fa-tools"></i> Repairs & Parts</div>
-      <div style="font-size:12px;color:var(--ink3);font-style:italic">No repairs logged yet via Firebase for this demo vehicle. Firebase sync will populate this in live mode.</div>
-    </div>`;
+  renderVehicle(CURRENT_VEHICLE);
+  // If live stage data exists for this stock, reflect the real current stage.
+  try {
+    var wf = JSON.parse(localStorage.getItem('ac_wf_'+CURRENT_VEHICLE.stockNo)||'{}');
+    var done = Object.keys(wf).map(Number).filter(function(n){return wf[n]&&wf[n].completed;});
+    if (done.length){
+      var max=Math.max.apply(null,done);
+      if (wf[8]&&wf[8].completed) CURRENT_VEHICLE.workflowStage='Sold';
+      else if (wf[7]&&wf[7].completed) CURRENT_VEHICLE.workflowStage='Ready for Sale';
+      else { var st=AC_WORKFLOW_STAGES.find(function(s){return s.id===max+1;}); if(st) CURRENT_VEHICLE.workflowStage=st.name; }
+      renderVehicle(CURRENT_VEHICLE);
+    }
+  } catch(e){}
 }
 });
 </script>
@@ -331,6 +395,22 @@ if (!vehicle) {
   } catch(e) {}
 })();
 </script>
-<script src="mobile-menu.js?v=20261020-v2"></script>
+<script src="mobile-menu.js?v=20261020-v2b"></script>
+
+<!-- EDIT VEHICLE MODAL -->
+<div id="editVehModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--navy,#001a4d);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <div style="font-weight:800;font-size:17px"><i class="fas fa-pen"></i> Edit Vehicle</div>
+      <button onclick="closeEditVeh()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:24px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px" id="ev-body"></div>
+    <div style="padding:14px 20px;border-top:1px solid #e4e7ec;display:flex;gap:10px;position:sticky;bottom:0;background:#fff">
+      <button onclick="closeEditVeh()" style="flex:1;background:#eef1f5;border:none;border-radius:10px;padding:13px;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="saveEditVehicle()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:13px;font-weight:800;cursor:pointer"><i class="fas fa-check"></i> Save changes</button>
+    </div>
+  </div>
+</div>
+<style>#editVehModal.open{display:flex !important}</style>
 </body>
 </html>

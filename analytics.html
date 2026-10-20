@@ -19,10 +19,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=20261020-v2"></script>
-<script src="firebase-init.js?v=20261020-v2"></script>
-<script src="live-sync.js?v=20261020-v2"></script>
-<script src="jobs-sync.js?v=20261020-v2"></script>
+<script src="./ac-data.js?v=20261020-v2b"></script>
+<script src="firebase-init.js?v=20261020-v2b"></script>
+<script src="live-sync.js?v=20261020-v2b"></script>
+<script src="jobs-sync.js?v=20261020-v2b"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -39,7 +39,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2"></script>
+<script src="notifications.js?v=20261020-v2b"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -329,7 +329,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2b">
 </head>
 <body>
 <nav class="nav">
@@ -378,11 +378,11 @@ input, select, textarea {
 
   <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi" style="--kc:var(--blue)"><i class="fas fa-car bi"></i><div class="kpi-label">Total Stock</div><div class="kpi-val" id="kTotal">—</div><div class="kpi-sub" id="kTotalSub">—</div></div>
-    <div class="kpi" style="--kc:var(--green)"><i class="fas fa-check-circle bi"></i><div class="kpi-label">In Stock</div><div class="kpi-val" id="kIn">—</div><div class="kpi-sub">Ready to sell</div></div>
-    <div class="kpi" style="--kc:var(--red)"><i class="fas fa-pound-sign bi"></i><div class="kpi-label">Total Value</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kAvgSub">Avg per vehicle</div></div>
-    <div class="kpi" style="--kc:var(--orange)"><i class="fas fa-hourglass-half bi"></i><div class="kpi-label">Avg Days Stock</div><div class="kpi-val" id="kAvgDays">—</div><div class="kpi-sub" id="kMaxDays">Max —</div></div>
-    <div class="kpi" style="--kc:var(--gold)"><i class="fas fa-calendar bi"></i><div class="kpi-label">MOT Alerts</div><div class="kpi-val" id="kMot">—</div><div class="kpi-sub">Expiring 60 days</div></div>
+    <div class="kpi" style="--kc:var(--blue);cursor:pointer" onclick="location.href='inventory.html'"><i class="fas fa-car bi"></i><div class="kpi-label">Total Stock</div><div class="kpi-val" id="kTotal">—</div><div class="kpi-sub" id="kTotalSub">—</div></div>
+    <div class="kpi" style="--kc:var(--green);cursor:pointer" onclick="location.href='inventory.html?status=In%20Stock'"><i class="fas fa-check-circle bi"></i><div class="kpi-label">In Stock</div><div class="kpi-val" id="kIn">—</div><div class="kpi-sub">Ready to sell</div></div>
+    <div class="kpi" style="--kc:var(--red);cursor:pointer" onclick="location.href='inventory.html'"><i class="fas fa-pound-sign bi"></i><div class="kpi-label">Total Value</div><div class="kpi-val" id="kVal">—</div><div class="kpi-sub" id="kAvgSub">Avg per vehicle</div></div>
+    <div class="kpi" style="--kc:var(--orange);cursor:pointer" onclick="location.href='inventory.html'"><i class="fas fa-hourglass-half bi"></i><div class="kpi-label">Avg Days Stock</div><div class="kpi-val" id="kAvgDays">—</div><div class="kpi-sub" id="kMaxDays">Max —</div></div>
+    <div class="kpi" style="--kc:var(--gold);cursor:pointer" onclick="location.href='alerts.html'"><i class="fas fa-calendar bi"></i><div class="kpi-label">MOT Alerts</div><div class="kpi-val" id="kMot">—</div><div class="kpi-sub">Expiring 60 days</div></div>
   </div>
 
   <!-- STOCK AGE ANALYSIS -->
@@ -497,7 +497,7 @@ function buildAll(){
 
   // OLDEST stock table
   const oldest=V.filter(x=>x.daysInStock>0).sort((a,b)=>b.daysInStock-a.daysInStock).slice(0,15);
-  document.getElementById("oldestBody").innerHTML=oldest.map(x=>`<tr><td><span class=rp>${x.registration}</span></td><td><strong>${x.make}</strong> ${x.model}</td><td><strong style="color:${dc(x.daysInStock)}">${x.daysInStock}d</strong></td><td><span class="badge b-blue" style="font-size:10px">${x.workflowStage}</span></td><td>${fgbp(x.price)}</td></tr>`).join("");
+  document.getElementById("oldestBody").innerHTML=oldest.map(x=>`<tr style="cursor:pointer" onclick="location.href='vehicle-overview.html?reg=${encodeURIComponent(x.registration)}'"><td><span class=rp>${x.registration}</span></td><td><strong>${x.make}</strong> ${x.model}</td><td><strong style="color:${dc(x.daysInStock)}">${x.daysInStock}d</strong></td><td><span class="badge b-blue" style="font-size:10px">${x.workflowStage}</span></td><td>${fgbp(x.price)}</td></tr>`).join("");
 
   // DEPT dwell time
   const deptMap={};V.forEach(x=>{const d=x.workflowDept||"Unknown";if(!deptMap[d])deptMap[d]=[];deptMap[d].push(x.daysInStage||0);});
@@ -566,12 +566,12 @@ function buildAll(){
   const ml=V.filter(x=>{const d=motDays(x.mot);return d!==null&&d<=60;}).map(x=>({...x,days:motDays(x.mot)})).sort((a,b)=>a.days-b.days);
   document.getElementById("motBody").innerHTML=ml.map(x=>{
     const [col,lbl]=x.days<0?[RED,"EXPIRED"]:x.days<30?[ORANGE,x.days+"d"]:[GOLD,x.days+"d"];
-    return `<tr><td><span class=rp>${x.registration||"—"}</span></td><td><strong>${x.make||""}</strong> ${x.model||""}</td><td>${x.mot||"—"}</td><td><strong style="color:${col}">${lbl}</strong></td><td>${x.location||"—"}</td><td><span class="badge b-blue" style="font-size:10px">${x.workflowStage||"—"}</span></td><td>${fgbp(x.price)}</td></tr>`;
+    return `<tr style="cursor:pointer" onclick="location.href='vehicle-overview.html?reg=${encodeURIComponent(x.registration||'')}'"><td><span class=rp>${x.registration||"—"}</span></td><td><strong>${x.make||""}</strong> ${x.model||""}</td><td>${x.mot||"—"}</td><td><strong style="color:${col}">${lbl}</strong></td><td>${x.location||"—"}</td><td><span class="badge b-blue" style="font-size:10px">${x.workflowStage||"—"}</span></td><td>${fgbp(x.price)}</td></tr>`;
   }).join("")||"<tr><td colspan=7 style='text-align:center;padding:24px;color:var(--muted)'>No MOT alerts in next 60 days</td></tr>";
 
   // NO PRICE TABLE
   document.getElementById("noPriceBody").innerHTML=noPrice.slice(0,30).map(x=>
-    `<tr><td><span class=rp>${x.registration||"—"}</span></td><td><strong>${x.make||""}</strong> ${x.model||""}</td><td><span class="badge b-blue" style="font-size:10px">${x.status||"—"}</span></td><td><span class="badge b-grey" style="font-size:10px">${x.workflowStage||"—"}</span></td><td style="color:${dc(x.daysInStock)};font-weight:600">${x.daysInStock||"—"}d</td><td>${x.location||"—"}</td><td>${x.fuel||"—"}</td></tr>`
+    `<tr style="cursor:pointer" onclick="location.href='vehicle-overview.html?reg=${encodeURIComponent(x.registration||'')}'"><td><span class=rp>${x.registration||"—"}</span></td><td><strong>${x.make||""}</strong> ${x.model||""}</td><td><span class="badge b-blue" style="font-size:10px">${x.status||"—"}</span></td><td><span class="badge b-grey" style="font-size:10px">${x.workflowStage||"—"}</span></td><td style="color:${dc(x.daysInStock)};font-weight:600">${x.daysInStock||"—"}d</td><td>${x.location||"—"}</td><td>${x.fuel||"—"}</td></tr>`
   ).join("")||"<tr><td colspan=7 style='text-align:center;padding:24px;color:var(--muted)'>All vehicles priced</td></tr>";
 }
 buildAll();
@@ -690,6 +690,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020-v2"></script>
+<script src="mobile-menu.js?v=20261020-v2b"></script>
 </body>
 </html>

@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=20261020-v2"></script>
-<script src="firebase-init.js?v=20261020-v2"></script>
-<script src="live-sync.js?v=20261020-v2"></script>
-<script src="jobs-sync.js?v=20261020-v2"></script>
+<script src="./ac-data.js?v=20261020-v2b"></script>
+<script src="firebase-init.js?v=20261020-v2b"></script>
+<script src="live-sync.js?v=20261020-v2b"></script>
+<script src="jobs-sync.js?v=20261020-v2b"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2"></script>
+<script src="notifications.js?v=20261020-v2b"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -365,7 +365,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2b">
 </head>
 <body>
 <nav class="nav">
@@ -791,7 +791,7 @@ function renderSystem(){
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Data size</span><strong>${(bytes/1024).toFixed(1)} KB</strong></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Staff records</span><strong>${staff.length}</strong></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:8px"><span>Departments</span><strong>${depts.length}</strong></div>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="clearTestData()"><i class="fas fa-broom"></i> Clear Test Data (jobs & issues)</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="clearTestData()"><i class="fas fa-broom"></i> Clear ALL Staff Jobs & Issues (clean slate)</button>
     <button class="btn btn-danger" style="margin-top:8px;opacity:.8" onclick="if(confirm('Clear ALL local data on THIS device?')){localStorage.clear();location.reload();}"><i class="fas fa-trash"></i> Clear All Local Data (this device)</button>
   </div>`;
   document.getElementById('sessionInfo').innerHTML=`<div style="padding:10px;background:var(--bg3);border-radius:8px;font-size:13px"><strong>Mode:</strong> Review (No Auth)<br><strong>Data:</strong> localStorage<br><strong>Version:</strong> CapeEye v5</div>`;
@@ -1020,6 +1020,6 @@ function declineRequest(idx) {
   }
 }
 </script>
-<script src="mobile-menu.js?v=20261020-v2"></script>
+<script src="mobile-menu.js?v=20261020-v2b"></script>
 </body>
 </html>

@@ -14,10 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2"></script>
-<script src="ac-data.js?v=20261020-v2"></script>
-<script src="firebase-init.js?v=20261020-v2"></script>
-<script src="jobs-sync.js?v=20261020-v2"></script>
+<script src="firebase-config.js?v=20261020-v2b"></script>
+<script src="ac-data.js?v=20261020-v2b"></script>
+<script src="firebase-init.js?v=20261020-v2b"></script>
+<script src="jobs-sync.js?v=20261020-v2b"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -34,7 +34,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2"></script>
+<script src="notifications.js?v=20261020-v2b"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -271,7 +271,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2b">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -336,7 +336,7 @@ function buildAlerts() {
     if (v.urgent) allAlerts.push({type:'urgent',reg:v.registration,title:`${v.registration} — URGENT`,desc:`${v.make} ${v.model} flagged as urgent`,color:'#C8102E',icon:'fas fa-fire',link:`vehicle-overview.html?reg=${v.registration}`});
     const mot = getMOTDaysLeft(v.mot);
     if (mot <= 180 && mot > 0 && v.status !== 'Sold') allAlerts.push({type:'mot',reg:v.registration,title:`${v.registration} — MOT expires in ${mot} days`,desc:`${v.make} ${v.model} · MOT: ${v.mot}. Sorted by soonest date.`,color:mot<=60?'#ef4444':'#f59e0b',icon:'fas fa-calendar-xmark',link:`vehicle-overview.html?reg=${v.registration}`});
-    if ((!v.price||v.price===0) && v.status==='In Stock') allAlerts.push({type:'no-price',reg:v.registration,title:`${v.registration} — No Price Set`,desc:`${v.make} ${v.model} is In Stock with no retail price.`,color:'#f97316',icon:'fas fa-tag',link:`inventory.html`});
+    if ((!v.price||v.price===0) && v.status==='In Stock') allAlerts.push({type:'no-price',reg:v.registration,title:`${v.registration} — No Price Set`,desc:`${v.make} ${v.model} is In Stock with no retail price.`,color:'#f97316',icon:'fas fa-tag',link:`vehicle-overview.html?reg=${v.registration}`});
     if (v.workflowStage==='Ready for Sale' && !v.advertised) allAlerts.push({type:'not-advertised',reg:v.registration,title:`${v.registration} — Ready but Not Advertised`,desc:`${v.make} ${v.model} is Ready for Sale but not yet live online.`,color:'#8b5cf6',icon:'fas fa-ad',link:`workflow.html`});
     if (v.status==='Off-site') allAlerts.push({type:'off-site',reg:v.registration,title:`${v.registration} — Off-site`,desc:`${v.make} ${v.model} is currently off-site. Days away: ${days}.`,color:'#3b82f6',icon:'fas fa-truck',link:`vehicle-overview.html?reg=${v.registration}`});
   });
@@ -472,6 +472,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020-v2"></script>
+<script src="mobile-menu.js?v=20261020-v2b"></script>
 </body>
 </html>
