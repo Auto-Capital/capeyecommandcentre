@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020-v2bb">
+<link rel="manifest" href="staff-manifest.json?v=20261020-v2cb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye 2.0.1 — Staff App</title>
+<title>CapEye 2.0.2 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2b"></script>
-<script src="./ac-data.js?v=20261020-v2b"></script>
-<script src="firebase-init.js?v=20261020-v2b"></script>
-<script src="jobs-sync.js?v=20261020-v2b"></script>
+<script src="firebase-config.js?v=20261020-v2c"></script>
+<script src="./ac-data.js?v=20261020-v2c"></script>
+<script src="firebase-init.js?v=20261020-v2c"></script>
+<script src="jobs-sync.js?v=20261020-v2c"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -299,20 +299,14 @@ html,
 
         <div class="hero-stats" id="dashStats"></div>
 
-        <div id="dashCompleteSale"></div>
+        <!-- Two actions, one unified vehicle search behind both -->
+        <div id="dashActions" style="display:flex;gap:10px;margin-bottom:18px">
+          <button id="btnCompleteSale" onclick="openVehicleFinder('sale')" style="flex:1;background:#C8102E;color:#fff;border:none;border-radius:14px;padding:16px 10px;font-size:15px;font-weight:800;cursor:pointer"><i class="fas fa-file-signature"></i> Complete Sale</button>
+          <button onclick="openVehicleFinder('inspect')" style="flex:1;background:#001a4d;color:#fff;border:none;border-radius:14px;padding:16px 10px;font-size:15px;font-weight:800;cursor:pointer"><i class="fas fa-clipboard-check"></i> Inspect</button>
+        </div>
 
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Your Tasks</div>
         <div id="dashTasks"></div>
-
-        <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px">Quick Inspect</div>
-        <div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px">
-          <input id="quickVehSearch" oninput="quickVehSearch(this.value)" placeholder="Type registration e.g. CJ23…" autocomplete="off" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">
-          <input type="hidden" id="quickVehicle" value="">
-          <div id="quickVehResults"></div>
-          <button onclick="startInspection()" class="big-btn big-btn-blue" style="padding:13px;font-size:14px">
-            <i class="fas fa-clipboard-check"></i> Start Inspection
-          </button>
-        </div>
       </div>
     </div>
 
@@ -386,7 +380,7 @@ html,
       <i class="fas fa-tasks"></i><span>Tasks</span>
       <div class="nav-badge" id="taskBadge" style="display:none">0</div>
     </div>
-    <div class="nav-item" id="nav-inspect" onclick="startInspection()">
+    <div class="nav-item" id="nav-inspect" onclick="openVehicleFinder('inspect')">
       <i class="fas fa-clipboard-check"></i><span>Inspect</span>
     </div>
     <div class="nav-item" id="nav-signoff" onclick="showScreen('signoff')">
@@ -396,7 +390,17 @@ html,
 </div>
 
 <script>
-const vehicles = getVehicles();
+// Full vehicle list = baked stock + any vehicles added via the platform (reg-keyed).
+function buildAppVehicles(){
+  var base = getVehicles();
+  try {
+    var added = JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]');
+    var byReg = {}; base.forEach(function(v){ byReg[(v.registration||'').toUpperCase()]=1; });
+    added.forEach(function(a){ var reg=(a.registration||a._id||'').toUpperCase(); if(reg&&!byReg[reg]){ base.push(a); byReg[reg]=1; } });
+  } catch(e){}
+  return base;
+}
+var vehicles = buildAppVehicles();
 let currentStaff = null;
 let taskFilter = 'pending';
 let inspVehicle = null;
@@ -645,9 +649,9 @@ var LIVE_VEH_STATUS = {};   // { REG: {status, workflowStage} }
 function _refreshSaleSearchIfOpen(){
   var ov = document.getElementById('appSaleOverlay');
   if (ov && ov.style.display === 'block') {
-    var s = document.getElementById('as_search');
+    var s = document.getElementById('vf_search');
     try { if (typeof appBuildReadyFromCache === 'function') READY_LIST = appBuildReadyFromCache(); } catch(e){}
-    try { appSaleSearch(s ? s.value : ''); } catch(e){}
+    try { if (typeof vehicleFinderSearch==='function') vehicleFinderSearch(s ? s.value : ''); } catch(e){}
   }
 }
 
@@ -690,11 +694,20 @@ function prewarmWorkflows(done) {
       _refreshSaleSearchIfOpen();
     });
     FS.collection('vehicles').onSnapshot(function(snap){
+      var added=[]; try{ added=JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]'); }catch(e){}
+      var bakedRegs={}; try{ getVehicles().forEach(function(v){ bakedRegs[(v.registration||'').toUpperCase()]=1; }); }catch(e){}
+      var addedRegs={}; added.forEach(function(a){ addedRegs[(a.registration||a._id||'').toUpperCase()]=1; });
+      var changed=false;
       snap.forEach(function(d){
         var data = d.data() || {};
         var reg = (data.registration || d.id || '').toUpperCase();
-        if (reg) LIVE_VEH_STATUS[reg] = { status: data.status, workflowStage: data.workflowStage };
+        if (reg) LIVE_VEH_STATUS[reg] = { status: data.status, workflowStage: data.workflowStage, readyForSaleAt: data.readyForSaleAt };
+        // A vehicle added on the platform that we don't know about yet.
+        if (reg && !bakedRegs[reg] && !addedRegs[reg] && (data.make||data.model||data.stockNo)) {
+          added.push(Object.assign({registration:reg}, data)); addedRegs[reg]=1; changed=true;
+        }
       });
+      if (changed){ try{ localStorage.setItem('ce_vehicle_additions', JSON.stringify(added)); }catch(e){} vehicles = buildAppVehicles(); }
       _refreshSaleSearchIfOpen();
     });
   } catch(e){}
@@ -757,10 +770,8 @@ function buildDash() {
   // Complete Sale: Sales staff + the four Full-access people can start a sale.
   var meStaff = ceMe();
   var canSell = meStaff && (ceStaffDepts(meStaff).indexOf('Sales')>-1 || ceIsFullAccess(meStaff));
-  var csWrap = document.getElementById('dashCompleteSale');
-  if (csWrap) csWrap.innerHTML = canSell
-    ? '<button onclick="appStartCompleteSale()" style="width:100%;background:#C8102E;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;margin-bottom:16px;cursor:pointer"><i class="fas fa-file-signature"></i> Complete a Sale</button>'
-    : '';
+  var csBtn = document.getElementById('btnCompleteSale');
+  if (csBtn) csBtn.style.display = canSell ? '' : 'none';
 
   // Show up to 3 pending tasks on dash
   document.getElementById('dashTasks').innerHTML = pending.slice(0,3).map(t=>renderTaskCard(t,true)).join('')
@@ -826,44 +837,90 @@ function appFetchReadyLive(cb){
 // Back-compat: anything else that calls this still works.
 function appReadyForSaleVehicles(){ return READY_LIST.length ? READY_LIST : appBuildReadyFromCache(); }
 
-// Step 1: open Complete Sale — show instantly from cache, then refresh live.
-function appStartCompleteSale(){
-  var ov = document.getElementById('appSaleOverlay');
-  ov.innerHTML = '<div style="padding:28px 24px 40px;max-width:640px;margin:0 auto">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">'+
-      '<div style="font-size:22px;font-weight:800;color:#001a4d">Complete Sale</div>'+
-      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
-    '<label style="display:block;font-size:14px;font-weight:700;color:#475569;margin-bottom:8px">Type the registration</label>'+
-    '<input id="as_search" oninput="appSaleSearch(this.value)" placeholder="Start typing e.g. CJ23…" autocomplete="off" style="width:100%;padding:16px;border:1px solid #d0d5dd;border-radius:12px;font-size:18px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">'+
-    '<div id="as_count" style="margin-top:10px;font-size:13px;color:#94a3b8">Loading Ready-for-Sale vehicles…</div>'+
-    '<div id="as_results" style="margin-top:12px"></div>'+
-  '</div>';
-  ov.style.display='block';
-  READY_LIST = appBuildReadyFromCache();              // show cache immediately
-  setTimeout(function(){ var s=document.getElementById('as_search'); if(s) s.focus(); appSaleSearch(''); }, 60);
-  appFetchReadyLive(function(){ appSaleSearch((document.getElementById('as_search')||{}).value||''); });  // then live
+// Is this ONE vehicle Ready for Sale? (same two-signal check as the list.)
+function appVehReady(v){
+  var reg=(v.registration||'').toUpperCase();
+  var live=LIVE_VEH_STATUS[reg];
+  if (live){ if(live.status==='Sold'||live.workflowStage==='Sold'||live.status==='Sale Pending') return {ready:false,sold:(live.status==='Sold'),pending:(live.status==='Sale Pending')};
+    if(live.status==='Ready for Sale'||live.workflowStage==='Ready for Sale') return {ready:true}; }
+  try { var wf=JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
+    if (wf[8]&&wf[8].completed) return {ready:false,sold:true};
+    if (wf[7]&&wf[7].completed) return {ready:true}; } catch(e){}
+  return {ready:false};
 }
 
-// Live search over READY_LIST, matched by registration.
-function appSaleSearch(q){
-  q = (q||'').trim().toUpperCase().replace(/\s+/g,'');
-  var ready = READY_LIST;
-  var cnt = document.getElementById('as_count');
-  if (cnt) cnt.textContent = ready.length ? (ready.length + ' vehicle' + (ready.length>1?'s':'') + ' Ready for Sale') : (_lastFetchError && _lastFetchError!=='offline' ? ('Could not load from server ('+_lastFetchError+')') : '');
-  var norm = function(r){ return (r||'').toUpperCase().replace(/\s+/g,''); };
-  var matches = q ? ready.filter(function(v){ return norm(v.registration).indexOf(q) > -1; }) : ready;
-  var el = document.getElementById('as_results'); if(!el) return;
-  if (!ready.length){ el.innerHTML = '<div style="text-align:center;padding:26px 10px;color:#64748b"><i class="fas fa-circle-check" style="font-size:28px;opacity:.2;display:block;margin-bottom:8px"></i>No vehicles are Ready for Sale yet.<br><span style="font-size:12px">A vehicle appears once its Prep for Sale stage is complete.</span></div>'; return; }
-  if (!matches.length){ el.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:14px">No match for "'+q+'"</div>'; return; }
-  el.innerHTML = matches.slice(0,10).map(function(v){
-    var dt = v.readyAt ? new Date(v.readyAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
-    return '<div onclick="appOpenSaleForm(\''+v.registration+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 12px;border:1px solid #e4e7ec;border-radius:12px;margin-bottom:8px;cursor:pointer">'+
-      '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:4px 10px;border-radius:5px">'+v.registration+'</span>'+
-      '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+(v.make||'')+' '+(v.model||'')+'</div>'+
-      '<div style="font-size:12px;color:#64748b">'+(v.price?('£'+Number(v.price).toLocaleString()):'No price')+(dt?(' · Ready '+dt):'')+'</div></div>'+
-      '<i class="fas fa-chevron-right" style="color:#cbd5e1"></i></div>';
+// ── UNIFIED VEHICLE FINDER ──────────────────────────────────────────────
+// One search over ALL vehicles. mode 'sale' emphasises Complete Sale,
+// 'inspect' emphasises Inspect — but every result offers the right actions.
+var FINDER_MODE = 'sale';
+function openVehicleFinder(mode){
+  FINDER_MODE = mode || 'sale';
+  var title = FINDER_MODE==='sale' ? 'Complete Sale' : 'Inspect a Vehicle';
+  var ov = document.getElementById('appSaleOverlay');
+  ov.innerHTML = '<div style="padding:28px 24px 48px;max-width:640px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'+
+      '<div style="font-size:22px;font-weight:800;color:#001a4d">'+title+'</div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
+    '<label style="display:block;font-size:14px;font-weight:700;color:#475569;margin-bottom:8px">Type the registration</label>'+
+    '<input id="vf_search" oninput="vehicleFinderSearch(this.value)" placeholder="Start typing e.g. CJ23…" autocomplete="off" style="width:100%;padding:16px;border:1px solid #d0d5dd;border-radius:12px;font-size:18px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">'+
+    '<div id="vf_count" style="margin-top:10px;font-size:13px;color:#94a3b8"></div>'+
+    '<div id="vf_results" style="margin-top:12px"></div>'+
+  '</div>';
+  ov.style.display='block';
+  READY_LIST = appBuildReadyFromCache();
+  setTimeout(function(){ var s=document.getElementById('vf_search'); if(s) s.focus(); vehicleFinderSearch(''); }, 60);
+  appFetchReadyLive(function(){ vehicleFinderSearch((document.getElementById('vf_search')||{}).value||''); });
+}
+
+function vehicleFinderSearch(q){
+  q=(q||'').trim().toUpperCase().replace(/\s+/g,'');
+  var el=document.getElementById('vf_results'); if(!el) return;
+  var cnt=document.getElementById('vf_count');
+  var norm=function(r){return (r||'').toUpperCase().replace(/\s+/g,'');};
+  if (!q){
+    if (cnt) cnt.textContent = FINDER_MODE==='sale' ? 'Type a plate to find a vehicle to sell' : 'Type a plate to find a vehicle to inspect';
+    el.innerHTML=''; return;
+  }
+  var matches = vehicles.filter(function(v){ return norm(v.registration).indexOf(q)>-1; }).slice(0,12);
+  if (cnt) cnt.textContent = matches.length ? (matches.length+' match'+(matches.length>1?'es':'')) : '';
+  if (!matches.length){ el.innerHTML='<div style="padding:16px;color:#94a3b8;font-size:14px">No vehicle matches "'+q+'"</div>'; return; }
+  var canSell = (function(){ var m=ceMe(); return m && (ceStaffDepts(m).indexOf('Sales')>-1 || ceIsFullAccess(m)); })();
+  el.innerHTML = matches.map(function(v){
+    var st=appVehReady(v);
+    var statusLabel = st.sold?'Sold':st.pending?'Sale Pending':st.ready?'Ready for Sale':(v.workflowStage||v.status||'In stock');
+    var statusColor = st.ready?'#16a34a':st.sold?'#64748b':st.pending?'#b45309':'#94a3b8';
+    // Action buttons
+    var saleBtn;
+    if (!canSell) saleBtn='';
+    else if (st.ready) saleBtn='<button onclick="event.stopPropagation();appOpenSaleForm(\''+v.registration+'\')" style="background:#C8102E;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap"><i class="fas fa-file-signature"></i> Complete Sale</button>';
+    else if (st.sold) saleBtn='<button disabled style="background:#e2e8f0;color:#94a3b8;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;white-space:nowrap">Already sold</button>';
+    else if (st.pending) saleBtn='<button disabled style="background:#fef3c7;color:#b45309;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;white-space:nowrap">Sale pending</button>';
+    else saleBtn='<button disabled title="Not ready for sale yet" style="background:#e2e8f0;color:#94a3b8;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;white-space:nowrap">Not ready yet</button>';
+    var inspectBtn='<button onclick="event.stopPropagation();appInspectReg(\''+v.registration+'\')" style="background:#001a4d;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap"><i class="fas fa-clipboard-check"></i> Inspect</button>';
+    // Order buttons by the mode you came in through.
+    var actions = FINDER_MODE==='sale' ? (saleBtn+inspectBtn) : (inspectBtn+saleBtn);
+    return '<div style="border:1px solid #e4e7ec;border-radius:12px;margin-bottom:10px;padding:14px 12px">'+
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'+
+        '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:4px 10px;border-radius:5px">'+v.registration+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+(v.make||'')+' '+(v.model||'')+'</div>'+
+        '<div style="font-size:12px"><span style="color:'+statusColor+';font-weight:700">'+statusLabel+'</span>'+(v.price?(' · £'+Number(v.price).toLocaleString()):'')+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end">'+actions+'</div>'+
+    '</div>';
   }).join('');
 }
+
+// Open the inspection flow for a reg from the finder.
+function appInspectReg(reg){
+  var v = vehicles.find(function(x){ return (x.registration||'').toUpperCase()===(reg||'').toUpperCase(); });
+  if(!v) return;
+  document.getElementById('appSaleOverlay').style.display='none';
+  openInspForTask(v.stockNo, null);
+}
+
+// Back-compat: the old entry points now open the unified finder.
+function appStartCompleteSale(){ openVehicleFinder('sale'); }
+function appSaleSearch(q){ vehicleFinderSearch(q); }
 // Step 2: the full handover form for the chosen vehicle.
 function appOpenSaleForm(reg){
   reg = (reg||'').trim().toUpperCase();
@@ -974,29 +1031,8 @@ function renderTaskCard(task, compact) {
 }
 
 /* ── INSPECTION ── */
-// Type-to-search the reg for Quick Inspect. Sets the hidden quickVehicle=stockNo.
-function quickVehSearch(q){
-  q = (q||'').trim().toUpperCase().replace(/\s+/g,'');
-  var el = document.getElementById('quickVehResults'); if(!el) return;
-  if (!q){ el.innerHTML=''; var h=document.getElementById('quickVehicle'); if(h) h.value=''; return; }
-  var matches = vehicles.filter(function(v){ return (v.registration||'').toUpperCase().replace(/\s+/g,'').indexOf(q)>-1; }).slice(0,8);
-  if (!matches.length){ el.innerHTML='<div style="padding:8px;color:var(--muted);font-size:13px">No match for "'+q+'"</div>'; return; }
-  el.innerHTML = matches.map(function(v){
-    return '<div onclick="pickQuickVeh(\''+v.stockNo+'\',\''+(v.registration||'')+'\')" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer">'+
-      '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:3px 8px;border-radius:5px">'+v.registration+'</span>'+
-      '<span style="font-size:13px">'+(v.make||'')+' '+(v.model||'')+'</span></div>';
-  }).join('');
-}
-function pickQuickVeh(stockNo, reg){
-  var h=document.getElementById('quickVehicle'); if(h) h.value=stockNo;
-  var s=document.getElementById('quickVehSearch'); if(s) s.value=reg;
-  document.getElementById('quickVehResults').innerHTML='<div style="padding:8px;color:var(--green);font-size:13px;font-weight:700"><i class="fas fa-check"></i> '+reg+' selected</div>';
-}
-function startInspection() {
-  const stockNo = document.getElementById('quickVehicle').value;
-  if (!stockNo) { showScreen('inspect'); buildInspForm(null); return; }
-  openInspForTask(stockNo, null);
-}
+// Inspect is driven by the unified vehicle finder (openVehicleFinder('inspect')).
+function startInspection() { openVehicleFinder('inspect'); }
 
 function openInspForTask(stockNo, taskId) {
   inspVehicle = vehicles.find(v=>v.stockNo===stockNo);
