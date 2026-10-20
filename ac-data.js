@@ -6317,33 +6317,52 @@ const AC_AUCTION_VEHICLES = [
   {"lotNo":"AC-AUC-005","registration":"SN22TUV","make":"CITROEN","model":"BERLINGO","variant":"1.5 BlueHDi 75 Van","colour":"WHITE","mileage":"55000","mot":"22/09/2026","condition":"Good","estimatedValue":6800,"reservePrice":6000,"auctionHouse":"BCA Blackbushe","auctionDate":"14/04/2026","auctionTime":"10:00","lotNumber":"B-315","status":"Sold at Auction","reason":"Part-exchange","assignedTo":"Ibrahim Ata","notes":"Sold for £6,400. Above reserve.","soldPrice":6400,"soldDate":"14/04/2026"}
 ];
 
+// `sees` = the app stages/sections this person sees (CapEye Lite). 'all' = Full app.
+// Mapping of the HR chart tokens → stage names is in CE_SEES_MAP below.
 const AC_STAFF = [
-{id:'sol', name:'Sol Adam', role:'Senior Management', dept:'Management', email:'sol@autocapital.co.uk', phone:'+44 7984 403318', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, pin:'8607'},
-  {id:'ali', name:'Ali Amood', role:'Senior Management', dept:'Management', email:'aftersales@autocapital.co.uk', phone:'+44 7944 858453', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, pin:'9157'},
-  {id:'keith', name:'Keith Hardy', role:'Senior Management', dept:'Management', email:'keith@autocapital.co.uk', phone:'+44 7760 621111', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, dob:'12/07/1988', address:"Lansdown Road", ec1name:"Wife : Saira", ec1phone:'07495373216', ec2name:"", ec2phone:'', pin:'6943'},
-  {id:'ibrahim', name:'Ibrahim Ata', role:'Management', dept:'Management', email:'ibrahim@autocapital.co.uk', phone:'+44 7778 880990', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, dob:'25/06/1990', address:"119 Meadway, Bushey, WD23 2DJ", ec1name:"Wife: Meriam", ec1phone:'07300011102', ec2name:"Brother : Mahmoud", ec2phone:'07788137131', pin:'1372'},
-  {id:'abu', name:'Abu Amar', role:'Accounts', dept:'Accounts', email:'accounts@autocapital.co.uk', phone:'+44 7717 244971', canSeePurchasePrice:true, canSkipStages:false, canSendBack:false, admin:false, dob:'', address:"", ec1name:"Son : Amar", ec1phone:'07543831392', ec2name:"", ec2phone:'', pin:'7171'},
-  {id:'germaine', name:'Germaine Dua', role:'Sales', dept:'Sales', email:'germaine@autocapital.co.uk', phone:'+44 7926 840186', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'02/06/1994', address:"18 Hirst Crescent, Wembley, HA9 7HA", ec1name:"Father : Emmanuel", ec1phone:'07481313881', ec2name:"Mother : Benedicta", ec2phone:'07908218044', pin:'2159'},
-  {id:'haider', name:'Haider Ahmed', role:'Sales', dept:'Sales', email:'haider@autocapital.co.uk', phone:'+44 7859 332335', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'5263'},
-  {id:'moamel', name:'Moamel Al Ameri', role:'Sales', dept:'Sales', email:'moamel@autocapital.co.uk', phone:'+44 7853 355505', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'28/01/2003', address:"34 Rydal Crescent Perivale, UB6 8EG", ec1name:"Father : Hassib", ec1phone:'07985350224', ec2name:"", ec2phone:'', pin:'5761'},
-  {id:'mustafa', name:'Mustafa Naama', role:'Advertising', dept:'Advertising', email:'mustafa@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'10/11/1981', address:"12 Artic Street, NW5 4DJ", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"Family : Anwar", ec2phone:'07886638372', pin:'9220'},
-  {id:'ismael', name:'Ismael Al Ameri', role:'Advertising', dept:'Advertising', email:'ismael@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'7200'},
-  {id:'david', name:'David', role:'AA Checklist', dept:'Checklist', email:'david@autocapital.co.uk', phone:'+44 7584 871763', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'20/03/2004', address:"125, Rydens Way, Woking, Surrey, GU22 9DG", ec1name:"Mum", ec1phone:'07958532812', ec2name:"Dad", ec2phone:'07960221413', pin:'1678'},
-  {id:'marcin', name:'Marcin', role:'Mechanic', dept:'Workshop', email:'marcin@autocapital.co.uk', phone:'+44 7511 697942', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'07/04/1989', address:"17 Church Street, Hemel Hampstead, HP2 5AS", ec1name:"Brother : Stash", ec1phone:'07913821294', ec2name:"Girlfriend : Carolina", ec2phone:'07470325918', pin:'6725'},
-  {id:'sia', name:'Sia', role:'Mechanic', dept:'Workshop', email:'sia@autocapital.co.uk', phone:'+44 7962 070596', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'05/06/1968', address:"335, Mays Lane, EN5 2QF", ec1name:"Wife", ec1phone:'07773065390', ec2name:"Son : Rosh", ec2phone:'07482716963', pin:'7509'},
-  {id:'alvaro', name:'Alvaro', role:'Mechanic', dept:'Workshop', email:'alvaro@autocapital.co.uk', phone:'+44 7941 531948', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'9130'},
-  {id:'iman', name:'Morteza', role:'Mechanic', dept:'Workshop', email:'iman@autocapital.co.uk', phone:'+44 7446 622944', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'10/09/1983', address:"Flat 8, Catleden House, 83 Finchley Road, London, NW3 6HX", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"", ec2phone:'', pin:'2167'},
-  {id:'gorgino', name:'Gorgino', role:'Valeting', dept:'Valeting', email:'gorgino@autocapital.co.uk', phone:'+44 7706 513140', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'6565'},
-  {id:'fred', name:'Fred', role:'Valeting', dept:'Valeting', email:'fred@autocapital.co.uk', phone:'+44 7494 276826', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'14/03/1974', address:"Flat 7, Kenwood Court, 1 Elm wood Crescent, NW9 9AB", ec1name:"Sister", ec1phone:'07518344540', ec2name:"Wife", ec2phone:'07950717526', pin:'4782'},
-  {id:'isaac', name:'Isaac', role:'Valeting', dept:'Valeting', email:'isaac@autocapital.co.uk', phone:'+44 7883 387286', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'03/03/1985', address:"57 Langham Road, Edgware, HA8 9EH", ec1name:"Sister : Gifty", ec1phone:'07415931253', ec2name:"", ec2phone:'', pin:'5733'},
-  {id:'ghazi', name:'Ghazi', role:'Valeting', dept:'Valeting', email:'ghazi@autocapital.co.uk', phone:'+44 7393 592364', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'8475'},
-  {id:'kasdin', name:'Kas Din', role:'Valeting', dept:'Valeting', email:'kasdin@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, dob:'12/03/2002', address:"103, Sudbury Heights Avenue, UB6 0NF", ec1name:"Dad", ec1phone:'07956436106', ec2name:"", ec2phone:'', pin:'9940'},
-  {id:'stanislaw', name:'Stanislaw', role:'Pre-Inspection / Intake', dept:'Bodyshop', email:'stash@autocapital.co.uk', phone:'+44 7913 821294', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'3953'},
-  {id:'jay', name:'Jay', role:'Dent Repair', dept:'Bodyshop', email:'jay@autocapital.co.uk', phone:'+44 7956 145518', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, pin:'4003'},
-  {id:'test1', name:'Test 1', role:'Test User', dept:'Management', email:'limliwenbackup@gmail.com', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, pin:'4648'},
-  {id:'test2', name:'Test 2', role:'Test User', dept:'Management', email:'calmmotivationalspace@gmail.com', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, pin:'2005'},
-  {id:'master', name:'CapEye Admin', role:'System Administrator', dept:'Management', email:'hello@capeye.co.uk', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, pin:'4719'},
+{id:'sol', name:'Sol Adam', role:'Senior Management', dept:'Management', email:'sol@autocapital.co.uk', phone:'+44 7984 403318', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'8607'},
+  {id:'ali', name:'Ali Amood', role:'Senior Management', dept:'Management', email:'aftersales@autocapital.co.uk', phone:'+44 7944 858453', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'9157'},
+  {id:'keith', name:'Keith Hardy', role:'Senior Management', dept:'Management', email:'keith@autocapital.co.uk', phone:'+44 7760 621111', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', dob:'12/07/1988', address:"Lansdown Road", ec1name:"Wife : Saira", ec1phone:'07495373216', ec2name:"", ec2phone:'', pin:'6943'},
+  {id:'ibrahim', name:'Ibrahim Ata', role:'Management', dept:'Management', email:'ibrahim@autocapital.co.uk', phone:'+44 7778 880990', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', dob:'25/06/1990', address:"119 Meadway, Bushey, WD23 2DJ", ec1name:"Wife: Meriam", ec1phone:'07300011102', ec2name:"Brother : Mahmoud", ec2phone:'07788137131', pin:'1372'},
+  {id:'ajay', name:'Ajay Kawa', role:'Management', dept:'Management', email:'ajay@autocapital.co.uk', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'3131'},
+  {id:'david', name:'David Lupu', role:'Workshop Manager', dept:'Management', email:'david@autocapital.co.uk', phone:'+44 7584 871763', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', dob:'20/03/2004', address:"125, Rydens Way, Woking, Surrey, GU22 9DG", ec1name:"Mum", ec1phone:'07958532812', ec2name:"Dad", ec2phone:'07960221413', pin:'1678'},
+  {id:'abu', name:'Abu Amar', role:'Accounts', dept:'Accounts', email:'accounts@autocapital.co.uk', phone:'+44 7717 244971', canSeePurchasePrice:true, canSkipStages:false, canSendBack:false, admin:false, sees:'all', dob:'', address:"", ec1name:"Son : Amar", ec1phone:'07543831392', ec2name:"", ec2phone:'', pin:'7171'},
+  {id:'saif', name:'Saif Ahmed', role:'Sales', dept:'Sales', email:'saif@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Prep for Sale','Sold'], dob:'08/01/1981', address:"13 Barn Rise, Wembley, HA9 9NF", ec1name:"", ec1phone:'', ec2name:"Mother : Um Saif", ec2phone:'07446871530', pin:'3082'},
+  {id:'germaine', name:'Germaine Dua', role:'Sales', dept:'Sales', email:'germaine@autocapital.co.uk', phone:'+44 7926 840186', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Prep for Sale','Sold'], dob:'02/06/1994', address:"18 Hirst Crescent, Wembley, HA9 7HA", ec1name:"Father : Emmanuel", ec1phone:'07481313881', ec2name:"Mother : Benedicta", ec2phone:'07908218044', pin:'2159'},
+  {id:'haider', name:'Haider Ahmed', role:'Sales', dept:'Sales', email:'haider@autocapital.co.uk', phone:'+44 7859 332335', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Prep for Sale','Sold'], pin:'5263'},
+  {id:'moamel', name:'Moamel Al Ameri', role:'Sales', dept:'Sales', email:'moamel@autocapital.co.uk', phone:'+44 7853 355505', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Prep for Sale','Sold'], dob:'28/01/2003', address:"34 Rydal Crescent Perivale, UB6 8EG", ec1name:"Father : Hassib", ec1phone:'07985350224', ec2name:"", ec2phone:'', pin:'5761'},
+  {id:'mustafa', name:'Mustafa Naama', role:'Advertising', dept:'Advertising', email:'mustafa@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting','Prep for Sale'], dob:'10/11/1981', address:"12 Artic Street, NW5 4DJ", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"Family : Anwar", ec2phone:'07886638372', pin:'9220'},
+  {id:'ismael', name:'Ismael Al Ameri', role:'Advertising', dept:'Advertising', email:'ismael@autocapital.co.uk', phone:'+44 7851 032351', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting','Prep for Sale'], pin:'7200'},
+  {id:'marcin', name:'Marcin Kiljan', role:'Mechanic', dept:'Workshop', email:'marcin@autocapital.co.uk', phone:'+44 7511 697942', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work','Accessories'], dob:'07/04/1989', address:"17 Church Street, Hemel Hampstead, HP2 5AS", ec1name:"Brother : Stash", ec1phone:'07913821294', ec2name:"Girlfriend : Carolina", ec2phone:'07470325918', pin:'6725'},
+  {id:'sia', name:'Sia Vajihi', role:'Mechanic', dept:'Workshop', email:'sia@autocapital.co.uk', phone:'+44 7962 070596', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work'], dob:'05/06/1968', address:"335, Mays Lane, EN5 2QF", ec1name:"Wife", ec1phone:'07773065390', ec2name:"Son : Rosh", ec2phone:'07482716963', pin:'7509'},
+  {id:'carlos', name:'Carlos Segovia Ocampos', role:'Mechanic', dept:'Workshop', email:'carlos@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work'], dob:'31/07/1960', address:"5, Wotton Road, Cricklewood, NW2 6PU", ec1name:"Christopher", ec1phone:'07904162181', ec2name:"", ec2phone:'', pin:'6014'},
+  {id:'bright', name:'Bright Efosa Obahiagbon', role:'Mechanic', dept:'Workshop', email:'bright@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work'], dob:'31/01/1980', address:"Flat 102a, Harrow and Wealdstone, HA3 7AH", ec1name:"Wife", ec1phone:'07404104462', ec2name:"", ec2phone:'', pin:'1980'},
+  {id:'iman', name:'Morteza Rahamian', role:'Mechanic', dept:'Workshop', email:'iman@autocapital.co.uk', phone:'+44 7446 622944', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work'], dob:'10/09/1983', address:"Flat 8, Catleden House, 83 Finchley Road, London, NW3 6HX", ec1name:"Sister : Wafaa", ec1phone:'07958144125', ec2name:"", ec2phone:'', pin:'2167'},
+  {id:'alvaro', name:'Alvaro', role:'Mechanic', dept:'Workshop', email:'alvaro@autocapital.co.uk', phone:'+44 7941 531948', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Mechanical','External Work'], pin:'9130'},
+  {id:'gorgino', name:'Gorginho Barnes', role:'Valeting', dept:'Valeting', email:'gorgino@autocapital.co.uk', phone:'+44 7706 513140', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting'], dob:'09/04/1986', address:"3a Watling Avenue, Edgware, HA8 0LQ", ec1name:"Brother in Law : Eric", ec1phone:'07853101133', ec2name:"Sister : Rose", ec2phone:'07521150090', pin:'6565'},
+  {id:'fred', name:'Fred', role:'Valeting', dept:'Valeting', email:'fred@autocapital.co.uk', phone:'+44 7494 276826', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting'], dob:'14/03/1974', address:"Flat 7, Kenwood Court, 1 Elm wood Crescent, NW9 9AB", ec1name:"Sister", ec1phone:'07518344540', ec2name:"Wife", ec2phone:'07950717526', pin:'4782'},
+  {id:'isaac', name:'Isaac', role:'Valeting', dept:'Valeting', email:'isaac@autocapital.co.uk', phone:'+44 7883 387286', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting'], dob:'03/03/1985', address:"57 Langham Road, Edgware, HA8 9EH", ec1name:"Sister : Gifty", ec1phone:'07415931253', ec2name:"", ec2phone:'', pin:'5733'},
+  {id:'ghazi', name:'Ghazi', role:'Valeting', dept:'Valeting', email:'ghazi@autocapital.co.uk', phone:'+44 7393 592364', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Valeting'], pin:'8475'},
+  {id:'kasdin', name:'Kas Din', role:'Advertising', dept:'Advertising', email:'kasdin@autocapital.co.uk', phone:'', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Intake','Valeting','Prep for Sale'], dob:'12/03/2002', address:"103, Sudbury Heights Avenue, UB6 0NF", ec1name:"Dad", ec1phone:'07956436106', ec2name:"", ec2phone:'', pin:'9940'},
+  {id:'stanislaw', name:'Stash', role:'Pre-Inspection / Intake', dept:'Intake', email:'stash@autocapital.co.uk', phone:'+44 7511 697942', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Intake','Bodywork','Dent Repair'], dob:'25/11/1987', address:"41, Tavistock Avenue, UB6 8AW", ec1name:"Wife : Ivona", ec1phone:'07545059336', ec2name:"Brother : Marcin", ec2phone:'07511697942', pin:'3953'},
+  {id:'jay', name:'Jay', role:'Dent Repair', dept:'Bodyshop', email:'jay@autocapital.co.uk', phone:'+44 7956 145518', canSeePurchasePrice:false, canSkipStages:false, canSendBack:false, admin:false, sees:['Bodywork','Dent Repair'], pin:'4003'},
+  {id:'test1', name:'Test 1', role:'Test User', dept:'Management', email:'limliwenbackup@gmail.com', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'4648'},
+  {id:'test2', name:'Test 2', role:'Test User', dept:'Management', email:'calmmotivationalspace@gmail.com', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'2005'},
+  {id:'master', name:'CapEye Admin', role:'System Administrator', dept:'Management', email:'hello@capeye.co.uk', phone:'', canSeePurchasePrice:true, canSkipStages:true, canSendBack:true, admin:true, sees:'all', pin:'4719'},
 ];
+
+// Which stages/sections each HR "sees" token maps to (reference / future use).
+var CE_SEES_MAP = {
+  all:          'all',
+  intake:       ['Intake'],
+  bodywork:     ['Bodywork','Dent Repair'],
+  dentrepair:   ['Dent Repair'],
+  mechanical:   ['Mechanical','External Work'],
+  accessories:  ['Accessories'],
+  valeting:     ['Valeting'],
+  advertising:  ['Prep for Sale'],
+  sales:        ['Prep for Sale','Sold']
+};
 
 const AC_DEPARTMENTS = [
   {name:"Management",  icon:"👔", color:"#64748b"},
@@ -6416,6 +6435,48 @@ const AC_PARTS = ["Air Filter","Cabin Filter","Fuel Filter","Oil Filter","Timing
 function getVehicles() {
   try { const s=localStorage.getItem('ac_vehicles'); if(s) return JSON.parse(s); } catch(e){}
   return JSON.parse(JSON.stringify(AC_VEHICLES));
+}
+
+// ── ROLE / APP-MODE HELPERS (shared by app + platform) ──────────────────
+// The four people who get the FULL CapEye app (see everything + Complete Sale).
+var CE_FULL_ACCESS_IDS = ['keith','ibrahim','ajay','david'];
+function ceIsFullAccess(staff){
+  if(!staff) return false;
+  var id = (staff.id||'').toLowerCase();
+  if (CE_FULL_ACCESS_IDS.indexOf(id) > -1) return true;
+  // Also allow explicit admins / management to see the full app.
+  return !!staff.admin || staff.dept === 'Management';
+}
+// The stages/sections a person SEES in the app. Returns 'all' or an array of
+// stage names. Full-access people always see all.
+function ceStaffSees(staff){
+  if(!staff) return [];
+  if (ceIsFullAccess(staff)) return 'all';
+  if (staff.sees === 'all') return 'all';
+  if (Array.isArray(staff.sees) && staff.sees.length) return staff.sees.slice();
+  // Fall back to their department's stage(s).
+  return ceDeptStages(staff.dept);
+}
+// Map a department to the workflow stage names it owns.
+function ceDeptStages(dept){
+  try {
+    return (AC_WORKFLOW_STAGES||[]).filter(function(s){ return s.dept===dept; }).map(function(s){ return s.name; });
+  } catch(e){ return []; }
+}
+// The DEPARTMENTS a person's visible stages belong to (for team-handover task
+// matching). Derived from `sees` so multi-stage staff match multiple depts.
+function ceStaffDepts(staff){
+  if(!staff) return [];
+  var sees = ceStaffSees(staff);
+  if (sees === 'all') { try { return AC_DEPARTMENTS.map(function(d){return d.name;}); } catch(e){ return [staff.dept]; } }
+  var depts = {};
+  sees.forEach(function(stageName){
+    var st = (AC_WORKFLOW_STAGES||[]).find(function(s){ return s.name===stageName; });
+    if (st && st.dept) depts[st.dept] = 1;
+    if (stageName === 'Accessories') depts['Workshop'] = 1;
+  });
+  if (staff.dept) depts[staff.dept] = 1;   // always include their home dept
+  return Object.keys(depts);
 }
 
 // ── WORKFLOW localStorage

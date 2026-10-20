@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020db">
+<link rel="manifest" href="staff-manifest.json?v=20261020-v2b">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Final V1.4 — Staff App</title>
+<title>CapEye 2.0 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020d"></script>
-<script src="./ac-data.js?v=20261020d"></script>
-<script src="firebase-init.js?v=20261020d"></script>
-<script src="jobs-sync.js?v=20261020d"></script>
+<script src="firebase-config.js?v=20261020-v2"></script>
+<script src="./ac-data.js?v=20261020-v2"></script>
+<script src="firebase-init.js?v=20261020-v2"></script>
+<script src="jobs-sync.js?v=20261020-v2"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -280,6 +280,7 @@ html,
       </div>
     </div>
     <div class="topbar-right">
+      <div id="modeBadge" style="display:none;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:8px;margin-right:6px"></div>
       <div class="staff-pill" id="staffPill">—</div>
       <div class="notif-btn" onclick="showScreen('tasks')">
         <i class="fas fa-bell"></i>
@@ -305,9 +306,9 @@ html,
 
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px">Quick Inspect</div>
         <div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px">
-          <select class="insp-input" id="quickVehicle" style="font-size:14px">
-            <option value="">— Select vehicle to inspect —</option>
-          </select>
+          <input id="quickVehSearch" oninput="quickVehSearch(this.value)" placeholder="Type registration e.g. CJ23…" autocomplete="off" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">
+          <input type="hidden" id="quickVehicle" value="">
+          <div id="quickVehResults"></div>
           <button onclick="startInspection()" class="big-btn big-btn-blue" style="padding:13px;font-size:14px">
             <i class="fas fa-clipboard-check"></i> Start Inspection
           </button>
@@ -401,14 +402,27 @@ let taskFilter = 'pending';
 let inspVehicle = null;
 let signoffTaskId = null;
 
+// ── ROLE / MODE ─────────────────────────────────────────────────────────
+// currentStaff is a NAME. Resolve the full staff record, their departments,
+// and whether they get the FULL app (everything + sell) or LITE (own depts).
+function ceMe(){ return AC_STAFF.find(function(s){ return s.name===currentStaff; }) || null; }
+function ceMyDepts(){ return ceStaffDepts(ceMe()); }
+function ceAmFull(){ return ceIsFullAccess(ceMe()); }
+function ceAmLite(){ return !ceAmFull(); }
+
 // ── SHARED JOBS: read jobs assigned to me from the shared store ──────────
 // Maps the shared job shape onto the fields this app's cards expect.
 function getMyTasks(staffName) {
   if (!staffName || typeof CE_JOBS === 'undefined') return [];
-  // Include jobs handed to this person's whole department (team handovers).
+  // Include jobs handed to ANY of this person's departments (multi-dept staff).
   var me = (typeof AC_STAFF !== 'undefined') ? AC_STAFF.find(function(s){ return s.name === staffName; }) : null;
-  var dept = me ? me.dept : '';
-  return CE_JOBS.forStaff(staffName, dept).map(function (j) {
+  var depts = ceStaffDepts(me);
+  // Union jobs across every department the person belongs to, de-duped by id.
+  var byId = {};
+  (depts.length ? depts : ['']).forEach(function(d){
+    CE_JOBS.forStaff(staffName, d).forEach(function(j){ byId[j.id] = j; });
+  });
+  return Object.keys(byId).map(function(k){ return byId[k]; }).map(function (j) {
     return {
       id: j.id,
       stockNo: j.stockNo,
@@ -523,8 +537,7 @@ window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); 
   if (sel) AC_STAFF.filter(function(s){return s.role!=='Test User'&&s.id!=='master'&&!s.archived;}).forEach(function(s){
     var o=document.createElement('option'); o.value=s.id; o.textContent=s.name+' — '+s.role; sel.appendChild(o);
   });
-  var qv = document.getElementById('quickVehicle');
-  if (qv) vehicles.slice(0,50).forEach(function(v){ var o=document.createElement('option'); o.value=v.stockNo; o.textContent=v.registration+' — '+v.make+' '+v.model+' ('+v.stockNo+')'; qv.appendChild(o); });
+  // Quick Inspect now uses a type-to-search reg box (quickVehSearch), no dropdown.
 
   // ── Decide which screen to show ──
   if (!isStandalone()) {
@@ -690,6 +703,12 @@ function prewarmWorkflows(done) {
 function launchApp() {
   showScreenEl('appShell');
   document.getElementById('staffPill').textContent = currentStaff.split(' ')[0];
+  // Mode badge: FULL for the four managers, LITE (with their stages) otherwise.
+  var badge = document.getElementById('modeBadge');
+  if (badge) {
+    if (ceAmFull()) { badge.textContent = 'CapEye · Full'; badge.style.background='#fde68a'; badge.style.color='#78350f'; badge.style.display='inline-block'; }
+    else { badge.textContent = 'Lite'; badge.style.background='#e0e7ff'; badge.style.color='#3730a3'; badge.style.display='inline-block'; }
+  }
   // Pull workflow state from Firestore first, THEN build (so Ready-for-Sale works on any phone).
   prewarmWorkflows(function(){
     buildDash(); buildTasks();
@@ -735,9 +754,9 @@ function buildDash() {
       <div class="hero-stat-label">Completed</div>
     </div>`;
 
-  // Sales & Management get a "Complete Sale" button (digital handover form).
-  var meStaff = AC_STAFF.find(function(s){ return s.name===currentStaff; });
-  var canSell = meStaff && (meStaff.dept==='Sales' || meStaff.dept==='Management' || meStaff.admin);
+  // Complete Sale: Sales staff + the four Full-access people can start a sale.
+  var meStaff = ceMe();
+  var canSell = meStaff && (ceStaffDepts(meStaff).indexOf('Sales')>-1 || ceIsFullAccess(meStaff));
   var csWrap = document.getElementById('dashCompleteSale');
   if (csWrap) csWrap.innerHTML = canSell
     ? '<button onclick="appStartCompleteSale()" style="width:100%;background:#C8102E;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;margin-bottom:16px;cursor:pointer"><i class="fas fa-file-signature"></i> Complete a Sale</button>'
@@ -771,7 +790,7 @@ function appBuildReadyFromCache(){
     var ready = false, soldOut = false, readyAt = v.readyForSaleAt || null;
     var live = LIVE_VEH_STATUS[reg];
     if (live) {
-      if (live.status === 'Sold' || live.workflowStage === 'Sold') soldOut = true;
+      if (live.status === 'Sold' || live.workflowStage === 'Sold' || live.status === 'Sale Pending') soldOut = true;
       if (live.status === 'Ready for Sale' || live.workflowStage === 'Ready for Sale') ready = true;
       if (live.readyForSaleAt) readyAt = live.readyForSaleAt;
     }
@@ -890,16 +909,23 @@ function initAsSig(){ var c=document.getElementById('as_sig'); if(!c)return; var
 function clearAsSig(){ if(_asSig)_asSig.getContext('2d').clearRect(0,0,_asSig.width,_asSig.height); }
 function submitAppSale(reg){
   var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
-  var sale={ reg:reg, method:g('as_method'), deliveryAddress:g('as_method')==='Delivery'?g('as_addr'):'',
+  var veh = vehicles.find(function(v){return (v.registration||'').toUpperCase()===reg;}) || {};
+  var sale={ reg:reg, stockNo:veh.stockNo||'', make:veh.make||'', model:veh.model||'', price:veh.price||0,
+    method:g('as_method'), deliveryAddress:g('as_method')==='Delivery'?g('as_addr'):'',
     checklist:{breakdown:g('as_breakdown'),tax:g('as_tax'),insurance:g('as_ins'),bluetooth:g('as_bt'),howto:g('as_howto'),tools:g('as_tools')},
     fuel:g('as_fuel'), customerName:g('as_cust'), signature:(_asSig?_asSig.toDataURL():''),
-    completedBy:currentStaff, completedAt:new Date().toISOString() };
-  if (typeof FS!=='undefined' && FS){ try{ FS.collection('sales').doc(reg).set(sale); }catch(e){} }
-  // Mark the vehicle sold on the shared workflow record if we can find it.
-  var veh = vehicles.find(function(v){return (v.registration||'').toUpperCase()===reg;});
-  if (veh && typeof CE_JOBS!=='undefined'){ /* sale logged */ }
+    submittedBy:currentStaff, submittedAt:new Date().toISOString(),
+    status:'Sale Pending',            // stage 1 — management confirms on the platform
+    confirmed:false };
+  // Write the pending sale (keyed by registration) for the platform to confirm.
+  if (typeof FS!=='undefined' && FS){
+    try{ FS.collection('sales').doc(reg).set(sale, {merge:true}); }catch(e){}
+    // Flag the vehicle as Sale Pending so it leaves the Ready-for-Sale list.
+    try{ FS.collection('vehicles').doc(reg).set({registration:reg, status:'Sale Pending'}, {merge:true}); }catch(e){}
+  }
+  try{ LIVE_VEH_STATUS[reg] = Object.assign({}, LIVE_VEH_STATUS[reg], {status:'Sale Pending'}); }catch(e){}
   document.getElementById('appSaleOverlay').style.display='none';
-  showToast('✓ Sale completed for '+reg);
+  showToast('✓ Sale submitted for '+reg+' — awaiting management confirmation');
 }
 
 /* ── TASKS ── */
@@ -948,6 +974,24 @@ function renderTaskCard(task, compact) {
 }
 
 /* ── INSPECTION ── */
+// Type-to-search the reg for Quick Inspect. Sets the hidden quickVehicle=stockNo.
+function quickVehSearch(q){
+  q = (q||'').trim().toUpperCase().replace(/\s+/g,'');
+  var el = document.getElementById('quickVehResults'); if(!el) return;
+  if (!q){ el.innerHTML=''; var h=document.getElementById('quickVehicle'); if(h) h.value=''; return; }
+  var matches = vehicles.filter(function(v){ return (v.registration||'').toUpperCase().replace(/\s+/g,'').indexOf(q)>-1; }).slice(0,8);
+  if (!matches.length){ el.innerHTML='<div style="padding:8px;color:var(--muted);font-size:13px">No match for "'+q+'"</div>'; return; }
+  el.innerHTML = matches.map(function(v){
+    return '<div onclick="pickQuickVeh(\''+v.stockNo+'\',\''+(v.registration||'')+'\')" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer">'+
+      '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:3px 8px;border-radius:5px">'+v.registration+'</span>'+
+      '<span style="font-size:13px">'+(v.make||'')+' '+(v.model||'')+'</span></div>';
+  }).join('');
+}
+function pickQuickVeh(stockNo, reg){
+  var h=document.getElementById('quickVehicle'); if(h) h.value=stockNo;
+  var s=document.getElementById('quickVehSearch'); if(s) s.value=reg;
+  document.getElementById('quickVehResults').innerHTML='<div style="padding:8px;color:var(--green);font-size:13px;font-weight:700"><i class="fas fa-check"></i> '+reg+' selected</div>';
+}
 function startInspection() {
   const stockNo = document.getElementById('quickVehicle').value;
   if (!stockNo) { showScreen('inspect'); buildInspForm(null); return; }

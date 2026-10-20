@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.4 — Inventory</title>
+<title>CapEye 2.0 — Inventory</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020d"></script>
-<script src="ac-data.js?v=20261020d"></script>
-<script src="firebase-init.js?v=20261020d"></script>
-<script src="live-sync.js?v=20261020d"></script>
-<script src="jobs-sync.js?v=20261020d"></script>
+<script src="firebase-config.js?v=20261020-v2"></script>
+<script src="ac-data.js?v=20261020-v2"></script>
+<script src="firebase-init.js?v=20261020-v2"></script>
+<script src="live-sync.js?v=20261020-v2"></script>
+<script src="jobs-sync.js?v=20261020-v2"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020d"></script>
+<script src="notifications.js?v=20261020-v2"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -297,7 +297,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020d">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -326,6 +326,7 @@ input, select, textarea {
       <a class="nav-tool" href="https://trade.hpi.co.uk/trade/preLogin.do" target="_blank">HPI</a>
       <a class="nav-tool" href="https://www.autocapital.co.uk/" target="_blank">Website</a>
       <a class="nav-tool" href="https://www.autocapital.co.uk/finance.php" target="_blank">Finance</a>
+      <a class="nav-tool" href="https://video.citnow.com/dashboard/overview/service" target="_blank">CitNow</a>
     </div>
     <span class="nav-import" id="lastImportBadge">—</span>
     <button onclick="if(confirm('Sign out of CapEye?'))doLogout()" style="padding:5px 12px;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.2);border-radius:6px;color:#C8102E;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
@@ -365,7 +366,7 @@ input, select, textarea {
       <option value="1">No Price Only</option>
     </select>
     <button class="tb-btn btn-price-drop" onclick="openPriceDrop()"><i class="fas fa-tag"></i> Price Drop</button>
-    <button class="tb-btn btn-navy" onclick="location.href='vehicle-overview.html'"><i class="fas fa-plus"></i> Add Vehicle</button>
+    <button class="tb-btn btn-navy" onclick="openAddVehicle()"><i class="fas fa-plus"></i> Add Vehicle</button>
     <span style="font-size:11px;color:var(--ink3);margin-left:auto" id="row-count"></span>
   </div>
   <div class="table-wrap">
@@ -382,6 +383,32 @@ input, select, textarea {
 </div>
 
 <!-- Price Drop Modal -->
+<div class="modal-bg" id="add-vehicle-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Add Vehicle</div>
+      <button class="modal-close" onclick="document.getElementById('add-vehicle-modal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Registration *</label><input type="text" class="form-input" id="av-reg" placeholder="e.g. CJ23 WNG" style="text-transform:uppercase;font-family:monospace"></div>
+      <div class="form-row"><label class="form-label">Stock No</label><input type="text" class="form-input" id="av-stock" placeholder="auto if blank"></div>
+      <div class="form-row"><label class="form-label">Make</label><input type="text" class="form-input" id="av-make" placeholder="e.g. Citroen"></div>
+      <div class="form-row"><label class="form-label">Model</label><input type="text" class="form-input" id="av-model" placeholder="e.g. Dispatch"></div>
+      <div class="form-row"><label class="form-label">Variant</label><input type="text" class="form-input" id="av-variant" placeholder="e.g. 1.5 BlueHDi Enterprise"></div>
+      <div class="form-row"><label class="form-label">Colour</label><input type="text" class="form-input" id="av-colour" placeholder="e.g. White"></div>
+      <div class="form-row"><label class="form-label">Mileage</label><input type="number" class="form-input" id="av-mileage" placeholder="e.g. 45000"></div>
+      <div class="form-row"><label class="form-label">MOT expiry</label><input type="text" class="form-input" id="av-mot" placeholder="e.g. 30/07/2027"></div>
+      <div class="form-row"><label class="form-label">Price (£)</label><input type="number" class="form-input" id="av-price" placeholder="e.g. 10999"></div>
+      <div class="form-row"><label class="form-label">Location</label><input type="text" class="form-input" id="av-location" placeholder="e.g. Stanmore Retail" value="Stanmore Retail"></div>
+      <div id="av-err" style="display:none;color:#C8102E;font-size:13px;font-weight:600;padding:6px 0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="tb-btn btn-ghost" onclick="document.getElementById('add-vehicle-modal').classList.remove('open')">Cancel</button>
+      <button class="tb-btn btn-navy" onclick="saveNewVehicle()"><i class="fas fa-plus"></i> Add Vehicle</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="price-drop-modal">
   <div class="modal">
     <div class="modal-hdr">
@@ -448,7 +475,18 @@ function getReadyDate(stockNo){
   return null;
 }
 function buildLiveVehicles(){
-  return JSON.parse(JSON.stringify(AC_VEHICLES)).map(function(v) {
+  // Base = baked stock + any vehicles added via the app/platform (reg-keyed).
+  var base = JSON.parse(JSON.stringify(AC_VEHICLES));
+  try {
+    var added = JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]');
+    var byReg = {};
+    base.forEach(function(v){ byReg[(v.registration||'').toUpperCase()] = 1; });
+    added.forEach(function(a){
+      var reg = (a.registration||a._id||'').toUpperCase();
+      if (reg && !byReg[reg]) { base.push(a); byReg[reg]=1; }
+    });
+  } catch(e){}
+  return base.map(function(v) {
     var live = getLiveStage(v.stockNo);
     var ready = isReadyForSale(v.stockNo);
     var out = Object.assign({}, v);
@@ -549,6 +587,54 @@ function applyPriceDrop() {
   showToast(`Price drop applied to ${reg} — £${newPrice.toLocaleString()}. Team notified.`,'warning');
   document.getElementById('price-drop-modal').classList.remove('open');
   renderTable();
+}
+
+// Lightweight toast (inventory had none of its own).
+if (typeof window.showToast !== 'function') {
+  window.showToast = function(msg, type){
+    var t = document.createElement('div');
+    var bg = type==='error' ? '#C8102E' : type==='warning' ? '#b45309' : '#16a34a';
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:'+bg+';color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){ t.remove(); },400); }, 2600);
+  };
+}
+function openAddVehicle(){
+  ['av-reg','av-stock','av-make','av-model','av-variant','av-colour','av-mileage','av-mot','av-price'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+  var loc=document.getElementById('av-location'); if(loc) loc.value='Stanmore Retail';
+  var err=document.getElementById('av-err'); if(err) err.style.display='none';
+  document.getElementById('add-vehicle-modal').classList.add('open');
+  setTimeout(function(){ var r=document.getElementById('av-reg'); if(r) r.focus(); },80);
+}
+function saveNewVehicle(){
+  var g=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+  var reg = g('av-reg').toUpperCase();
+  var err=document.getElementById('av-err');
+  if(!reg){ if(err){err.textContent='Registration is required.';err.style.display='block';} return; }
+  // Prevent duplicate registration.
+  if (vehicles.some(function(v){ return (v.registration||'').toUpperCase()===reg; })){
+    if(err){err.textContent='A vehicle with that registration already exists.';err.style.display='block';} return;
+  }
+  var stock = g('av-stock') || ('AC'+Date.now().toString().slice(-6));
+  var veh = {
+    stockNo: stock, registration: reg, make:g('av-make'), model:g('av-model'), variant:g('av-variant'),
+    colour:g('av-colour'), mileage:parseInt(g('av-mileage'))||0, fuel:'', gearbox:'',
+    mot:g('av-mot')||'Not set', price:parseFloat(g('av-price'))||0, status:'In Stock',
+    location:g('av-location')||'Stanmore Retail', workflowStage:'Intake', daysInStock:0,
+    stageStarted:new Date().toLocaleDateString('en-GB'), regDate:'', keytag:'0', urgent:false,
+    addedAt:new Date().toISOString(), addedBy:getCurrentUser().name
+  };
+  // Persist reg-keyed to Firestore (vehicles collection) + local cache.
+  if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(veh, function(){}); } catch(e){} }
+  else { try { var a=JSON.parse(localStorage.getItem('ce_vehicle_additions')||'[]'); a.push(veh); localStorage.setItem('ce_vehicle_additions', JSON.stringify(a)); } catch(e){} }
+  // Seed an Intake workflow so it enters the pipeline immediately.
+  try { if (typeof saveWorkflow==='function') saveWorkflow(stock, {1:{startedAt:new Date().toISOString()}}); } catch(e){}
+  try { if (typeof writeAuditLog==='function') writeAuditLog('add', reg, 'Vehicle added', reg+' '+veh.make+' '+veh.model, getCurrentUser().name, 'normal'); } catch(e){}
+  document.getElementById('add-vehicle-modal').classList.remove('open');
+  vehicles = buildLiveVehicles();
+  renderTable();
+  showToast('✓ '+reg+' added to inventory','success');
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -664,6 +750,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020d"></script>
+<script src="mobile-menu.js?v=20261020-v2"></script>
 </body>
 </html>

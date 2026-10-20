@@ -19,10 +19,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=20261020d"></script>
-<script src="firebase-init.js?v=20261020d"></script>
-<script src="live-sync.js?v=20261020d"></script>
-<script src="jobs-sync.js?v=20261020d"></script>
+<script src="./ac-data.js?v=20261020-v2"></script>
+<script src="firebase-init.js?v=20261020-v2"></script>
+<script src="live-sync.js?v=20261020-v2"></script>
+<script src="jobs-sync.js?v=20261020-v2"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -39,7 +39,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020d"></script>
+<script src="notifications.js?v=20261020-v2"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -329,7 +329,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020d">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
 </head>
 <body>
 <nav class="nav">
@@ -359,6 +359,7 @@ input, select, textarea {
       <a class="nav-tool" href="https://trade.hpi.co.uk/trade/preLogin.do" target="_blank">HPI</a>
       <a class="nav-tool" href="https://www.autocapital.co.uk/" target="_blank">Website</a>
       <a class="nav-tool" href="https://www.autocapital.co.uk/finance.php" target="_blank">Finance</a>
+      <a class="nav-tool" href="https://video.citnow.com/dashboard/overview/service" target="_blank">CitNow</a>
     </div>
     <span class="nav-import" id="lastImportBadge">—</span>
     <button onclick="if(confirm('Sign out of CapEye?'))doLogout()" style="padding:5px 12px;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.2);border-radius:6px;color:#C8102E;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
@@ -689,6 +690,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020d"></script>
+<script src="mobile-menu.js?v=20261020-v2"></script>
 </body>
 </html>

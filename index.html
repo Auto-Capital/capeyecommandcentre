@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.4 — Dashboard</title>
+<title>CapEye 2.0 — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020d"></script>
-<script src="ac-data.js?v=20261020d"></script>
-<script src="firebase-init.js?v=20261020d"></script>
-<script src="jobs-sync.js?v=20261020d"></script>
-<script src="live-sync.js?v=20261020d"></script>
+<script src="firebase-config.js?v=20261020-v2"></script>
+<script src="ac-data.js?v=20261020-v2"></script>
+<script src="firebase-init.js?v=20261020-v2"></script>
+<script src="jobs-sync.js?v=20261020-v2"></script>
+<script src="live-sync.js?v=20261020-v2"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,7 +47,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020d"></script>
+<script src="notifications.js?v=20261020-v2"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -223,6 +223,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 /* ── NOTIFICATION PANEL ── */
 .notif-overlay{display:none;position:fixed;inset:0;z-index:200}
 .notif-overlay.open{display:block}
+#confirmSaleModal.open,#saleEmailModal.open{display:flex !important}
 .notif-panel{position:fixed;top:54px;right:12px;width:340px;max-height:480px;
   background:#fff;border:1px solid var(--border);border-radius:var(--radius);
   box-shadow:var(--shadow);z-index:201;display:flex;flex-direction:column;
@@ -248,7 +249,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020d">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2">
 </head>
 <body>
 
@@ -321,6 +322,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
       <div class="ql-icon" style="background:#6d28d9"><i class="fas fa-car-side"></i></div>
       <span class="ql-label">ClickDealer</span>
     </a>
+    <a class="ql-btn" href="https://video.citnow.com/dashboard/overview/service" target="_blank">
+      <div class="ql-icon" style="background:#0ea5e9"><i class="fas fa-video"></i></div>
+      <span class="ql-label">CitNow</span>
+    </a>
     <a class="ql-btn" href="import.html">
       <div class="ql-icon" style="background:#92400e"><i class="fas fa-file-import"></i></div>
       <span class="ql-label">Import Stock</span>
@@ -372,6 +377,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
         <span id="rfs-count" style="font-size:11px;color:var(--ink3)"></span>
       </div>
       <div class="scroll-y" style="max-height:280px" id="rfs-list"></div>
+    </div>
+
+    <!-- SALES TO CONFIRM — pending sales submitted from the app -->
+    <div class="card" id="stc-card" style="display:none;border-top:3px solid var(--red)">
+      <div class="card-h-row">
+        <div class="card-h"><i class="fas fa-file-signature" style="color:var(--red)"></i> Sales to Confirm</div>
+        <span id="stc-count" style="font-size:11px;color:var(--ink3)"></span>
+      </div>
+      <div class="scroll-y" style="max-height:280px" id="stc-list"></div>
     </div>
 
     <!-- COL 2 ROW 2: Department Workload — full width -->
@@ -447,8 +461,113 @@ function _ceRefreshDashboard() {
     buildStockSummary();
     buildOverdue();
     buildReadyForSale();
+    buildSalesToConfirm();
   } catch (e) { console.warn('[CapEye] dashboard refresh error', e); }
 }
+
+// ── SALES TO CONFIRM (two-stage sale) ─────────────────────────────────
+// App submits sales/<reg> with status 'Sale Pending'. Keith/Ibrahim confirm here.
+var CE_PENDING_SALES = {};   // reg -> sale record
+function _ceCanConfirmSales(){
+  var u = getCurrentUser();
+  var id = (u.id||'').toLowerCase();
+  return ['keith','ibrahim','ajay','david'].indexOf(id) > -1 || !!u.admin || u.dept==='Management';
+}
+function buildSalesToConfirm(){
+  var card = document.getElementById('stc-card');
+  var el = document.getElementById('stc-list'); if (!el || !card) return;
+  // Only the confirming managers see this card.
+  if (!_ceCanConfirmSales()) { card.style.display='none'; return; }
+  var pend = Object.keys(CE_PENDING_SALES).map(function(k){ return CE_PENDING_SALES[k]; })
+    .filter(function(s){ return s && s.status==='Sale Pending' && !s.confirmed; })
+    .sort(function(a,b){ return (new Date(b.submittedAt||0)) - (new Date(a.submittedAt||0)); });
+  var cnt = document.getElementById('stc-count'); if (cnt) cnt.textContent = pend.length + ' to confirm';
+  if (!pend.length) { card.style.display='none'; return; }
+  card.style.display='';
+  el.innerHTML = pend.map(function(s){
+    var dt = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid var(--border)">'+
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;background:#f5c518;color:#000;padding:2px 8px;border-radius:4px">'+s.reg+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+(s.make||'')+' '+(s.model||'')+'</div>'+
+      '<div style="font-size:11px;color:var(--ink3)">'+(s.customerName?('Customer: '+s.customerName+' · '):'')+(s.submittedBy||'')+(dt?(' · '+dt):'')+'</div></div>'+
+      '<button onclick="openConfirmSale(\''+s.reg+'\')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Confirm</button></div>';
+  }).join('');
+}
+function _ceLoadPendingSales(){
+  if (typeof FS==='undefined' || !FS) { buildSalesToConfirm(); return; }
+  FS.collection('sales').where('status','==','Sale Pending').onSnapshot(function(snap){
+    CE_PENDING_SALES = {};
+    snap.forEach(function(d){ var s=d.data()||{}; s.reg=s.reg||d.id; CE_PENDING_SALES[s.reg]=s; });
+    buildSalesToConfirm();
+  }, function(e){ console.warn('[CapEye] pending sales listener', e); });
+}
+
+function openConfirmSale(reg){
+  var s = CE_PENDING_SALES[reg]; if(!s) return;
+  var m = document.getElementById('confirmSaleModal');
+  document.getElementById('cs-reg').textContent = reg;
+  document.getElementById('cs-veh').textContent = (s.make||'')+' '+(s.model||'')+(s.price?(' · '+formatGBP(s.price)):'');
+  document.getElementById('cs-cust').textContent = s.customerName || '(no name given)';
+  document.getElementById('cs-method').textContent = s.method + (s.deliveryAddress?(' — '+s.deliveryAddress):'');
+  ['cs-payment','cs-checks'].forEach(function(id){ var e=document.getElementById(id); if(e) e.checked=false; });
+  var rev=document.getElementById('cs-review'); if(rev) rev.checked=true;
+  m.dataset.reg = reg;
+  m.classList.add('open');
+}
+function closeConfirmSale(){ document.getElementById('confirmSaleModal').classList.remove('open'); }
+
+function submitConfirmSale(){
+  var m = document.getElementById('confirmSaleModal');
+  var reg = m.dataset.reg;
+  var s = CE_PENDING_SALES[reg]; if(!s) return;
+  if (!document.getElementById('cs-payment').checked) { alert('Please tick: Payment received.'); return; }
+  if (!document.getElementById('cs-checks').checked) { alert('Please tick: All checks OK.'); return; }
+  var sendReview = document.getElementById('cs-review').checked;
+  var by = getCurrentUser().name;
+  var when = new Date().toISOString();
+  // Mark Sold everywhere (keyed by registration).
+  if (typeof FS!=='undefined' && FS){
+    try{ FS.collection('sales').doc(reg).set({status:'Sold', confirmed:true, confirmedBy:by, confirmedAt:when, paymentReceived:true, checksOk:true, sendReview:sendReview}, {merge:true}); }catch(e){}
+    try{ FS.collection('vehicles').doc(reg).set({registration:reg, status:'Sold', workflowStage:'Sold', soldAt:when, soldBy:by}, {merge:true}); }catch(e){}
+    // Mark stage 8 complete in the workflow so it reads Sold across the app.
+    if (s.stockNo){ try{ FS.collection('workflows').doc(String(s.stockNo)).set({8:{completed:true, completedAt:when, completedBy:by}}, {merge:true}); }catch(e){} }
+  }
+  try { if (typeof writeAuditLog==='function') writeAuditLog('complete', reg, 'Sale confirmed — Sold', reg+' · confirmed by '+by, by, 'normal'); } catch(e){}
+  closeConfirmSale();
+  // Generate the paste-ready thank-you email.
+  openSaleEmail(s, sendReview);
+}
+
+// Google review link — set this once (Firebase settings or here).
+var CE_GOOGLE_REVIEW_LINK = '[PASTE GOOGLE REVIEW LINK]';
+function openSaleEmail(s, sendReview){
+  var cust = s.customerName || 'there';
+  var veh = (s.make||'')+' '+(s.model||'')+(s.reg?(' ('+s.reg+')'):'');
+  var body =
+'Dear '+cust+',\n\n'+
+'Thank you for choosing Auto Capital for the purchase of your '+veh+'. It was a pleasure to help you, and we hope you enjoy your new vehicle.\n\n'+
+'A quick summary of your purchase:\n'+
+'  • Vehicle: '+veh+'\n'+
+(s.price?('  • Price: '+formatGBP(s.price)+'\n'):'')+
+'  • Collection / Delivery: '+(s.method||'Collection')+(s.deliveryAddress?(' — '+s.deliveryAddress):'')+'\n\n'+
+'If you have any questions at all about your vehicle, please don\'t hesitate to get in touch — we\'re always happy to help.\n\n'+
+(sendReview ? ('We\'d really appreciate it if you could share your experience with a quick Google review:\n'+CE_GOOGLE_REVIEW_LINK+'\n\n') : '')+
+'Thank you again, and welcome to the Auto Capital family.\n\n'+
+'Kind regards,\n'+
+getCurrentUser().name+'\nAuto Capital\nStanmore';
+  var ov = document.getElementById('saleEmailModal');
+  document.getElementById('se-body').value = body;
+  document.getElementById('se-sub').value = 'Thank you from Auto Capital — your '+veh;
+  ov.classList.add('open');
+}
+function copySaleEmail(){
+  var t = document.getElementById('se-body');
+  t.select(); t.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); } catch(e){}
+  try { navigator.clipboard.writeText(t.value); } catch(e){}
+  var b = document.getElementById('se-copybtn'); if(b){ var o=b.innerHTML; b.innerHTML='<i class="fas fa-check"></i> Copied'; setTimeout(function(){ b.innerHTML=o; },1800); }
+}
+function closeSaleEmail(){ document.getElementById('saleEmailModal').classList.remove('open'); }
 
 // Dashboard list of vehicles that have finished Prep for Sale.
 function buildReadyForSale() {
@@ -473,6 +592,7 @@ if (window.CE_LIVE) {
     CE_LIVE.attachListeners(AC_VEHICLES, _ceRefreshDashboard);
   });
 }
+_ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
 
 // ── WELCOME BAR ──────────────────────────────────────────────────
 function buildWelcome() {
@@ -772,6 +892,51 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=20261020d"></script>
+<script src="mobile-menu.js?v=20261020-v2"></script>
+
+<!-- CONFIRM SALE MODAL -->
+<div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:460px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--navy,#001a4d);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:800;font-size:17px">Confirm Sale</div>
+      <button onclick="closeConfirmSale()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="background:#f5c518;color:#000;display:inline-block;font-weight:800;padding:3px 12px;border-radius:6px;margin-bottom:6px" id="cs-reg"></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px" id="cs-veh"></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:2px">Customer: <span id="cs-cust"></span></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:16px" id="cs-method"></div>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-payment" style="width:18px;height:18px"> Payment received</label>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-checks" style="width:18px;height:18px"> All checks OK</label>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:16px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-review" checked style="width:18px;height:18px"> Send customer Google review link</label>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeConfirmSale()" style="flex:1;background:#eef1f5;border:none;border-radius:10px;padding:13px;font-weight:700;cursor:pointer">Cancel</button>
+        <button onclick="submitConfirmSale()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:13px;font-weight:800;cursor:pointer"><i class="fas fa-check-circle"></i> Confirm & Mark Sold</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SALE EMAIL MODAL -->
+<div id="saleEmailModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--navy,#001a4d);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:800;font-size:17px"><i class="fas fa-envelope"></i> Thank-you email</div>
+      <button onclick="closeSaleEmail()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="font-size:12px;color:#16a34a;font-weight:700;margin-bottom:12px"><i class="fas fa-check-circle"></i> Sale confirmed and marked Sold.</div>
+      <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Subject</label>
+      <input id="se-sub" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px;margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Email (copy & paste into your email client)</label>
+      <textarea id="se-body" rows="14" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px;font-family:inherit;line-height:1.5"></textarea>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button onclick="closeSaleEmail()" style="flex:1;background:#eef1f5;border:none;border-radius:10px;padding:13px;font-weight:700;cursor:pointer">Close</button>
+        <button id="se-copybtn" onclick="copySaleEmail()" style="flex:2;background:var(--navy,#001a4d);color:#fff;border:none;border-radius:10px;padding:13px;font-weight:800;cursor:pointer"><i class="fas fa-copy"></i> Copy email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
