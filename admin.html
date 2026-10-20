@@ -477,6 +477,16 @@ input, select, textarea {
               <input class="form-control" id="staffDob" placeholder="DD/MM/YYYY">
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">App PIN (4 digits)</label>
+              <input class="form-control" id="staffPin" maxlength="4" inputmode="numeric" placeholder="e.g. 4821">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Staff Login ID</label>
+              <input class="form-control" id="staffLoginId" placeholder="e.g. david (for their link)">
+            </div>
+          </div>
           <div class="form-field">
             <label class="form-label">Home Address</label>
             <textarea class="form-control" id="staffAddress" rows="2" placeholder="Full home address..."></textarea>
@@ -613,7 +623,7 @@ input, select, textarea {
 function load(k,def){try{return JSON.parse(localStorage.getItem('ac_admin_'+k))||def;}catch(e){return def;}}
 function save(k,v){localStorage.setItem('ac_admin_'+k,JSON.stringify(v));}
 
-let staff  = load('staff',  AC_STAFF.map((s,i)=>({...s,id:i+1})));
+let staff  = load('staff',  AC_STAFF.map((s,i)=>({...s,id:i+1,loginId:s.id})));
 let depts  = load('depts',  AC_DEPARTMENTS.map((d,i)=>({...d,id:i+1})));
 let locs   = load('locs',   [...AC_LOCATIONS]);
 let faults = load('faults', [...AC_FAULTS]);
@@ -648,11 +658,26 @@ function renderStaff(){
   document.getElementById('staffGrid').innerHTML=filtered.map(s=>{
     const col=DEPT_C[s.dept]||'#003DA5';
     const init=s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    // Pull PIN + login id from the master staff list by name if not on the record.
+    const master = (typeof AC_STAFF!=='undefined') ? AC_STAFF.find(x=>x.name===s.name) : null;
+    const pin = s.pin || (master && master.pin) || '— not set —';
+    const loginId = s.loginId || (master && master.id) || '';
+    const link = loginId ? ('https://www.capeye.co.uk/staff-app.html?id='+loginId) : '';
     return `<div class="staff-card">
       <div class="staff-card-top">
         <div class="staff-avatar" style="background:${col}22;color:${col}">${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:`<span style="font-weight:800;font-size:18px">${init}</span>`}</div>
         <div><div class="staff-name">${s.name}</div><div class="staff-role">${s.role}</div>
         <span class="staff-dept" style="background:${col}18;color:${col}">${s.dept}</span></div>
+      </div>
+      <div style="background:#f4f6f9;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="color:#6b7280">App PIN</span>
+          <span style="font-family:monospace;font-weight:800;font-size:14px;letter-spacing:2px;color:#001a4d">${pin}</span>
+        </div>
+        ${link?`<div style="display:flex;align-items:center;gap:6px">
+          <input readonly value="${link}" style="flex:1;font-size:10px;border:1px solid #e4e7ec;border-radius:5px;padding:4px 6px;color:#475569;background:#fff" onclick="this.select()">
+          <button class="btn btn-ghost btn-sm" onclick="copyText('${link}')" title="Copy link"><i class="fas fa-copy"></i></button>
+        </div>`:'<div style="color:#94a3b8;font-size:11px">No login link (set a Login ID)</div>'}
       </div>
       <div class="staff-card-actions">
         <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editStaff(${s.id})"><i class="fas fa-edit"></i> Edit</button>
@@ -662,6 +687,10 @@ function renderStaff(){
     </div>`;
   }).join('')||'<div class="loading">No staff found</div>';
 }
+function copyText(t){
+  try { navigator.clipboard.writeText(t); toast('Link copied','#1a7f37'); }
+  catch(e){ toast('Copy failed — long-press to copy','#C8102E'); }
+}
 function saveStaff(){
   const first=document.getElementById('staffFirst').value.trim(),last=document.getElementById('staffLast').value.trim();
   if(!first||!last){toast('Enter first and last name','#C8102E');return;}
@@ -669,6 +698,7 @@ function saveStaff(){
   const s={id:editingStaffId||Date.now(),name:first+' '+last,role:g('staffRole')||'Staff',
     dept:document.getElementById('staffDept').value,phone:g('staffPhone'),
     email:g('staffEmail'),startDate:g('staffStart'),
+    pin:g('staffPin'),loginId:g('staffLoginId'),
     dob:g('staffDob'),address:g('staffAddress'),
     ec1name:g('staffEc1Name'),ec1phone:g('staffEc1Phone'),ec2name:g('staffEc2Name'),ec2phone:g('staffEc2Phone'),
     notes:g('staffNotes'),photo:avatarData||null,
@@ -686,7 +716,7 @@ function editStaff(id){
   document.getElementById('staffPhone').value=s.phone||'';document.getElementById('staffEmail').value=s.email||'';
   document.getElementById('staffStart').value=s.startDate||'';
   var sv=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
-  sv('staffDob',s.dob);sv('staffAddress',s.address);
+  sv('staffDob',s.dob);sv('staffAddress',s.address);sv('staffPin',s.pin);sv('staffLoginId',s.loginId||s.id);
   sv('staffEc1Name',s.ec1name);sv('staffEc1Phone',s.ec1phone);
   sv('staffEc2Name',s.ec2name);sv('staffEc2Phone',s.ec2phone);
   document.getElementById('staffNotes').value=s.notes||'';
@@ -700,7 +730,7 @@ function deleteStaff(id){if(!confirm('Remove this staff member?'))return;staff=s
 function archiveStaff(id){var s=staff.find(x=>x.id===id);if(!s)return;s.archived=!s.archived;save('staff',staff);renderStaff();toast(s.archived?'Archived':'Un-archived','#003DA5');}
 function clearStaffForm(){
   editingStaffId=null;avatarData=null;
-  ['staffFirst','staffLast','staffRole','staffPhone','staffEmail','staffStart','staffDob','staffAddress','staffEc1Name','staffEc1Phone','staffEc2Name','staffEc2Phone','staffNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['staffFirst','staffLast','staffRole','staffPhone','staffEmail','staffStart','staffDob','staffAddress','staffPin','staffLoginId','staffEc1Name','staffEc1Phone','staffEc2Name','staffEc2Phone','staffNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('avatarWrap').innerHTML='<i class="fas fa-camera" style="color:var(--muted);font-size:20px"></i><span style="font-size:10px;color:var(--muted);margin-top:4px">Photo</span><input type="file" id="avatarFile" accept="image/*" onchange="previewAvatar(this)">';
   document.getElementById('staffFormTitle').textContent='Add New Staff Member';
   document.getElementById('staffSaveLbl').textContent='Add Staff Member';

@@ -77,7 +77,7 @@ html,
 /* TOPBAR */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .topbar-logo{display:flex;align-items:center;gap:10px}
-.topbar-logo .logo-text{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;color:var(--gold)}
+.topbar-logo .logo-text{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;color:var(--blue)}
 .topbar-logo .logo-sub{font-size:12px;color:var(--muted);font-weight:600}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .staff-pill{background:rgba(59,127,245,.15);color:var(--blue);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
@@ -88,13 +88,13 @@ html,
 /* BOTTOM NAV */
 .bottom-nav{background:var(--bg2);border-top:1px solid var(--border);height:calc(72px + var(--safe-bottom));padding-bottom:var(--safe-bottom);display:flex;align-items:center;justify-content:space-around;flex-shrink:0;position:relative;z-index:10}
 .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;cursor:pointer;color:var(--muted);transition:all .2s;border-radius:10px;position:relative}
-.nav-item.active{color:var(--gold)}
+.nav-item.active{color:var(--red)}
 .nav-item i{font-size:20px}
 .nav-item span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .nav-badge{position:absolute;top:4px;right:10px;background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 /* LOGIN SCREEN */
 .login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:24px;gap:20px}
-.login-logo{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;letter-spacing:4px;color:var(--gold);margin-bottom:8px}
+.login-logo{font-family:"Barlow Condensed",sans-serif;font-size:48px;font-weight:800;letter-spacing:4px;color:var(--blue);margin-bottom:8px}
 .login-sub{color:var(--muted);font-size:14px;margin-bottom:20px}
 .login-label{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:6px;text-transform:uppercase}
 .login-select{width:100%;max-width:340px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-size:16px;font-family:'Barlow',sans-serif;outline:none;-webkit-appearance:none}
@@ -112,7 +112,7 @@ html,
 .task-reg{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;letter-spacing:1px;background:#f5c518;color:#000;padding:3px 10px;border-radius:6px;white-space:nowrap}
 .task-vehicle{font-size:14px;font-weight:700;flex:1}
 .task-stage{font-size:12px;color:var(--muted);margin-bottom:4px}
-.task-note{font-size:12px;color:var(--gold);font-style:italic;margin-bottom:8px}
+.task-note{font-size:12px;color:var(--blue);font-style:italic;margin-bottom:8px}
 .task-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .task-time{font-size:11px;color:var(--muted)}
 .pri-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px}
@@ -186,24 +186,65 @@ html,
 <body>
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" style="background:var(--bg);min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:16px">
-  <div style="text-align:center;margin-bottom:8px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:800;letter-spacing:4px;color:var(--gold)">CAPEYE</div>
-    <div style="font-size:14px;color:var(--muted);margin-top:4px">Auto Capital Staff Portal</div>
+<div id="loginScreen" style="background:#0a1a4d;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:14px">
+  <!-- Add to Home Screen banner (shows on arrival) -->
+  <div id="a2hsBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:#C8102E;color:#fff;padding:12px 16px;font-size:13px;font-weight:600;align-items:center;gap:10px;z-index:100">
+    <i class="fas fa-mobile-screen"></i>
+    <span style="flex:1">Add CapEye to your Home Screen</span>
+    <button onclick="doInstall()" style="background:#fff;color:#C8102E;border:none;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px">Add</button>
+    <button onclick="dismissInstall()" style="background:transparent;color:#fff;border:none;font-size:18px">&times;</button>
   </div>
-  <div style="width:100%;max-width:340px">
-    <div style="font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Who are you?</div>
-    <select id="loginSelect" style="width:100%;background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:16px;color:var(--text);font-size:16px;font-family:'Barlow',sans-serif;outline:none;-webkit-appearance:none">
-      <option value="">— Select your name —</option>
-    </select>
+
+  <div style="text-align:center;margin-bottom:4px">
+    <img src="capeye-icon-192.png" alt="CapEye" style="width:84px;height:84px;border-radius:20px;margin-bottom:12px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;letter-spacing:4px;color:#fff">CAP<span style="color:#C8102E">EYE</span></div>
+    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:2px;letter-spacing:1px">AUTO CAPITAL STAFF PORTAL</div>
   </div>
-  <button onclick="doLogin()" style="width:100%;max-width:340px;padding:18px;border-radius:14px;background:var(--gold);color:#000;font-size:18px;font-weight:800;border:none;cursor:pointer;font-family:'Barlow',sans-serif;letter-spacing:1px">
-    <i class="fas fa-sign-in-alt"></i> Log In
-  </button>
-  <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">
-    <i class="fas fa-mobile-alt"></i> Add to Home Screen for the full app experience
+
+  <!-- PIN login -->
+  <div style="width:100%;max-width:320px;text-align:center">
+    <div id="pinWho" style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">Enter your PIN</div>
+    <div id="pinHint" style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:16px">4-digit code</div>
+
+    <!-- PIN dots -->
+    <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:20px">
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+    </div>
+    <div id="pinError" style="color:#ff8a9c;font-size:13px;font-weight:600;min-height:18px;margin-bottom:8px"></div>
+
+    <!-- Keypad -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:280px;margin:0 auto">
+
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" style="visibility:hidden"></button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinBack()" style="font-size:20px">&#9003;</button>
+    </div>
+
+    <!-- Fallback name picker (only if link has no ?id=) -->
+    <div id="pinPicker" style="display:none;margin-top:18px">
+      <div style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:6px">Not you? Select your name:</div>
+      <select id="loginSelect" onchange="setPinPerson(this.value)" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:15px;outline:none;-webkit-appearance:none">
+        <option value="">— Select your name —</option>
+      </select>
+    </div>
   </div>
 </div>
+
+<style>
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:transparent;transition:all .15s}
+.pin-dot.filled{background:#C8102E;border-color:#C8102E}
+.pin-key{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:16px;padding:18px 0;font-size:24px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;transition:background .1s}
+.pin-key:active{background:rgba(255,255,255,.28)}
+</style>
 
 <!-- MAIN APP -->
 <div class="app-shell" id="appShell" style="display:none">
@@ -426,39 +467,92 @@ let sigCtx = null;
 let sigLastX, sigLastY;
 let damagePins = [];
 
-/* ── POP LOGIN SELECT ── */
+/* ── PIN LOGIN ── */
+var _pinPerson = null;   // the staff object we're logging in
+var _pinEntry  = '';     // digits typed so far
+
 (function() {
+  // Fallback name picker (shown only if the link has no ?id=)
   const sel = document.getElementById('loginSelect');
-  const qv  = document.getElementById('quickVehicle');
-  AC_STAFF.forEach(s => {
+  AC_STAFF.filter(s=>s.role!=='Test User' && s.id!=='master' && !s.archived).forEach(s => {
     const o = document.createElement('option');
-    o.value = s.name; o.textContent = `${s.name} — ${s.role} (${s.dept})`;
+    o.value = s.id; o.textContent = `${s.name} — ${s.role}`;
     sel.appendChild(o);
   });
-  vehicles.slice(0,50).forEach(v => {
+  const qv = document.getElementById('quickVehicle');
+  if (qv) vehicles.slice(0,50).forEach(v => {
     const o = document.createElement('option');
-    o.value = v.stockNo;
-    o.textContent = `${v.registration} — ${v.make} ${v.model} (${v.stockNo})`;
+    o.value = v.stockNo; o.textContent = `${v.registration} — ${v.make} ${v.model} (${v.stockNo})`;
     qv.appendChild(o);
   });
-  // Check saved session
-  const saved = localStorage.getItem('ac_staff_session');
-  if (saved && AC_STAFF.find(s=>s.name===saved)) {
-    currentStaff = saved;
-    _ensureFirebaseSession(launchApp);
+
+  // Show the Add-to-Home-Screen banner on arrival (before login).
+  showArrivalInstall();
+
+  // Already logged in on this device? Go straight in.
+  const savedId = localStorage.getItem('ac_staff_id');
+  if (savedId) {
+    const s = AC_STAFF.find(x=>x.id===savedId);
+    if (s) { currentStaff = s.name; _ensureFirebaseSession(launchApp); return; }
+  }
+
+  // Link pre-selects the person: staff-app.html?id=david
+  const params = new URLSearchParams(window.location.search);
+  const id = (params.get('id')||'').toLowerCase();
+  const person = id ? AC_STAFF.find(x=>x.id===id) : null;
+  if (person) {
+    setPinPerson(person.id);
+  } else {
+    // No id in the link — let them pick their name, then enter PIN.
+    document.getElementById('pinWho').textContent = 'Welcome';
+    document.getElementById('pinHint').textContent = 'Select your name, then enter your PIN';
+    document.getElementById('pinPicker').style.display = 'block';
   }
 })();
 
-/* ── LOGIN ── */
-function doLogin() {
-  const name = document.getElementById('loginSelect').value;
-  if (!name) { alert('Please select your name'); return; }
-  currentStaff = name;
-  localStorage.setItem('ac_staff_session', name);
-  // Establish a Firebase session so Firestore reads are allowed (rules
-  // require request.auth != null). Anonymous sign-in keeps the quick
-  // name-picker UX while giving a valid auth session for live sync.
-  _ensureFirebaseSession(launchApp);
+function setPinPerson(id){
+  const s = AC_STAFF.find(x=>x.id===id);
+  if (!s) return;
+  _pinPerson = s; _pinEntry = '';
+  document.getElementById('pinWho').textContent = 'Hi ' + s.name.split(' ')[0];
+  document.getElementById('pinHint').textContent = 'Enter your 4-digit PIN';
+  document.getElementById('pinError').textContent = '';
+  renderPinDots();
+}
+
+function pinPress(d){
+  if (!_pinPerson) { document.getElementById('pinError').textContent = 'Select your name first'; return; }
+  if (_pinEntry.length >= 4) return;
+  _pinEntry += d;
+  renderPinDots();
+  if (_pinEntry.length === 4) setTimeout(checkPin, 150);
+}
+function pinBack(){ _pinEntry = _pinEntry.slice(0,-1); document.getElementById('pinError').textContent=''; renderPinDots(); }
+function renderPinDots(){
+  var dots = document.querySelectorAll('.pin-dot');
+  dots.forEach(function(d,i){ d.classList.toggle('filled', i < _pinEntry.length); });
+}
+function checkPin(){
+  if (!_pinPerson) return;
+  if (_pinEntry === String(_pinPerson.pin)) {
+    currentStaff = _pinPerson.name;
+    localStorage.setItem('ac_staff_id', _pinPerson.id);
+    localStorage.setItem('ac_staff_session', _pinPerson.name);
+    _ensureFirebaseSession(launchApp);
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
+    _pinEntry = ''; renderPinDots();
+    if (navigator.vibrate) navigator.vibrate(200);
+  }
+}
+
+// Show the install banner as soon as the page opens (not just after login).
+function showArrivalInstall(){
+  if (localStorage.getItem('ce_install_dismissed')) return;
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (standalone) return;
+  var b = document.getElementById('a2hsBanner');
+  if (b) b.style.display = 'flex';
 }
 
 // Sign in anonymously if not already signed in, then run cb().
@@ -520,7 +614,10 @@ function doInstall() {
     alert('To add CapEye to your Home Screen:\n\nTap the Share button, then “Add to Home Screen”.');
   }
 }
-function dismissInstall(){ try{localStorage.setItem('ce_install_dismissed','1');}catch(e){} var b=document.getElementById('installBar'); if(b) b.style.display='none'; }
+function dismissInstall(){
+  try{localStorage.setItem('ce_install_dismissed','1');}catch(e){}
+  ['installBar','a2hsBanner'].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display='none'; });
+}
 
 /* ── SCREENS ── */
 function showScreen(name) {
