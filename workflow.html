@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.1 — Workflow</title>
+<title>CapEye Final V1.2 — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020"></script>
-<script src="ac-data.js?v=20261020"></script>
-<script src="firebase-init.js?v=20261020"></script>
-<script src="jobs-sync.js?v=20261020"></script>
-<script src="live-sync.js?v=20261020"></script>
+<script src="firebase-config.js?v=20261020b"></script>
+<script src="ac-data.js?v=20261020b"></script>
+<script src="firebase-init.js?v=20261020b"></script>
+<script src="jobs-sync.js?v=20261020b"></script>
+<script src="live-sync.js?v=20261020b"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020"></script>
+<script src="notifications.js?v=20261020b"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020b">
 </head><body>
 
 <nav class="nav">
@@ -638,15 +638,15 @@ function init() {
 function buildKPIs() {
   const v = vehicles;
   const kpis = [
-    {v:v.filter(x=>x.status==='In Stock').length, l:'In Stock', c:'#3b82f6'},
-    {v:v.filter(x=>isReadyForSaleWF(x.stockNo)).length, l:'Ready for Sale', c:'#0891b2'},
-    {v:v.filter(x=>x.workflowStage==='Prep for Sale').length, l:'Prep for Sale', c:'#8b5cf6'},
-    {v:v.filter(x=>x.status==='Sold').length, l:'Sold', c:'#64748b'},
-    {v:v.filter(x=>isOverdue(x)).length, l:'Overdue', c:'#ef4444'},
-    {v:v.filter(x=>x.urgent).length, l:'Urgent', c:'#C8102E'},
+    {v:v.filter(x=>x.status==='In Stock').length, l:'In Stock', c:'#3b82f6', link:'inventory.html?status=In%20Stock'},
+    {v:v.filter(x=>isReadyForSaleWF(x.stockNo)).length, l:'Ready for Sale', c:'#0891b2', link:'inventory.html?status=Ready%20for%20Sale'},
+    {v:v.filter(x=>x.workflowStage==='Prep for Sale').length, l:'Prep for Sale', c:'#8b5cf6', link:'inventory.html?stage=Prep%20for%20Sale'},
+    {v:v.filter(x=>x.status==='Sold').length, l:'Sold', c:'#64748b', link:'inventory.html?status=Sold'},
+    {v:v.filter(x=>isOverdue(x)).length, l:'Overdue', c:'#ef4444', link:'inventory.html'},
+    {v:v.filter(x=>x.urgent).length, l:'Urgent', c:'#C8102E', link:'inventory.html'},
   ];
   document.getElementById('kpi-strip').innerHTML = kpis.map(k=>
-    `<div class="kpi" style="--kc:${k.c}"><div class="kpi-v">${k.v}</div><div class="kpi-l">${k.l}</div></div>`
+    `<div class="kpi" style="--kc:${k.c};cursor:pointer" onclick="location.href='${k.link}'"><div class="kpi-v">${k.v}</div><div class="kpi-l">${k.l}</div></div>`
   ).join('');
 }
 
@@ -757,10 +757,15 @@ function loadVehicle(stockNo) {
 function updateCompleteBtn(stageId) {
   var btn = document.getElementById('completeStageBtn');
   if (!btn) return;
-  // Every stage hands over to a person OR a department.
-  // The final stage (Aftersales) just marks complete — nothing to hand to.
+  // Prep for Sale (7) and Sold (8) do NOT hand over to a person — they just
+  // get ticked. Completing Prep for Sale makes the vehicle Ready for Sale;
+  // the final Sold tick closes it out. Every earlier stage hands over.
+  var stageObj = AC_WORKFLOW_STAGES.find(function(s){ return s.id === stageId; });
+  var isPrep = stageObj && stageObj.name === 'Prep for Sale';
   var lastId = AC_WORKFLOW_STAGES[AC_WORKFLOW_STAGES.length-1].id;
-  if (stageId >= lastId) {
+  if (isPrep) {
+    btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="completeJobOnly()"><i class="fas fa-check-circle"></i> Complete — Mark Ready for Sale</button>';
+  } else if (stageId >= lastId) {
     btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="completeJobOnly()"><i class="fas fa-check-circle"></i> Mark Complete</button>';
   } else {
     btn.outerHTML = '<button class="btn btn-green complete-stage-btn" id="completeStageBtn" onclick="openHandoverModal()"><i class="fas fa-arrow-right"></i> Complete Stage & Handover</button>';
@@ -774,6 +779,20 @@ function completeJobOnly() {
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString(),completedBy:getCurrentUser().name};
   saveWorkflow(currentVehicle.stockNo, wf);
+
+  if (stage.name === 'Prep for Sale') {
+    // No handover — the vehicle is now READY FOR SALE. Persist that status so
+    // Inventory, Dashboard and the phone app all see it (keyed by registration).
+    currentVehicle.workflowStage = 'Ready for Sale';
+    if (currentVehicle.status !== 'Sold') currentVehicle.status = 'Ready for Sale';
+    if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
+    writeAuditLog('complete', currentVehicle.registration, 'Prep for Sale complete — Ready for Sale', currentVehicle.registration+' '+currentVehicle.make+' '+currentVehicle.model, getCurrentUser().name, 'normal');
+    showToast('Ready for Sale ✓ — now in Inventory & Dashboard', 'success');
+    loadVehicle(currentVehicle.stockNo);
+    renderPipeline(); buildKPIs(); buildDeptStrip();
+    return;
+  }
+
   // Final "Sold" stage: mark the vehicle Sold so it filters in inventory.
   if (stage.name === 'Sold') {
     currentVehicle.status = 'Sold';
@@ -1862,6 +1881,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020"></script>
+<script src="mobile-menu.js?v=20261020b"></script>
 </body>
 </html>

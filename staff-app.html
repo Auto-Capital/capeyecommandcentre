@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020b">
+<link rel="manifest" href="staff-manifest.json?v=20261020bb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Final V1.1 — Staff App</title>
+<title>CapEye Final V1.2 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020"></script>
-<script src="./ac-data.js?v=20261020"></script>
-<script src="firebase-init.js?v=20261020"></script>
-<script src="jobs-sync.js?v=20261020"></script>
+<script src="firebase-config.js?v=20261020b"></script>
+<script src="./ac-data.js?v=20261020b"></script>
+<script src="firebase-init.js?v=20261020b"></script>
+<script src="jobs-sync.js?v=20261020b"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -624,10 +624,47 @@ function _ensureFirebaseSession(cb) {
   } catch (e) { cb(); }
 }
 
+// Pull EVERY vehicle workflow from Firestore into this phone's localStorage
+// cache (ac_wf_<stockNo>) so Ready-for-Sale derivation + reg search work on
+// a device that has never run the back-office app. Then keep it live.
+function prewarmWorkflows(done) {
+  if (typeof FS === 'undefined' || !FS) { if (done) done(); return; }
+  var finished = false;
+  var finish = function(){ if (finished) return; finished = true; if (done) done(); };
+  // Safety: don't block the UI forever if the network is slow.
+  var t = setTimeout(finish, 6000);
+  FS.collection('workflows').get()
+    .then(function(snap){
+      snap.forEach(function(d){
+        try { localStorage.setItem('ac_wf_'+d.id, JSON.stringify(d.data())); } catch(e){}
+      });
+      clearTimeout(t); finish();
+    })
+    .catch(function(e){ console.warn('[CapEye] prewarm workflows failed', e); clearTimeout(t); finish(); });
+  // Live: keep the cache hot so Complete-Sale search updates in real time.
+  try {
+    FS.collection('workflows').onSnapshot(function(snap){
+      snap.forEach(function(d){
+        try { localStorage.setItem('ac_wf_'+d.id, JSON.stringify(d.data())); } catch(e){}
+      });
+      // If the Complete-Sale search is open, refresh its results live.
+      var ov = document.getElementById('appSaleOverlay');
+      if (ov && ov.style.display === 'block') {
+        var s = document.getElementById('as_search');
+        try { appSaleSearch(s ? s.value : ''); } catch(e){}
+      }
+    });
+  } catch(e){}
+}
+
 function launchApp() {
   showScreenEl('appShell');
   document.getElementById('staffPill').textContent = currentStaff.split(' ')[0];
-  buildDash(); buildTasks();
+  // Pull workflow state from Firestore first, THEN build (so Ready-for-Sale works on any phone).
+  prewarmWorkflows(function(){
+    buildDash(); buildTasks();
+  });
+  buildDash(); buildTasks();             // immediate paint from whatever cache exists
   attachJobsLive();   // live updates when jobs are assigned/changed
   initSigCanvas();
 }
