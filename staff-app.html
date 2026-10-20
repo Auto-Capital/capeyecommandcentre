@@ -186,35 +186,34 @@ html,
 <body>
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" style="background:#0a1a4d;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:14px">
-  <!-- Add to Home Screen banner (shows on arrival) -->
-  <div id="a2hsBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:#C8102E;color:#fff;padding:12px 16px;font-size:13px;font-weight:600;align-items:center;gap:10px;z-index:100">
-    <i class="fas fa-mobile-screen"></i>
-    <span style="flex:1">Add CapEye to your Home Screen</span>
-    <button onclick="doInstall()" style="background:#fff;color:#C8102E;border:none;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px">Add</button>
-    <button onclick="dismissInstall()" style="background:transparent;color:#fff;border:none;font-size:18px">&times;</button>
-  </div>
+<!-- ═══ SCREEN 1: INSTALL (shown in browser, before adding to home screen) ═══ -->
+<div id="installScreen" style="display:none;background:#0a1a4d;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center">
+  <img src="capeye-icon-192.png" alt="CapEye" style="width:96px;height:96px;border-radius:22px;margin-bottom:18px">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:46px;font-weight:800;letter-spacing:4px;color:#fff">CAP<span style="color:#C8102E">EYE</span></div>
+  <div id="installWho" style="font-size:15px;color:rgba(255,255,255,.75);margin-top:4px;margin-bottom:26px">Auto Capital Staff App</div>
 
+  <div style="background:rgba(255,255,255,.08);border-radius:16px;padding:22px 20px;max-width:340px;width:100%">
+    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:14px"><i class="fas fa-mobile-screen" style="color:#C8102E"></i> Add to Home Screen</div>
+    <div id="installSteps" style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;text-align:left"></div>
+    <button id="installBtn" onclick="doInstall()" style="display:none;width:100%;margin-top:16px;padding:15px;border-radius:12px;background:#C8102E;color:#fff;font-size:16px;font-weight:800;border:none;cursor:pointer">Add to Home Screen</button>
+  </div>
+  <button onclick="skipInstall()" style="margin-top:18px;background:transparent;border:none;color:rgba(255,255,255,.5);font-size:13px;text-decoration:underline;cursor:pointer">Continue in browser instead</button>
+</div>
+
+<!-- ═══ SCREEN 2: PIN LOGIN (shown in the installed app) ═══ -->
+<div id="loginScreen" style="display:none;background:#0a1a4d;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px">
   <div style="text-align:center;margin-bottom:4px">
-    <img src="capeye-icon-192.png" alt="CapEye" style="width:84px;height:84px;border-radius:20px;margin-bottom:12px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;letter-spacing:4px;color:#fff">CAP<span style="color:#C8102E">EYE</span></div>
-    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:2px;letter-spacing:1px">AUTO CAPITAL STAFF PORTAL</div>
+    <img src="capeye-icon-192.png" alt="CapEye" style="width:76px;height:76px;border-radius:18px;margin-bottom:12px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:800;letter-spacing:4px;color:#fff">CAP<span style="color:#C8102E">EYE</span></div>
   </div>
-
-  <!-- PIN login -->
   <div style="width:100%;max-width:320px;text-align:center">
-    <div id="pinWho" style="color:#fff;font-size:17px;font-weight:700;margin-bottom:4px">Enter your PIN</div>
-    <div id="pinHint" style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:16px">4-digit code</div>
-
-    <!-- PIN dots -->
-    <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:20px">
+    <div id="pinWho" style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">Welcome</div>
+    <div id="pinHint" style="color:rgba(255,255,255,.55);font-size:13px;margin-bottom:18px">Enter your 4-digit PIN</div>
+    <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:18px">
       <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
     </div>
     <div id="pinError" style="color:#ff8a9c;font-size:13px;font-weight:600;min-height:18px;margin-bottom:8px"></div>
-
-    <!-- Keypad -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:280px;margin:0 auto">
-
       <button class="pin-key" onclick="pinPress('1')">1</button>
       <button class="pin-key" onclick="pinPress('2')">2</button>
       <button class="pin-key" onclick="pinPress('3')">3</button>
@@ -228,10 +227,8 @@ html,
       <button class="pin-key" onclick="pinPress('0')">0</button>
       <button class="pin-key" onclick="pinBack()" style="font-size:20px">&#9003;</button>
     </div>
-
-    <!-- Fallback name picker (only if link has no ?id=) -->
     <div id="pinPicker" style="display:none;margin-top:18px">
-      <div style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:6px">Not you? Select your name:</div>
+      <div style="color:rgba(255,255,255,.55);font-size:12px;margin-bottom:6px">Select your name:</div>
       <select id="loginSelect" onchange="setPinPerson(this.value)" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:15px;outline:none;-webkit-appearance:none">
         <option value="">— Select your name —</option>
       </select>
@@ -239,22 +236,41 @@ html,
   </div>
 </div>
 
+<!-- ═══ SCREEN 3: PERMISSIONS (first login only) ═══ -->
+<div id="permScreen" style="display:none;background:#0a1a4d;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center">
+  <img src="capeye-icon-192.png" alt="CapEye" style="width:76px;height:76px;border-radius:18px;margin-bottom:14px">
+  <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:6px">You're in! 🎉</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:24px;max-width:320px">Turn these on so CapEye works properly on your phone.</div>
+  <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">
+    <button id="permNotif" onclick="enablePerm('notif')" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px;color:#fff;cursor:pointer;text-align:left">
+      <i class="fas fa-bell" style="font-size:22px;color:#C8102E;width:28px"></i>
+      <div style="flex:1"><div style="font-weight:700;font-size:15px">Notifications</div><div style="font-size:12px;color:rgba(255,255,255,.55)">Get alerted when a job is assigned</div></div>
+      <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.4)"></i>
+    </button>
+    <button id="permCam" onclick="enablePerm('cam')" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px;color:#fff;cursor:pointer;text-align:left">
+      <i class="fas fa-camera" style="font-size:22px;color:#C8102E;width:28px"></i>
+      <div style="flex:1"><div style="font-weight:700;font-size:15px">Camera</div><div style="font-size:12px;color:rgba(255,255,255,.55)">Take photos of vehicles and work done</div></div>
+      <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.4)"></i>
+    </button>
+    <button id="permLoc" onclick="enablePerm('loc')" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px;color:#fff;cursor:pointer;text-align:left">
+      <i class="fas fa-location-dot" style="font-size:22px;color:#C8102E;width:28px"></i>
+      <div style="flex:1"><div style="font-weight:700;font-size:15px">Location</div><div style="font-size:12px;color:rgba(255,255,255,.55)">For deliveries and site check-ins</div></div>
+      <i class="fas fa-chevron-right" style="color:rgba(255,255,255,.4)"></i>
+    </button>
+  </div>
+  <button onclick="finishPermissions()" style="margin-top:26px;width:100%;max-width:340px;padding:15px;border-radius:12px;background:#C8102E;color:#fff;font-size:16px;font-weight:800;border:none;cursor:pointer">Continue to my jobs</button>
+</div>
+
 <style>
 .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:transparent;transition:all .15s}
 .pin-dot.filled{background:#C8102E;border-color:#C8102E}
 .pin-key{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:16px;padding:18px 0;font-size:24px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;transition:background .1s}
 .pin-key:active{background:rgba(255,255,255,.28)}
+.perm-done{background:rgba(26,127,55,.25)!important;border-color:#1a7f37!important}
 </style>
 
 <!-- MAIN APP -->
 <div class="app-shell" id="appShell" style="display:none">
-  <!-- ADD TO HOME SCREEN BAR -->
-  <div id="installBar" style="display:none;align-items:center;gap:10px;background:#C8102E;color:#fff;padding:10px 14px;font-size:13px;font-weight:600">
-    <i class="fas fa-mobile-screen"></i>
-    <span style="flex:1">Add CapEye to your Home Screen</span>
-    <button onclick="doInstall()" style="background:#fff;color:#C8102E;border:none;border-radius:6px;padding:6px 12px;font-weight:700;font-size:12px">Add</button>
-    <button onclick="dismissInstall()" style="background:transparent;color:#fff;border:none;font-size:16px">&times;</button>
-  </div>
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-logo">
@@ -467,78 +483,114 @@ let sigCtx = null;
 let sigLastX, sigLastY;
 let damagePins = [];
 
-/* ── PIN LOGIN ── */
+/* ══ APP ONBOARDING FLOW ═══════════════════════════════════════════════
+   Browser (not installed)  → INSTALL screen only
+   Installed, first open     → PIN → PERMISSIONS → app
+   Installed, returning      → PIN → app
+   Individual link (?id=x)   → that person only, no name picker
+   ════════════════════════════════════════════════════════════════════ */
 var _pinPerson = null;   // the staff object we're logging in
-var _pinEntry  = '';     // digits typed so far
+var _pinEntry  = '';
+var _deferredInstall = null;
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function showScreenEl(id){
+  ['installScreen','loginScreen','permScreen','appShell'].forEach(function(s){
+    var el=document.getElementById(s); if(!el) return;
+    el.style.display = (s===id) ? (s==='appShell'?'flex':'flex') : 'none';
+  });
+}
+
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredInstall = e;
+  var b=document.getElementById('installBtn'); if(b) b.style.display='block'; });
 
 (function() {
-  // Fallback name picker (shown only if the link has no ?id=)
-  const sel = document.getElementById('loginSelect');
-  AC_STAFF.filter(s=>s.role!=='Test User' && s.id!=='master' && !s.archived).forEach(s => {
-    const o = document.createElement('option');
-    o.value = s.id; o.textContent = `${s.name} — ${s.role}`;
-    sel.appendChild(o);
-  });
-  const qv = document.getElementById('quickVehicle');
-  if (qv) vehicles.slice(0,50).forEach(v => {
-    const o = document.createElement('option');
-    o.value = v.stockNo; o.textContent = `${v.registration} — ${v.make} ${v.model} (${v.stockNo})`;
-    qv.appendChild(o);
-  });
-
-  // Show the Add-to-Home-Screen banner on arrival (before login).
-  showArrivalInstall();
-
-  // Already logged in on this device? Go straight in.
-  const savedId = localStorage.getItem('ac_staff_id');
-  if (savedId) {
-    const s = AC_STAFF.find(x=>x.id===savedId);
-    if (s) { currentStaff = s.name; _ensureFirebaseSession(launchApp); return; }
+  // Remember which person this link/device is for (so it's ALWAYS them).
+  var params = new URLSearchParams(window.location.search);
+  var linkId = (params.get('id')||'').toLowerCase();
+  if (linkId && AC_STAFF.find(function(x){return x.id===linkId;})) {
+    try { localStorage.setItem('ac_staff_id', linkId); } catch(e){}
   }
+  var myId = localStorage.getItem('ac_staff_id') || linkId;
+  var me = myId ? AC_STAFF.find(function(x){ return x.id===myId; }) : null;
 
-  // Link pre-selects the person: staff-app.html?id=david
-  const params = new URLSearchParams(window.location.search);
-  const id = (params.get('id')||'').toLowerCase();
-  const person = id ? AC_STAFF.find(x=>x.id===id) : null;
-  if (person) {
-    setPinPerson(person.id);
-  } else {
-    // No id in the link — let them pick their name, then enter PIN.
+  // Populate fallback picker (only used when there's genuinely no person).
+  var sel = document.getElementById('loginSelect');
+  if (sel) AC_STAFF.filter(function(s){return s.role!=='Test User'&&s.id!=='master'&&!s.archived;}).forEach(function(s){
+    var o=document.createElement('option'); o.value=s.id; o.textContent=s.name+' — '+s.role; sel.appendChild(o);
+  });
+  var qv = document.getElementById('quickVehicle');
+  if (qv) vehicles.slice(0,50).forEach(function(v){ var o=document.createElement('option'); o.value=v.stockNo; o.textContent=v.registration+' — '+v.make+' '+v.model+' ('+v.stockNo+')'; qv.appendChild(o); });
+
+  // ── Decide which screen to show ──
+  if (!isStandalone()) {
+    // In a browser tab → show INSTALL screen (unless they chose to continue).
+    if (!localStorage.getItem('ce_browser_ok')) {
+      prepInstallScreen(me);
+      showScreenEl('installScreen');
+      return;
+    }
+  }
+  // Installed (or chose browser) → go to PIN for the known person.
+  if (me) { setPinPerson(me.id); }
+  else {
     document.getElementById('pinWho').textContent = 'Welcome';
     document.getElementById('pinHint').textContent = 'Select your name, then enter your PIN';
     document.getElementById('pinPicker').style.display = 'block';
   }
+  showScreenEl('loginScreen');
 })();
 
+function prepInstallScreen(me){
+  if (me) document.getElementById('installWho').textContent = 'Welcome, ' + me.name.split(' ')[0];
+  var ua = navigator.userAgent||'';
+  var isIOS = /iphone|ipad|ipod/i.test(ua);
+  var steps = document.getElementById('installSteps');
+  if (isIOS) {
+    steps.innerHTML = '1. Tap the <b>Share</b> button <i class="fas fa-arrow-up-from-bracket"></i> at the bottom of Safari<br>'+
+                      '2. Scroll down and tap <b>Add to Home Screen</b><br>'+
+                      '3. Tap <b>Add</b>, then open CapEye from your home screen';
+  } else {
+    steps.innerHTML = 'Tap the button below to add CapEye to your home screen, then open it from there.';
+    var b=document.getElementById('installBtn'); if(b) b.style.display='block';
+  }
+}
+function doInstall(){
+  if (_deferredInstall){ _deferredInstall.prompt(); _deferredInstall.userChoice.then(function(){ _deferredInstall=null; }); }
+  else { /* iOS: instructions already shown */ }
+}
+function skipInstall(){ try{localStorage.setItem('ce_browser_ok','1');}catch(e){} location.reload(); }
+
 function setPinPerson(id){
-  const s = AC_STAFF.find(x=>x.id===id);
-  if (!s) return;
+  var s = AC_STAFF.find(function(x){return x.id===id;}); if (!s) return;
   _pinPerson = s; _pinEntry = '';
-  document.getElementById('pinWho').textContent = 'Hi ' + s.name.split(' ')[0];
+  document.getElementById('pinWho').textContent = 'Welcome, ' + s.name.split(' ')[0];
   document.getElementById('pinHint').textContent = 'Enter your 4-digit PIN';
   document.getElementById('pinError').textContent = '';
+  document.getElementById('pinPicker').style.display = 'none';
   renderPinDots();
 }
-
 function pinPress(d){
   if (!_pinPerson) { document.getElementById('pinError').textContent = 'Select your name first'; return; }
   if (_pinEntry.length >= 4) return;
-  _pinEntry += d;
-  renderPinDots();
+  _pinEntry += d; renderPinDots();
   if (_pinEntry.length === 4) setTimeout(checkPin, 150);
 }
 function pinBack(){ _pinEntry = _pinEntry.slice(0,-1); document.getElementById('pinError').textContent=''; renderPinDots(); }
-function renderPinDots(){
-  var dots = document.querySelectorAll('.pin-dot');
-  dots.forEach(function(d,i){ d.classList.toggle('filled', i < _pinEntry.length); });
-}
+function renderPinDots(){ document.querySelectorAll('.pin-dot').forEach(function(d,i){ d.classList.toggle('filled', i < _pinEntry.length); }); }
 function checkPin(){
   if (!_pinPerson) return;
   if (_pinEntry === String(_pinPerson.pin)) {
     currentStaff = _pinPerson.name;
-    localStorage.setItem('ac_staff_id', _pinPerson.id);
-    localStorage.setItem('ac_staff_session', _pinPerson.name);
-    _ensureFirebaseSession(launchApp);
+    try { localStorage.setItem('ac_staff_id', _pinPerson.id); localStorage.setItem('ac_staff_session', _pinPerson.name); } catch(e){}
+    // First login on this device → show permissions screen once.
+    if (!localStorage.getItem('ce_perms_done')) {
+      showScreenEl('permScreen');
+    } else {
+      _ensureFirebaseSession(launchApp);
+    }
   } else {
     document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
     _pinEntry = ''; renderPinDots();
@@ -546,14 +598,18 @@ function checkPin(){
   }
 }
 
-// Show the install banner as soon as the page opens (not just after login).
-function showArrivalInstall(){
-  if (localStorage.getItem('ce_install_dismissed')) return;
-  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (standalone) return;
-  var b = document.getElementById('a2hsBanner');
-  if (b) b.style.display = 'flex';
+// ── Permissions screen ──
+function enablePerm(which){
+  if (which==='notif'){
+    try { if('Notification' in window) Notification.requestPermission().then(function(){ markPerm('permNotif'); }); } catch(e){ markPerm('permNotif'); }
+  } else if (which==='cam'){
+    try { navigator.mediaDevices.getUserMedia({video:true}).then(function(st){ st.getTracks().forEach(function(t){t.stop();}); markPerm('permCam'); }).catch(function(){ markPerm('permCam'); }); } catch(e){ markPerm('permCam'); }
+  } else if (which==='loc'){
+    try { navigator.geolocation.getCurrentPosition(function(){ markPerm('permLoc'); }, function(){ markPerm('permLoc'); }, {timeout:8000}); } catch(e){ markPerm('permLoc'); }
+  }
 }
+function markPerm(id){ var b=document.getElementById(id); if(b){ b.classList.add('perm-done'); var chev=b.querySelector('.fa-chevron-right'); if(chev){ chev.className='fas fa-check'; chev.style.color='#1a7f37'; } } }
+function finishPermissions(){ try{localStorage.setItem('ce_perms_done','1');}catch(e){} _ensureFirebaseSession(launchApp); }
 
 // Sign in anonymously if not already signed in, then run cb().
 function _ensureFirebaseSession(cb) {
@@ -567,56 +623,11 @@ function _ensureFirebaseSession(cb) {
 }
 
 function launchApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'flex';
+  showScreenEl('appShell');
   document.getElementById('staffPill').textContent = currentStaff.split(' ')[0];
   buildDash(); buildTasks();
   attachJobsLive();   // live updates when jobs are assigned/changed
   initSigCanvas();
-  requestAppPermissions();
-  maybeShowInstallPrompt();
-}
-
-// Ask for notifications, location and camera — the PWA "app-like" permissions.
-function requestAppPermissions() {
-  try {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  } catch(e){}
-  try {
-    // Location (one-off prompt; result cached by the browser)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(){}, function(){}, {timeout:8000});
-    }
-  } catch(e){}
-  // Camera is requested at the moment a photo slot is tapped (capture input),
-  // which is the correct time to ask — no pre-emptive getUserMedia needed.
-}
-
-// "Add to Home Screen" — Android/Chrome shows a native prompt we can trigger;
-// iOS Safari needs a manual hint (no programmatic API).
-var _deferredInstall = null;
-window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredInstall = e; });
-function maybeShowInstallPrompt() {
-  if (localStorage.getItem('ce_install_dismissed')) return;
-  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (isStandalone) return; // already installed
-  var bar = document.getElementById('installBar');
-  if (bar) bar.style.display = 'flex';
-}
-function doInstall() {
-  if (_deferredInstall) {
-    _deferredInstall.prompt();
-    _deferredInstall.userChoice.then(function(){ _deferredInstall=null; dismissInstall(); });
-  } else {
-    // iOS: show how-to
-    alert('To add CapEye to your Home Screen:\n\nTap the Share button, then “Add to Home Screen”.');
-  }
-}
-function dismissInstall(){
-  try{localStorage.setItem('ce_install_dismissed','1');}catch(e){}
-  ['installBar','a2hsBanner'].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display='none'; });
 }
 
 /* ── SCREENS ── */

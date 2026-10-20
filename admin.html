@@ -414,8 +414,8 @@ input, select, textarea {
 
   <!-- TABS -->
   <div class="admin-tabs">
-    <div class="admin-tab active" onclick="setTab('staff')"><i class="fas fa-users"></i> Staff</div>
-    <div class="admin-tab" onclick="setTab('departments')"><i class="fas fa-building"></i> Departments</div>
+    <div class="admin-tab" onclick="location.href='team.html'"><i class="fas fa-users"></i> Staff (on Team page)</div>
+    <div class="admin-tab active" onclick="setTab('departments')"><i class="fas fa-building"></i> Departments</div>
     <div class="admin-tab" onclick="setTab('locations')"><i class="fas fa-map-marker-alt"></i> Locations</div>
     <div class="admin-tab" onclick="setTab('faults')"><i class="fas fa-exclamation-triangle"></i> Fault Types</div>
     <div class="admin-tab" onclick="setTab('repairs')"><i class="fas fa-tools"></i> Repair Types</div>
@@ -425,7 +425,7 @@ input, select, textarea {
   </div>
 
   <!-- ══ STAFF PANEL ══ -->
-  <div class="panel active" id="panel-staff">
+  <div class="panel" id="panel-staff" style="display:none">
     <div class="two-col">
       <!-- Add / Edit form -->
       <div class="card" style="position:sticky;top:84px">
@@ -533,7 +533,7 @@ input, select, textarea {
   </div>
 
   <!-- ══ DEPARTMENTS PANEL ══ -->
-  <div class="panel" id="panel-departments">
+  <div class="panel active" id="panel-departments">
     <div class="two-col">
       <div class="card" style="position:sticky;top:84px">
         <div class="card-header"><span class="card-title" id="deptFormTitle">Add Department</span></div>
@@ -825,7 +825,7 @@ function clearTestData(){
 function toast(msg,bg){document.querySelectorAll('.admin-toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast admin-toast';t.style.cssText=`background:${bg};color:#fff`;t.innerHTML=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
 /* INIT */
-renderStaff();
+renderDepts();
 </script>
 
 <script>

@@ -449,6 +449,7 @@ function renderTeam(){
       <td style="padding:10px 12px;font-size:12px">${s.email?`<a href="mailto:${s.email}" onclick="event.stopPropagation()" style="color:var(--blue,#003DA5);text-decoration:none">${s.email}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td style="padding:10px 12px;font-size:12px;color:var(--muted);white-space:nowrap">${start}</td>
       <td style="padding:10px 12px;text-align:center"><span style="font-weight:800;color:${pending?col:'var(--muted)'}">${pending}</span></td>
+      ${canEditStaff()?`<td style="padding:10px 12px;text-align:center"><button onclick="event.stopPropagation();editRowWithPin('${s.name.replace(/'/g,"\\'")}')" style="background:var(--navy,#003DA5);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-edit"></i> Edit</button></td>`:''}
     </tr>`;
   }).join('');
   grid.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:720px">
@@ -460,9 +461,18 @@ function renderTeam(){
       <th style="padding:10px 12px">Email</th>
       <th style="padding:10px 12px">Start Date</th>
       <th style="padding:10px 12px;text-align:center">Tasks</th>
+      ${canEditStaff()?'<th style="padding:10px 12px;text-align:center">Edit</th>':''}
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
+}
+
+// Ask for the 3131 edit password EACH time, then open the edit form.
+function editRowWithPin(name){
+  var pw = prompt('Enter edit password:');
+  if (pw === null) return;
+  if (pw !== '3131'){ alert('Incorrect password'); return; }
+  editProfile(name, true);   // open the editor directly (we've just authorised)
 }
 
 function openProfile(name){
@@ -479,7 +489,6 @@ function openProfile(name){
       <div class="modal-name">${s.name}</div>
       <div class="modal-role" style="color:var(--muted);margin-bottom:10px">${s.role}</div>
       <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${col}18;color:${col};margin-bottom:16px">${deptData.icon} ${s.dept}</div>
-      ${canEditStaff()?`<button onclick="editProfile('${s.name.replace(/'/g,"\\'")}')" style="float:right;background:var(--navy,#003DA5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer"><i class="fas fa-edit"></i> Edit</button>`:''}
       <div class="info-grid">
         <div class="info-field"><div class="info-label">Department</div><div class="info-val">${s.dept}</div></div>
         <div class="info-field"><div class="info-label">Role</div><div class="info-val">${s.role}</div></div>
@@ -511,9 +520,10 @@ function canEditStaff(){
 }
 
 // Inline edit form inside the profile modal.
-function editProfile(name){
+function editProfile(name, authorised){
   var s = AC_STAFF.find(x=>x.name===name); if(!s) return;
   if(!canEditStaff()){ return; }
+  document.getElementById('profileModal').style.display='flex';   // ensure modal is open
   var f=function(label,id,val,type){ return '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:3px">'+label+'</label><input id="ed_'+id+'" '+(type==='ta'?'':'')+' value="'+(val||'').replace(/"/g,'&quot;')+'" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px"></div>'; };
   var html = '<div style="padding:20px;max-height:76vh;overflow-y:auto">'+
     '<div style="font-size:18px;font-weight:800;color:var(--navy,#003DA5);margin-bottom:14px">Edit — '+s.name+'</div>'+
