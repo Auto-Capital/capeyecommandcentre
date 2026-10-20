@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020cb">
+<link rel="manifest" href="staff-manifest.json?v=20261020db">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Final V1.3 — Staff App</title>
+<title>CapEye Final V1.4 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020c"></script>
-<script src="./ac-data.js?v=20261020c"></script>
-<script src="firebase-init.js?v=20261020c"></script>
-<script src="jobs-sync.js?v=20261020c"></script>
+<script src="firebase-config.js?v=20261020d"></script>
+<script src="./ac-data.js?v=20261020d"></script>
+<script src="firebase-init.js?v=20261020d"></script>
+<script src="jobs-sync.js?v=20261020d"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -633,6 +633,7 @@ function _refreshSaleSearchIfOpen(){
   var ov = document.getElementById('appSaleOverlay');
   if (ov && ov.style.display === 'block') {
     var s = document.getElementById('as_search');
+    try { if (typeof appBuildReadyFromCache === 'function') READY_LIST = appBuildReadyFromCache(); } catch(e){}
     try { appSaleSearch(s ? s.value : ''); } catch(e){}
   }
 }
@@ -754,22 +755,59 @@ function buildDash() {
 }
 
 /* ── COMPLETE SALE (digital customer handover, Sales/Mgmt) ── */
-// Ready for Sale = "Prep for Sale" (stage 7) complete, not yet Sold (stage 8).
-function appReadyForSaleVehicles(){
-  return vehicles.filter(function(v){
+// The Ready-for-Sale list the search uses. Rebuilt from a LIVE Firestore read
+// every time the Complete-Sale screen opens, so the phone never depends on a
+// prewarm having finished. Each entry: {registration, make, model, price, readyAt}.
+var READY_LIST = [];
+
+// Build the Ready-for-Sale list from whatever data we have RIGHT NOW (cache),
+// combining the workflow cache and the live vehicle-status map.
+function appBuildReadyFromCache(){
+  var out = [];
+  var seen = {};
+  vehicles.forEach(function(v){
     var reg = (v.registration||'').toUpperCase();
-    // Signal A: live vehicle status from Firestore (keyed by registration)
+    if (!reg || seen[reg]) return;
+    var ready = false, soldOut = false, readyAt = v.readyForSaleAt || null;
     var live = LIVE_VEH_STATUS[reg];
     if (live) {
-      if (live.status === 'Sold' || live.workflowStage === 'Sold') return false;
-      if (live.status === 'Ready for Sale' || live.workflowStage === 'Ready for Sale') return true;
+      if (live.status === 'Sold' || live.workflowStage === 'Sold') soldOut = true;
+      if (live.status === 'Ready for Sale' || live.workflowStage === 'Ready for Sale') ready = true;
+      if (live.readyForSaleAt) readyAt = live.readyForSaleAt;
     }
-    // Signal B: workflow cache — Prep for Sale (7) complete, not yet Sold (8)
-    try { var wf = JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
-      return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed); } catch(e){ return false; }
+    try {
+      var wf = JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
+      if (wf[8] && wf[8].completed) soldOut = true;
+      if (wf[7] && wf[7].completed) { ready = true; if (wf[7].readyForSaleAt) readyAt = wf[7].readyForSaleAt; else if (wf[7].completedAt) readyAt = wf[7].completedAt; }
+    } catch(e){}
+    if (ready && !soldOut) { seen[reg] = 1; out.push({ registration: reg, make: v.make, model: v.model, price: v.price, readyAt: readyAt }); }
   });
+  return out;
 }
-// Step 1: pick a Ready-for-Sale vehicle from a dropdown (no typing).
+
+// Fetch LIVE from Firestore (workflows + vehicles), update caches, rebuild list,
+// then re-render the open search. Falls back to cache if offline.
+var _lastFetchError = '';
+function appFetchReadyLive(cb){
+  if (typeof FS === 'undefined' || !FS) { _lastFetchError='offline'; READY_LIST = appBuildReadyFromCache(); if (cb) cb(); return; }
+  _lastFetchError='';
+  var gotW=false, gotV=false;
+  var done=function(){ if(gotW&&gotV){ READY_LIST = appBuildReadyFromCache(); if(cb) cb(); } };
+  FS.collection('workflows').get().then(function(snap){
+    snap.forEach(function(d){ try{ localStorage.setItem('ac_wf_'+d.id, JSON.stringify(d.data())); }catch(e){} });
+    gotW=true; done();
+  }).catch(function(e){ _lastFetchError = (e && e.code) || 'read-failed'; console.warn('[CapEye] workflows read failed', e); gotW=true; done(); });
+  FS.collection('vehicles').get().then(function(snap){
+    snap.forEach(function(d){ var data=d.data()||{}; var reg=(data.registration||d.id||'').toUpperCase();
+      if(reg) LIVE_VEH_STATUS[reg]={status:data.status,workflowStage:data.workflowStage,readyForSaleAt:data.readyForSaleAt}; });
+    gotV=true; done();
+  }).catch(function(e){ _lastFetchError = (e && e.code) || 'read-failed'; console.warn('[CapEye] vehicles read failed', e); gotV=true; done(); });
+}
+
+// Back-compat: anything else that calls this still works.
+function appReadyForSaleVehicles(){ return READY_LIST.length ? READY_LIST : appBuildReadyFromCache(); }
+
+// Step 1: open Complete Sale — show instantly from cache, then refresh live.
 function appStartCompleteSale(){
   var ov = document.getElementById('appSaleOverlay');
   ov.innerHTML = '<div style="padding:22px;max-width:480px;margin:0 auto">'+
@@ -778,25 +816,32 @@ function appStartCompleteSale(){
       '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:24px;color:#64748b">&times;</button></div>'+
     '<label style="display:block;font-size:13px;font-weight:700;color:#475569;margin-bottom:6px">Type the registration</label>'+
     '<input id="as_search" oninput="appSaleSearch(this.value)" placeholder="Start typing e.g. CJ23…" autocomplete="off" style="width:100%;padding:14px;border:1px solid #d0d5dd;border-radius:10px;font-size:17px;text-transform:uppercase;font-family:monospace;letter-spacing:1px">'+
-    '<div id="as_results" style="margin-top:10px"></div>'+
+    '<div id="as_count" style="margin-top:8px;font-size:12px;color:#94a3b8">Loading Ready-for-Sale vehicles…</div>'+
+    '<div id="as_results" style="margin-top:8px"></div>'+
   '</div>';
   ov.style.display='block';
-  setTimeout(function(){ var s=document.getElementById('as_search'); if(s) s.focus(); appSaleSearch(''); }, 100);
+  READY_LIST = appBuildReadyFromCache();              // show cache immediately
+  setTimeout(function(){ var s=document.getElementById('as_search'); if(s) s.focus(); appSaleSearch(''); }, 60);
+  appFetchReadyLive(function(){ appSaleSearch((document.getElementById('as_search')||{}).value||''); });  // then live
 }
 
-// Live search: match Ready-for-Sale vehicles by registration as you type.
+// Live search over READY_LIST, matched by registration.
 function appSaleSearch(q){
-  q = (q||'').trim().toUpperCase();
-  var ready = appReadyForSaleVehicles();
-  var matches = q ? ready.filter(function(v){ return (v.registration||'').toUpperCase().indexOf(q)===0 || (v.registration||'').toUpperCase().indexOf(q)>-1; }) : ready;
+  q = (q||'').trim().toUpperCase().replace(/\s+/g,'');
+  var ready = READY_LIST;
+  var cnt = document.getElementById('as_count');
+  if (cnt) cnt.textContent = ready.length ? (ready.length + ' vehicle' + (ready.length>1?'s':'') + ' Ready for Sale') : (_lastFetchError && _lastFetchError!=='offline' ? ('Could not load from server ('+_lastFetchError+')') : '');
+  var norm = function(r){ return (r||'').toUpperCase().replace(/\s+/g,''); };
+  var matches = q ? ready.filter(function(v){ return norm(v.registration).indexOf(q) > -1; }) : ready;
   var el = document.getElementById('as_results'); if(!el) return;
   if (!ready.length){ el.innerHTML = '<div style="text-align:center;padding:26px 10px;color:#64748b"><i class="fas fa-circle-check" style="font-size:28px;opacity:.2;display:block;margin-bottom:8px"></i>No vehicles are Ready for Sale yet.<br><span style="font-size:12px">A vehicle appears once its Prep for Sale stage is complete.</span></div>'; return; }
   if (!matches.length){ el.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:14px">No match for "'+q+'"</div>'; return; }
-  el.innerHTML = matches.slice(0,8).map(function(v){
+  el.innerHTML = matches.slice(0,10).map(function(v){
+    var dt = v.readyAt ? new Date(v.readyAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
     return '<div onclick="appOpenSaleForm(\''+v.registration+'\')" style="display:flex;align-items:center;gap:12px;padding:14px 12px;border:1px solid #e4e7ec;border-radius:12px;margin-bottom:8px;cursor:pointer">'+
       '<span style="font-family:monospace;font-weight:800;background:#f5c518;color:#000;padding:4px 10px;border-radius:5px">'+v.registration+'</span>'+
-      '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+v.make+' '+v.model+'</div>'+
-      '<div style="font-size:12px;color:#64748b">'+(v.price?('£'+Number(v.price).toLocaleString()):'No price')+'</div></div>'+
+      '<div style="flex:1"><div style="font-weight:700;font-size:14px">'+(v.make||'')+' '+(v.model||'')+'</div>'+
+      '<div style="font-size:12px;color:#64748b">'+(v.price?('£'+Number(v.price).toLocaleString()):'No price')+(dt?(' · Ready '+dt):'')+'</div></div>'+
       '<i class="fas fa-chevron-right" style="color:#cbd5e1"></i></div>';
   }).join('');
 }

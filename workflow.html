@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.3 — Workflow</title>
+<title>CapEye Final V1.4 — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020c"></script>
-<script src="ac-data.js?v=20261020c"></script>
-<script src="firebase-init.js?v=20261020c"></script>
-<script src="jobs-sync.js?v=20261020c"></script>
-<script src="live-sync.js?v=20261020c"></script>
+<script src="firebase-config.js?v=20261020d"></script>
+<script src="ac-data.js?v=20261020d"></script>
+<script src="firebase-init.js?v=20261020d"></script>
+<script src="jobs-sync.js?v=20261020d"></script>
+<script src="live-sync.js?v=20261020d"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020c"></script>
+<script src="notifications.js?v=20261020d"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020c">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020d">
 </head><body>
 
 <nav class="nav">
@@ -801,8 +801,13 @@ function completeJobOnly() {
   if (stage.name === 'Prep for Sale') {
     // No handover — the vehicle is now READY FOR SALE. Persist that status so
     // Inventory, Dashboard and the phone app all see it (keyed by registration).
+    var nowIso = new Date().toISOString();
     currentVehicle.workflowStage = 'Ready for Sale';
     if (currentVehicle.status !== 'Sold') currentVehicle.status = 'Ready for Sale';
+    currentVehicle.readyForSaleAt = nowIso;              // date it became Ready for Sale
+    // Also stamp it into the workflow record so the phone app can show the date.
+    wf[sid].readyForSaleAt = nowIso;
+    saveWorkflow(currentVehicle.stockNo, wf);
     if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
     writeAuditLog('complete', currentVehicle.registration, 'Prep for Sale complete — Ready for Sale', currentVehicle.registration+' '+currentVehicle.make+' '+currentVehicle.model, getCurrentUser().name, 'normal');
     renderPipeline(); buildKPIs(); buildDeptStrip();
@@ -1900,6 +1905,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020c"></script>
+<script src="mobile-menu.js?v=20261020d"></script>
 </body>
 </html>

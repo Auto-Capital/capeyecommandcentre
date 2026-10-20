@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.3 — Inventory</title>
+<title>CapEye Final V1.4 — Inventory</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020c"></script>
-<script src="ac-data.js?v=20261020c"></script>
-<script src="firebase-init.js?v=20261020c"></script>
-<script src="live-sync.js?v=20261020c"></script>
-<script src="jobs-sync.js?v=20261020c"></script>
+<script src="firebase-config.js?v=20261020d"></script>
+<script src="ac-data.js?v=20261020d"></script>
+<script src="firebase-init.js?v=20261020d"></script>
+<script src="live-sync.js?v=20261020d"></script>
+<script src="jobs-sync.js?v=20261020d"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020c"></script>
+<script src="notifications.js?v=20261020d"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -297,7 +297,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020c">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261020d">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -373,7 +373,7 @@ input, select, textarea {
       <thead>
         <tr>
           <th></th><th>Reg</th><th>Make / Model</th><th>Colour</th><th>Mileage</th><th>MOT</th>
-          <th>Stage</th><th>Days in Stage</th><th>Price</th><th id="pp-header" style="display:none">Purchase Price</th><th>Status</th><th>Action</th>
+          <th>Stage</th><th>Days in Stage</th><th>Price</th><th id="pp-header" style="display:none">Purchase Price</th><th>Status</th><th>Ready Date</th><th>Action</th>
         </tr>
       </thead>
       <tbody id="inv-tbody"></tbody>
@@ -441,13 +441,19 @@ function isReadyForSale(stockNo){
     return !!(wf[7] && wf[7].completed) && !(wf[8] && wf[8].completed);
   } catch(e){ return false; }
 }
+function getReadyDate(stockNo){
+  try { var wf = JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}');
+    if (wf[7] && wf[7].completed) return wf[7].readyForSaleAt || wf[7].completedAt || null;
+  } catch(e){}
+  return null;
+}
 function buildLiveVehicles(){
   return JSON.parse(JSON.stringify(AC_VEHICLES)).map(function(v) {
     var live = getLiveStage(v.stockNo);
     var ready = isReadyForSale(v.stockNo);
     var out = Object.assign({}, v);
     if (live) { out.workflowStage = live.name; if (live.enteredAt) out.stageStarted = live.enteredAt; }
-    if (ready) { out.readyForSale = true; if (out.status!=='Sold') out.status = 'Ready for Sale'; }
+    if (ready) { out.readyForSale = true; out.readyForSaleAt = getReadyDate(v.stockNo); if (out.status!=='Sold') out.status = 'Ready for Sale'; }
     return out;
   });
 }
@@ -511,6 +517,7 @@ function renderTable() {
       <td>${v.price&&v.price>0?'<b>£'+v.price.toLocaleString()+'</b>':'<span class="no-price">No Price</span>'}${v.priceDropped?'<span class="price-drop-badge">↓ DROP</span>':''}</td>
       ${showPurchasePrice?`<td class="purchase-price">${v.purchasePrice?'£'+v.purchasePrice.toLocaleString():'—'}</td>`:''}
       <td><span class="${statusCls}" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${v.status}</span></td>
+      <td style="font-size:12px;color:var(--ink2)">${v.readyForSaleAt?new Date(v.readyForSaleAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—'}</td>
       <td><button onclick="event.stopPropagation();location.href='workflow.html'" style="padding:4px 10px;border:1px solid var(--border);border-radius:5px;background:#fff;font-size:11px;font-weight:600;cursor:pointer;color:var(--navy)"><i class="fas fa-arrow-right"></i></button></td>
     </tr>`;
   }).join('');
@@ -657,6 +664,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020c"></script>
+<script src="mobile-menu.js?v=20261020d"></script>
 </body>
 </html>
