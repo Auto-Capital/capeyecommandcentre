@@ -337,12 +337,19 @@ input, select, textarea {
     <input type="text" class="tb-input" id="search" placeholder="Search reg, make, model..." oninput="renderTable()">
     <select class="tb-select" id="f-stage" onchange="renderTable()">
       <option value="">All Stages</option>
-      <option value="Sold">Sold (Archive)</option>
-      <option value="Auction">Auction</option>
+      <option value="Intake">Intake</option>
+      <option value="Bodywork">Bodywork</option>
+      <option value="Dent Repair">Dent Repair</option>
+      <option value="Mechanical">Mechanical</option>
+      <option value="External Work">External Work</option>
+      <option value="Valeting">Valeting</option>
+      <option value="Prep for Sale">Prep for Sale</option>
+      <option value="Sold">Sold</option>
     </select>
     <select class="tb-select" id="f-status" onchange="renderTable()">
       <option value="">All Status</option>
       <option value="In Stock">In Stock</option>
+      <option value="Ready for Sale">Ready for Sale</option>
       <option value="Off-site">Off-site</option>
       <option value="Sold">Sold</option>
     </select>
@@ -443,9 +450,12 @@ function renderTable() {
 
   let filtered = vehicles.filter(v => {
     if (search && !`${v.registration} ${v.make} ${v.model} ${v.colour}`.toLowerCase().includes(search)) return false;
-    if (fStage === 'Sold' && v.status !== 'Sold') return false;
+    // Stage filter — match the vehicle's current workflow stage.
+    if (fStage === 'Sold' && !(v.status === 'Sold' || v.workflowStage === 'Sold')) return false;
     if (fStage && fStage !== 'Sold' && v.workflowStage !== fStage) return false;
-    if (fStatus && v.status !== fStatus) return false;
+    // Status filter — "Ready for Sale" is a flag set when Advertising completes.
+    if (fStatus === 'Ready for Sale') { if (!v.readyForSale) return false; }
+    else if (fStatus && v.status !== fStatus) return false;
     if (fNoPrice && (v.price && v.price > 0)) return false;
     if (fLocation && (v.location||'') !== fLocation) return false;
     return true;
@@ -517,8 +527,20 @@ function applyPriceDrop() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-document.getElementById('nav-user').textContent = getCurrentUser().name;
-renderTable();
+  document.getElementById('nav-user').textContent = getCurrentUser().name;
+  renderTable();
+  // Pull live workflow + vehicle data from Firestore, then rebuild the live
+  // stages and re-render — so a van moved to Advertising/Sold elsewhere shows.
+  if (window.CE_LIVE) {
+    CE_LIVE.bootstrap(AC_VEHICLES).then(function(){
+      vehicles = getLiveVehicles();
+      renderTable();
+      CE_LIVE.attachListeners(AC_VEHICLES, function(){
+        vehicles = getLiveVehicles();
+        renderTable();
+      });
+    });
+  }
 });
 
 </script>

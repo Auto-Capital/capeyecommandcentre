@@ -365,6 +365,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
       </div>
     </div>
 
+    <!-- READY FOR SALE — vehicles that have finished Prep for Sale -->
+    <div class="card">
+      <div class="card-h-row">
+        <div class="card-h"><i class="fas fa-circle-check" style="color:#0891b2"></i> Ready for Sale</div>
+        <span id="rfs-count" style="font-size:11px;color:var(--ink3)"></span>
+      </div>
+      <div class="scroll-y" style="max-height:280px" id="rfs-list"></div>
+    </div>
+
     <!-- COL 2 ROW 2: Department Workload — full width -->
     <div class="card">
       <div class="card-h"><i class="fas fa-people-group" style="color:var(--navy)"></i> Department Workload</div>
@@ -437,7 +446,25 @@ function _ceRefreshDashboard() {
     buildAlerts();
     buildStockSummary();
     buildOverdue();
+    buildReadyForSale();
   } catch (e) { console.warn('[CapEye] dashboard refresh error', e); }
+}
+
+// Dashboard list of vehicles that have finished Prep for Sale.
+function buildReadyForSale() {
+  var el = document.getElementById('rfs-list'); if (!el) return;
+  var list = getLiveVehicles().filter(function(v){
+    return v.readyForSale || v.status==='Ready for Sale';
+  });
+  var cnt = document.getElementById('rfs-count'); if (cnt) cnt.textContent = list.length + ' vehicle' + (list.length===1?'':'s');
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink3);font-size:13px"><i class="fas fa-circle-check" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>No vehicles ready for sale yet</div>'; return; }
+  el.innerHTML = list.map(function(v){
+    return '<div onclick="location.href=\'workflow.html?stock='+v.stockNo+'\'" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border);cursor:pointer">'+
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;background:#f5c518;color:#000;padding:2px 8px;border-radius:4px">'+v.registration+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+v.make+' '+v.model+'</div>'+
+      '<div style="font-size:11px;color:var(--ink3)">'+(v.price?formatGBP(v.price):'No price')+'</div></div>'+
+      '<span style="font-size:10px;font-weight:700;color:#0891b2;background:rgba(8,145,178,.1);padding:3px 8px;border-radius:10px">READY</span></div>';
+  }).join('');
 }
 if (window.CE_LIVE) {
   CE_LIVE.bootstrap(AC_VEHICLES).then(function() {
@@ -680,6 +707,7 @@ buildAgeChart();
 buildAlerts();
 buildStockSummary();
 buildOverdue();
+buildReadyForSale();
 
 }); // end DOMContentLoaded
 

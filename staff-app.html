@@ -298,6 +298,8 @@ html,
 
         <div class="hero-stats" id="dashStats"></div>
 
+        <div id="dashCompleteSale"></div>
+
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Your Tasks</div>
         <div id="dashTasks"></div>
 
@@ -666,6 +668,14 @@ function buildDash() {
       <div class="hero-stat-label">Completed</div>
     </div>`;
 
+  // Sales & Management get a "Complete Sale" button (digital handover form).
+  var meStaff = AC_STAFF.find(function(s){ return s.name===currentStaff; });
+  var canSell = meStaff && (meStaff.dept==='Sales' || meStaff.dept==='Management' || meStaff.admin);
+  var csWrap = document.getElementById('dashCompleteSale');
+  if (csWrap) csWrap.innerHTML = canSell
+    ? '<button onclick="appStartCompleteSale()" style="width:100%;background:#C8102E;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;margin-bottom:16px;cursor:pointer"><i class="fas fa-file-signature"></i> Complete a Sale</button>'
+    : '';
+
   // Show up to 3 pending tasks on dash
   document.getElementById('dashTasks').innerHTML = pending.slice(0,3).map(t=>renderTaskCard(t,true)).join('')
     || `<div class="empty"><i class="fas fa-check-circle" style="color:var(--green)"></i><p>No pending tasks — you're all caught up!</p></div>`;
@@ -675,6 +685,64 @@ function buildDash() {
   const notifDot = document.getElementById('notifDot');
   if(pending.length>0){badge.style.display='flex';badge.textContent=pending.length;notifDot.style.display='block';}
   else{badge.style.display='none';notifDot.style.display='none';}
+}
+
+/* ── COMPLETE SALE (digital customer handover, Sales/Mgmt) ── */
+function appStartCompleteSale(){
+  var reg = prompt('Vehicle registration being sold:');
+  if (!reg) return;
+  reg = reg.trim().toUpperCase();
+  var veh = vehicles.find(function(v){ return (v.registration||'').toUpperCase()===reg; });
+  var ov = document.getElementById('appSaleOverlay');
+  var yn=function(id){return '<select id="'+id+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px"><option value="Yes">Yes</option><option value="No">No</option><option value="N/A">N/A</option></select>';};
+  var ph=function(id,label){return '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">'+label+'</label><input type="file" accept="image/*" capture="environment" id="'+id+'" style="font-size:14px"></div>';};
+  var fld=function(label,inner){return '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">'+label+'</label>'+inner+'</div>';};
+  var html = '<div style="padding:18px;max-width:560px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+      '<div style="font-size:19px;font-weight:800;color:#001a4d">Complete Sale</div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:24px;color:#64748b">&times;</button></div>'+
+    '<div style="background:#f5c518;color:#000;display:inline-block;font-weight:800;padding:3px 12px;border-radius:6px;margin-bottom:14px">'+reg+(veh?(' · '+veh.make+' '+veh.model):'')+'</div>'+
+    fld('Collection or Delivery?','<select id="as_method" onchange="document.getElementById(\'as_addrwrap\').style.display=this.value===\'Delivery\'?\'block\':\'none\'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px"><option>Collection</option><option>Delivery</option></select>')+
+    '<div id="as_addrwrap" style="display:none">'+fld('Delivery address','<textarea id="as_addr" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px" rows="2"></textarea>')+'</div>'+
+    '<div style="font-size:12px;font-weight:800;text-transform:uppercase;color:#64748b;margin:12px 0 8px">Handover Checklist</div>'+
+    fld('Breakdown cover provided?',yn('as_breakdown'))+
+    fld('Road tax set up?',yn('as_tax'))+
+    fld('Insurance set up?',yn('as_ins'))+
+    fld('Bluetooth set up?',yn('as_bt'))+
+    fld('Explained how to drive / AdBlue / gearbox?',yn('as_howto'))+
+    fld('Shown spare wheel & tools?',yn('as_tools'))+
+    fld('Fuel level',  '<input id="as_fuel" placeholder="e.g. 25%" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">')+
+    '<div style="font-size:12px;font-weight:800;text-transform:uppercase;color:#64748b;margin:12px 0 8px">Photos & Video</div>'+
+    ph('as_keys','Photo of keys')+ph('as_f','Photo — Front')+ph('as_r','Photo — Rear')+ph('as_d','Photo — Driver side')+ph('as_p','Photo — Passenger side')+ph('as_warn','Warning lights (if any)')+
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Walkaround video (up to 60s)</label><input type="file" accept="video/*" capture="environment" id="as_video" style="font-size:14px"></div>'+
+    fld('Customer name','<input id="as_cust" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">')+
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Customer signature</label><canvas id="as_sig" width="500" height="120" style="border:1px dashed #cbd5e1;border-radius:10px;width:100%;touch-action:none;background:#fff"></canvas><button onclick="clearAsSig()" style="margin-top:6px;background:#eef1f5;border:none;border-radius:8px;padding:8px 14px;font-size:13px">Clear</button></div>'+
+    '<button onclick="submitAppSale(\''+reg+'\')" style="width:100%;background:#1a7f37;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:800;margin-top:6px"><i class="fas fa-check-circle"></i> Confirm & Complete Sale</button>'+
+  '</div>';
+  ov.innerHTML = html; ov.style.display='block';
+  setTimeout(initAsSig,100);
+}
+var _asSig=null;
+function initAsSig(){ var c=document.getElementById('as_sig'); if(!c)return; var ctx=c.getContext('2d'); ctx.strokeStyle='#001a4d';ctx.lineWidth=2;ctx.lineCap='round'; var drawing=false;
+  function pos(e){var r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};}
+  function s(e){drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();}
+  function m(e){if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();}
+  function en(){drawing=false;}
+  c.onmousedown=s;c.onmousemove=m;c.onmouseup=en;c.ontouchstart=s;c.ontouchmove=m;c.ontouchend=en;_asSig=c;
+}
+function clearAsSig(){ if(_asSig)_asSig.getContext('2d').clearRect(0,0,_asSig.width,_asSig.height); }
+function submitAppSale(reg){
+  var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+  var sale={ reg:reg, method:g('as_method'), deliveryAddress:g('as_method')==='Delivery'?g('as_addr'):'',
+    checklist:{breakdown:g('as_breakdown'),tax:g('as_tax'),insurance:g('as_ins'),bluetooth:g('as_bt'),howto:g('as_howto'),tools:g('as_tools')},
+    fuel:g('as_fuel'), customerName:g('as_cust'), signature:(_asSig?_asSig.toDataURL():''),
+    completedBy:currentStaff, completedAt:new Date().toISOString() };
+  if (typeof FS!=='undefined' && FS){ try{ FS.collection('sales').doc(reg).set(sale); }catch(e){} }
+  // Mark the vehicle sold on the shared workflow record if we can find it.
+  var veh = vehicles.find(function(v){return (v.registration||'').toUpperCase()===reg;});
+  if (veh && typeof CE_JOBS!=='undefined'){ /* sale logged */ }
+  document.getElementById('appSaleOverlay').style.display='none';
+  showToast('✓ Sale completed for '+reg);
 }
 
 /* ── TASKS ── */
@@ -1016,6 +1084,8 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 function doLogout(){window.location.href='./login.html';}
 </script>
+<div id="appSaleOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:6000;overflow-y:auto"></div>
+
 <script>
 // Register the service worker so the staff app installs as a PWA.
 if ('serviceWorker' in navigator) {

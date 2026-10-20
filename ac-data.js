@@ -6362,11 +6362,13 @@ const AC_WORKFLOW_STAGES = [
   {id:3,  name:"Dent Repair",     dept:"Bodyshop",     color:"#fb923c", assignedTo:"Jay (Dentmaster)", handoverTo:"Mechanical",     optional:true},
   {id:4,  name:"Mechanical",      dept:"Workshop",     color:"#ef4444", assignedTo:"Workshop Team",   handoverTo:"External Work",   optional:false},
   {id:5,  name:"External Work",   dept:"Workshop",     color:"#dc2626", assignedTo:"Keith Hardy",     handoverTo:"Valeting",        optional:true},
-  {id:6,  name:"Valeting",        dept:"Valeting",     color:"#10b981", assignedTo:"Valeting Team",   handoverTo:"Advertising",     optional:false},
-  {id:7,  name:"Advertising",     dept:"Advertising",  color:"#8b5cf6", assignedTo:"Mustafa Naama",   handoverTo:"Legal & Docs",    optional:false},
-  {id:8,  name:"Legal & Docs",    dept:"Sales",        color:"#3b82f6", assignedTo:"Sales Team",      handoverTo:"Sold",            optional:false},
-  {id:9,  name:"Sold",            dept:"Sales",        color:"#64748b", assignedTo:"Sales Team",      handoverTo:null,              optional:false, tickOnly:true},
+  {id:6,  name:"Valeting",        dept:"Valeting",     color:"#10b981", assignedTo:"Valeting Team",   handoverTo:"Prep for Sale",   optional:false},
+  {id:7,  name:"Prep for Sale",   dept:"Sales",        color:"#8b5cf6", assignedTo:"Sales Team",      handoverTo:"Sold",            optional:false},
+  {id:8,  name:"Sold",            dept:"Sales",        color:"#64748b", assignedTo:"Sales Team",      handoverTo:null,              optional:false, tickOnly:true},
 ];
+// Prep for Sale = Advertising + Legal & Docs combined. When it completes the
+// vehicle becomes "Ready for Sale" (status) and appears in Inventory and on
+// the Dashboard "Ready for Sale" list. Sold is the final tick + handover form.
 // NOTE: Test Drive, Ready for Sale and Aftersales removed as stages.
 //  - "Ready for Sale" is now a STATUS, auto-set when Advertising completes.
 //  - Aftersales is handled by the Aftersales section (not a pipeline stage).

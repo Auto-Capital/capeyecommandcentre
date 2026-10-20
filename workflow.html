@@ -634,8 +634,8 @@ function buildKPIs() {
   const v = vehicles;
   const kpis = [
     {v:v.filter(x=>x.status==='In Stock').length, l:'In Stock', c:'#3b82f6'},
-    {v:v.filter(x=>x.workflowStage==='Ready for Sale').length, l:'Ready', c:'#0891b2'},
-    {v:v.filter(x=>x.workflowStage==='Advertising').length, l:'Advertised', c:'#8b5cf6'},
+    {v:v.filter(x=>x.readyForSale||x.status==='Ready for Sale').length, l:'Ready for Sale', c:'#0891b2'},
+    {v:v.filter(x=>x.workflowStage==='Prep for Sale').length, l:'Prep for Sale', c:'#8b5cf6'},
     {v:v.filter(x=>x.status==='Sold').length, l:'Sold', c:'#64748b'},
     {v:v.filter(x=>isOverdue(x)).length, l:'Overdue', c:'#ef4444'},
     {v:v.filter(x=>x.urgent).length, l:'Urgent', c:'#C8102E'},
@@ -689,7 +689,7 @@ function buildMyQueue() {
     'Checklist':  [4,5],
     'Valeting':   [6],
     'Advertising':[7],
-    'Sales':      [8,9,10],
+    'Sales':      [7,8],
     'Bodyshop':   [1,2,3],
     'Management': [],
   };
@@ -1310,28 +1310,27 @@ function buildForm(stage, ex) {
           </div>
         </div></div></div>`;
 
-  } else if (stage.id===7) { // ADVERTISING
-    f+=`<div class="form-field"><div class="form-label">Assigned To (Mustafa)</div><select class="form-control" id="f_assignedTo">${AC_STAFF.filter(s=>s.dept==='Advertising').map(s=>`<option>${s.name}</option>`).join('')}</select></div>
-    <div class="form-field"><div class="form-label">Ismael Confirmed Live Online?</div><select class="form-control" id="f_confirmedLive"><option value="no">Pending</option><option value="yes">✓ Confirmed Live</option></select></div>
+  } else if (stage.id===7) { // PREP FOR SALE (Advertising + Legal & Docs combined)
+    f+=`<div class="form-field"><div class="form-label">Assigned To</div><select class="form-control" id="f_assignedTo">${AC_STAFF.filter(s=>s.dept==='Advertising'||s.dept==='Sales').map(s=>`<option>${s.name}</option>`).join('')}</select></div>
+    <div class="form-field"><div class="form-label">Confirmed Live Online?</div><select class="form-control" id="f_confirmedLive"><option value="no">Pending</option><option value="yes">✓ Confirmed Live</option></select></div>
     <div class="form-field full"><div class="form-label">Advertising Checklist</div>
     ${[['f_turntable','Turntable Video ✓'],['f_walkaround','Walk-around Video ✓'],['f_images','Images ✓'],['f_touchups','Touch-ups ✓']].map(([id,label])=>`
       <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer">
         <input type="checkbox" id="${id}" ${ck(id)} style="width:16px;height:16px;accent-color:var(--red)">
         <span style="font-size:13px;font-weight:500">${label}</span>
       </label>`).join('')}
-    </div>`;
-
-  } else if (stage.id===8) { // LEGAL & DOCS
-    f+=`<div class="form-field full"><div class="form-label">Documents Checklist</div>
-    ${[['doc_v5','V5 Logbook'],['doc_sh','Service History'],['doc_key','Spare Key'],['doc_mot','MOT Certificate'],['doc_hpi','HPI Clear'],['doc_adv','Advertised']].map(([id,label])=>`
+    </div>
+    <div class="form-field full"><div class="form-label">Documents Checklist (Legal & Docs)</div>
+    ${[['doc_v5','V5 Logbook'],['doc_sh','Service History'],['doc_key','Spare Key'],['doc_mot','MOT Certificate'],['doc_hpi','HPI Clear']].map(([id,label])=>`
       <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer">
         <input type="checkbox" id="${id}" ${ck(id)} style="width:16px;height:16px;accent-color:var(--green)">
         <span style="font-size:13px;font-weight:500">${label}</span>
       </label>`).join('')}
     </div>
+    <div style="font-size:12px;color:var(--ink3);padding:8px 10px;background:var(--blue-light,#eef3ff);border-radius:8px;margin-bottom:8px"><i class="fas fa-info-circle"></i> When both advertising and documents are complete, this vehicle becomes <b>Ready for Sale</b> and appears in Inventory and on the Dashboard.</div>
     <div class="form-field full"><div class="form-label">Notes</div><textarea class="form-control" id="f_notes" rows="2">${v('f_notes')}</textarea></div>`;
 
-  } else if (stage.id===9) { // SOLD — tick + Complete Sale digital form
+  } else if (stage.id===8) { // SOLD — tick + Complete Sale digital form
     var canSell = (function(){ var u=getCurrentUser(); return u.dept==='Sales'||u.dept==='Management'||u.admin; })();
     f+=`<div class="form-field full">
       <div class="form-label">Sale Date</div>
@@ -1488,10 +1487,11 @@ function confirmHandover() {
     currentVehicle.stageStarted = new Date().toLocaleDateString('en-GB');
     if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(currentVehicle,function(){}); }catch(e){} }
   }
-  // Completing Advertising auto-sets the "Ready for Sale" status.
-  if (stage.name === 'Advertising') {
+  // Completing "Prep for Sale" (advertising + docs) auto-sets Ready for Sale.
+  if (stage.name === 'Prep for Sale') {
     currentVehicle.readyForSale = true;
     currentVehicle.advertised = true;
+    currentVehicle.status = 'Ready for Sale';
     if (typeof saveVehicleFS === 'function') { try { saveVehicleFS(currentVehicle, function(){}); } catch(e){} }
   }
   saveWorkflow(currentVehicle.stockNo, wf);
