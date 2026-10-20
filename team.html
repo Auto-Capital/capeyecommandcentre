@@ -406,8 +406,19 @@ input, select, textarea {
 
 <script>
 /* ── TEAM PAGE ── */
-const DEPT_COLORS={Management:'#64748b',Sales:'#003DA5',Workshop:'#ef4444',Valeting:'#10b981',Marketing:'#8b5cf6',Finance:'#a855f7',Bodyshop:'#f97316',Intake:'#6366f1'};
+const DEPT_COLORS={Management:'#64748b',Sales:'#003DA5',Workshop:'#ef4444',Valeting:'#10b981',Marketing:'#8b5cf6',Finance:'#a855f7',Bodyshop:'#f97316',Intake:'#6366f1',Advertising:'#8b5cf6',Checklist:'#0891b2',Accounts:'#a855f7'};
 let activeDept='all';
+
+// Apply any saved staff edits (from the Edit button) onto AC_STAFF on load.
+(function(){
+  try {
+    var ov = JSON.parse(localStorage.getItem('ac_staff_overrides')||'{}');
+    Object.keys(ov).forEach(function(id){
+      var s = AC_STAFF.find(function(x){ return x.id===id; });
+      if (s) Object.assign(s, ov[id]);
+    });
+  } catch(e){}
+})();
 
 function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
 function avatarColor(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffffffff;const cols=['#003DA5','#C8102E','#1a7f37','#d4980a','#7c3aed','#0891b2','#be185d','#d4600a'];return cols[Math.abs(h)%cols.length];}
@@ -468,6 +479,7 @@ function openProfile(name){
       <div class="modal-name">${s.name}</div>
       <div class="modal-role" style="color:var(--muted);margin-bottom:10px">${s.role}</div>
       <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${col}18;color:${col};margin-bottom:16px">${deptData.icon} ${s.dept}</div>
+      ${canEditStaff()?`<button onclick="editProfile('${s.name.replace(/'/g,"\\'")}')" style="float:right;background:var(--navy,#003DA5);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer"><i class="fas fa-edit"></i> Edit</button>`:''}
       <div class="info-grid">
         <div class="info-field"><div class="info-label">Department</div><div class="info-val">${s.dept}</div></div>
         <div class="info-field"><div class="info-label">Role</div><div class="info-val">${s.role}</div></div>
@@ -486,6 +498,56 @@ function openProfile(name){
   document.getElementById('profileModal').style.display='flex';
 }
 function closeProfile(){document.getElementById('profileModal').style.display='none';}
+
+// Only Keith, Ibrahim and Ajay can edit staff.
+function canEditStaff(){
+  try {
+    var u = (typeof getCurrentUser==='function')?getCurrentUser():null;
+    if(!u) return false;
+    var id=(u.id||'').toLowerCase(), nm=(u.name||'').toLowerCase(), em=(u.email||'').toLowerCase();
+    return u.admin || ['keith','ibrahim','ajay','master'].indexOf(id)>=0 ||
+           /keith|ibrahim|ajay/.test(nm) || /keith|ibrahim|ajay|hello@capeye/.test(em);
+  } catch(e){ return false; }
+}
+
+// Inline edit form inside the profile modal.
+function editProfile(name){
+  var s = AC_STAFF.find(x=>x.name===name); if(!s) return;
+  if(!canEditStaff()){ return; }
+  var f=function(label,id,val,type){ return '<div style="margin-bottom:10px"><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:3px">'+label+'</label><input id="ed_'+id+'" '+(type==='ta'?'':'')+' value="'+(val||'').replace(/"/g,'&quot;')+'" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px"></div>'; };
+  var html = '<div style="padding:20px;max-height:76vh;overflow-y:auto">'+
+    '<div style="font-size:18px;font-weight:800;color:var(--navy,#003DA5);margin-bottom:14px">Edit — '+s.name+'</div>'+
+    f('Role','role',s.role)+
+    f('Department','dept',s.dept)+
+    f('Phone','phone',s.phone)+
+    f('Email','email',s.email)+
+    f('Start Date','startDate',s.startDate)+
+    f('Date of Birth','dob',s.dob)+
+    f('Home Address','address',s.address)+
+    f('App PIN (4 digits)','pin',s.pin)+
+    f('Emergency Contact 1 name','ec1name',s.ec1name)+
+    f('Contact 1 phone','ec1phone',s.ec1phone)+
+    f('Emergency Contact 2 name','ec2name',s.ec2name)+
+    f('Contact 2 phone','ec2phone',s.ec2phone)+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+      '<button onclick="saveProfile(\''+s.name.replace(/'/g,"\\'")+'\')" style="flex:1;background:var(--green,#1a7f37);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer"><i class="fas fa-save"></i> Save</button>'+
+      '<button onclick="openProfile(\''+s.name.replace(/'/g,"\\'")+'\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer">Cancel</button>'+
+    '</div></div>';
+  document.getElementById('profileContent').innerHTML = html;
+}
+
+function saveProfile(name){
+  var s = AC_STAFF.find(x=>x.name===name); if(!s) return;
+  var g=function(id){var el=document.getElementById('ed_'+id);return el?el.value.trim():'';};
+  s.role=g('role'); s.dept=g('dept'); s.phone=g('phone'); s.email=g('email');
+  s.startDate=g('startDate'); s.dob=g('dob'); s.address=g('address'); s.pin=g('pin');
+  s.ec1name=g('ec1name'); s.ec1phone=g('ec1phone'); s.ec2name=g('ec2name'); s.ec2phone=g('ec2phone');
+  // Persist the edit to Firestore so it syncs, and to a local override.
+  if (typeof FS!=='undefined' && FS){ try{ FS.collection('staff_overrides').doc(s.id).set(s,{merge:true}); }catch(e){} }
+  try { var ov=JSON.parse(localStorage.getItem('ac_staff_overrides')||'{}'); ov[s.id]=s; localStorage.setItem('ac_staff_overrides',JSON.stringify(ov)); } catch(e){}
+  renderTeam();
+  openProfile(name);   // reopen read-only profile showing the new values
+}
 
 function buildDeptFilters(){
   const depts=[...new Set(AC_STAFF.map(s=>s.dept))];

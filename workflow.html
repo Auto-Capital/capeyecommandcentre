@@ -1480,6 +1480,14 @@ function confirmHandover() {
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString()};
   if (sid < AC_WORKFLOW_STAGES.length) { if(!wf[sid+1])wf[sid+1]={}; wf[sid+1].startedAt=new Date().toISOString(); }
+  // Advance the vehicle's displayed stage to the next one (fixes pipeline/bar
+  // still showing the old stage after a handover).
+  var nextStageObj = AC_WORKFLOW_STAGES[currentStageIdx+1];
+  if (nextStageObj) {
+    currentVehicle.workflowStage = nextStageObj.name;
+    currentVehicle.stageStarted = new Date().toLocaleDateString('en-GB');
+    if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(currentVehicle,function(){}); }catch(e){} }
+  }
   // Completing Advertising auto-sets the "Ready for Sale" status.
   if (stage.name === 'Advertising') {
     currentVehicle.readyForSale = true;
@@ -1561,10 +1569,19 @@ function confirmSkip() {
   if (!reason) { showToast('Reason is required to skip a stage','error'); return; }
   const targetIdx = AC_WORKFLOW_STAGES.findIndex(s=>s.id===targetId);
   const wf = getWorkflow(currentVehicle.stockNo);
-  // Mark all skipped stages
-  for (let i=currentStageIdx+1; i<targetIdx; i++) {
-    wf[AC_WORKFLOW_STAGES[i].id] = {completed:true,skipped:true,completedAt:new Date().toISOString(),skipReason:reason};
+  // Mark EVERY stage before the target as complete (so the target becomes
+  // the current stage). Stages the van hadn't reached yet are flagged skipped.
+  for (let i=0; i<targetIdx; i++) {
+    const st = AC_WORKFLOW_STAGES[i];
+    if (!wf[st.id] || !wf[st.id].completed) {
+      wf[st.id] = Object.assign({}, wf[st.id], {completed:true,skipped:(i>currentStageIdx),completedAt:new Date().toISOString(),skipReason:reason,completedBy:getCurrentUser().name});
+    }
   }
+  // Start the target stage and update the vehicle's displayed stage.
+  if(!wf[AC_WORKFLOW_STAGES[targetIdx].id]) wf[AC_WORKFLOW_STAGES[targetIdx].id]={};
+  wf[AC_WORKFLOW_STAGES[targetIdx].id].startedAt = new Date().toISOString();
+  currentVehicle.workflowStage = AC_WORKFLOW_STAGES[targetIdx].name;
+  if (typeof saveVehicleFS==='function'){ try{ saveVehicleFS(currentVehicle,function(){}); }catch(e){} }
   saveWorkflow(currentVehicle.stockNo, wf);
   logWorkflowEvent(currentVehicle.registration, 'STAGE_SKIP', `Skipped to ${AC_WORKFLOW_STAGES[targetIdx].name}. Reason: ${reason}`, getCurrentUser().name);
   writeAuditLog('skip', currentVehicle.registration, `Stage skipped → ${AC_WORKFLOW_STAGES[targetIdx].name}`, `${currentVehicle.registration} ${currentVehicle.make} ${currentVehicle.model} · Reason: ${reason}`, getCurrentUser().name, 'normal');
