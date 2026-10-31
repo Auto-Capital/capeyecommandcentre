@@ -22,20 +22,51 @@ var CE_JOBS = (function () {
 
   function _id() { return 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
 
+  // Track ids written locally but not yet confirmed in a server snapshot, so a
+  // snapshot that arrives before the write lands can't wipe them from the cache.
+  var _pendingIds = {};
+
+  // Wait until Firebase auth is ready (anonymous or email), then run cb.
+  function _awaitAuth(cb) {
+    try {
+      if (typeof AUTH === 'undefined' || !AUTH) { cb(); return; }
+      if (AUTH.currentUser) { cb(); return; }
+      var done = false;
+      var unsub = AUTH.onAuthStateChanged(function (u) {
+        if (done) return;
+        if (u) { done = true; if (unsub) unsub(); cb(); }
+      });
+      // Fallback: proceed after 4s even if auth never fires, and try anon sign-in.
+      if (AUTH.signInAnonymously && !AUTH.currentUser) { AUTH.signInAnonymously().catch(function(){}); }
+      setTimeout(function () { if (!done) { done = true; if (unsub) unsub(); cb(); } }, 4000);
+    } catch (e) { cb(); }
+  }
+
+  // Push one job to Firestore, waiting for auth and retrying once on failure.
+  function _writeFS(job, attempt) {
+    if (typeof FS === 'undefined' || !FS) return;
+    _pendingIds[job.id] = Date.now();
+    _awaitAuth(function () {
+      FS.collection(COL).doc(String(job.id)).set(job, { merge: true })
+        .then(function () { delete _pendingIds[job.id]; })
+        .catch(function (e) {
+          console.warn('[CapEye] job write failed', e);
+          if (!attempt) { setTimeout(function () { _writeFS(job, 1); }, 1500); }
+          else { delete _pendingIds[job.id]; }
+        });
+    });
+  }
+
   // Create (or update) one job. Writes to Firestore AND localStorage.
   function upsert(job) {
     if (!job.id) job.id = _id();
     if (!job.createdAt) job.createdAt = Date.now();
-    // keep both status vocabularies in sync so either UI shows it right
-    if (job.status === 'pending' || job.status === 'To Do') { job.status = job.status; }
+    job.updatedAt = Date.now();
     var arr = _lsLoad();
     var i = arr.findIndex(function (j) { return j.id === job.id; });
     if (i >= 0) arr[i] = Object.assign({}, arr[i], job); else arr.unshift(job);
     _lsSave(arr);
-    if (typeof FS !== 'undefined' && FS) {
-      FS.collection(COL).doc(String(job.id)).set(job, { merge: true })
-        .catch(function (e) { console.warn('[CapEye] job write failed', e); });
-    }
+    _writeFS(Object.assign({}, job), 0);
     return job;
   }
 
@@ -92,15 +123,28 @@ var CE_JOBS = (function () {
   }
 
   // Live subscription — calls cb() whenever jobs change. Pre-warms cache too.
+  // Waits for auth first so the first read isn't rejected, and MERGES any
+  // locally-written jobs whose Firestore write hasn't landed yet, so a job
+  // never vanishes between being created and being confirmed on the server.
   function subscribe(cb) {
     if (typeof FS === 'undefined' || !FS) { if (cb) cb(_lsLoad()); return function () {}; }
-    return FS.collection(COL).onSnapshot(function (snap) {
-      var arr = [];
-      snap.forEach(function (d) { arr.push(Object.assign({ id: d.id }, d.data())); });
-      arr.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-      _lsSave(arr);
-      if (cb) cb(arr);
-    }, function (err) { console.warn('[CapEye] jobs listener error', err); if (cb) cb(_lsLoad()); });
+    var unsub = function () {};
+    _awaitAuth(function () {
+      unsub = FS.collection(COL).onSnapshot(function (snap) {
+        var server = [];
+        var serverIds = {};
+        snap.forEach(function (d) { var j = Object.assign({ id: d.id }, d.data()); server.push(j); serverIds[d.id] = 1; });
+        // Keep any local job that the server doesn't have yet AND is still pending a write.
+        var local = _lsLoad();
+        local.forEach(function (j) {
+          if (!serverIds[j.id] && _pendingIds[j.id]) server.push(j);
+        });
+        server.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        _lsSave(server);
+        if (cb) cb(server);
+      }, function (err) { console.warn('[CapEye] jobs listener error', err); if (cb) cb(_lsLoad()); });
+    });
+    return function () { try { unsub(); } catch (e) {} };
   }
 
   return { upsert: upsert, assignFromHandover: assignFromHandover, complete: complete,

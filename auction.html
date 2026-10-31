@@ -14,10 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2c"></script>
-<script src="ac-data.js?v=20261020-v2c"></script>
-<script src="firebase-init.js?v=20261020-v2c"></script>
-<script src="jobs-sync.js?v=20261020-v2c"></script>
+<script src="firebase-config.js?v=20261031"></script>
+<script src="ac-data.js?v=20261031"></script>
+<script src="firebase-init.js?v=20261031"></script>
+<script src="jobs-sync.js?v=20261031"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -34,7 +34,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2c"></script>
+<script src="notifications.js?v=20261031"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -279,7 +279,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2c">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261031">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -332,38 +332,8 @@ input, select, textarea {
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 document.getElementById('nav-user').textContent = getCurrentUser().name;
+// Live CRUD entries drive both the KPIs and the grid (renderAuctions → refreshAucKpis).
 renderAuctions();
-
-// KPIs
-const entered = AC_AUCTION_VEHICLES.filter(v=>v.status==='Entered').length;
-const awaiting = AC_AUCTION_VEHICLES.filter(v=>v.status==='Awaiting Drop-off').length;
-const sold = AC_AUCTION_VEHICLES.filter(v=>v.status==='Sold at Auction').length;
-const totalValue = AC_AUCTION_VEHICLES.filter(v=>v.status!=='Sold at Auction').reduce((a,v)=>a+(v.reservePrice||0),0);
-const kpis = [{v:AC_AUCTION_VEHICLES.length,l:'Total Entries',c:'#a855f7'},{v:entered,l:'Entered',c:'#6d28d9'},{v:awaiting,l:'Awaiting Drop-off',c:'#f59e0b'},{v:sold,l:'Sold',c:'#10b981'},{v:'£'+totalValue.toLocaleString(),l:'Total Reserve',c:'#3b82f6'}];
-document.getElementById('auc-kpis').innerHTML = kpis.map(k=>`<div style="background:#fff;border-radius:10px;padding:12px 16px;border:1px solid var(--border);border-top:3px solid ${k.c}"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:${k.c}">${k.v}</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-top:3px">${k.l}</div></div>`).join('');
-
-const statusCls = {Entered:'s-entered','Awaiting Drop-off':'s-awaiting',Preparing:'s-preparing','Sold at Auction':'s-sold'};
-document.getElementById('auc-grid').innerHTML = AC_AUCTION_VEHICLES.map(v => `
-  <div class="auc-card">
-    <div class="auc-hdr">
-      <div><div class="auc-reg">${v.registration}</div><div class="auc-model">${v.make} ${v.model} — ${v.variant}</div></div>
-      <span class="auc-status ${statusCls[v.status]||'s-entered'}">${v.status}</span>
-    </div>
-    <div class="auc-meta">
-      <span class="auc-tag"><i class="fas fa-palette"></i> ${v.colour}</span>
-      <span class="auc-tag"><i class="fas fa-road"></i> ${parseInt(v.mileage||0).toLocaleString()} mi</span>
-      <span class="auc-tag"><i class="fas fa-calendar"></i> MOT ${v.mot}</span>
-      <span class="auc-tag">${v.condition}</span>
-    </div>
-    <div class="auc-row"><span>Auction House</span><strong>${v.auctionHouse}</strong></div>
-    <div class="auc-row"><span>Auction Date</span><strong>${v.auctionDate} at ${v.auctionTime}</strong></div>
-    <div class="auc-row"><span>Lot Number</span><strong>${v.lotNumber}</strong></div>
-    <div class="auc-row"><span>Estimated Value</span><strong>£${(v.estimatedValue||0).toLocaleString()}</strong></div>
-    <div class="auc-row"><span>Reserve Price</span><strong style="color:var(--red)">£${(v.reservePrice||0).toLocaleString()}</strong></div>
-    ${v.soldPrice?`<div class="auc-row"><span>Sold Price</span><strong style="color:#10b981">£${v.soldPrice.toLocaleString()}</strong></div>`:''}
-    <div class="auc-row"><span>Assigned To</span><strong>${v.assignedTo}</strong></div>
-    ${v.notes?`<div class="auc-reason">"${v.notes}"</div>`:''}
-  </div>`).join('');
 });
 </script>
 <script>
@@ -492,7 +462,7 @@ function openAddAuction() {
   ['aucReg','aucMake','aucModel','aucHouse','aucLot','aucDate','aucReserve','aucSalePrice','aucNotes'].forEach(function(id){
     document.getElementById(id).value = '';
   });
-  document.getElementById('aucStatus').value = 'Pending';
+  document.getElementById('aucStatus').value = 'Awaiting Drop-off';
   document.getElementById('auc-modal').style.display = 'flex';
 }
 
@@ -554,11 +524,34 @@ function closeAucModal() {
   document.getElementById('auc-modal').style.display = 'none';
 }
 
+// KPIs computed from the SAME live entries shown below, so they always match.
+function refreshAucKpis(entries){
+  if (!entries) { try { entries = JSON.parse(localStorage.getItem(AUC_KEY)||'[]'); } catch(e){ entries=[]; } }
+  var st = function(name){ return entries.filter(function(e){ return (e.status||'')===name; }).length; };
+  // Count across both old and new status wording so nothing is missed.
+  var entered  = st('Entered');
+  var awaiting = st('Awaiting Drop-off') + st('Pending');
+  var sold     = st('Sold') + st('Sold at Auction');
+  var reserveMet = st('Reserve Met');
+  var totalValue = entries.filter(function(e){ return (e.status!=='Sold'&&e.status!=='Sold at Auction'); })
+                          .reduce(function(a,e){ return a + (Number(e.reserve)||0); }, 0);
+  var kpis = [
+    {v:entries.length,l:'Total Entries',c:'#a855f7'},
+    {v:entered,l:'Entered',c:'#6d28d9'},
+    {v:awaiting,l:'Awaiting Drop-off',c:'#f59e0b'},
+    {v:sold,l:'Sold',c:'#10b981'},
+    {v:'£'+totalValue.toLocaleString(),l:'Total Reserve',c:'#3b82f6'}
+  ];
+  var el = document.getElementById('auc-kpis');
+  if (el) el.innerHTML = kpis.map(function(k){ return '<div style="background:#fff;border-radius:10px;padding:12px 16px;border:1px solid var(--border);border-top:3px solid '+k.c+'"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:22px;font-weight:700;color:'+k.c+'">'+k.v+'</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-top:3px">'+k.l+'</div></div>'; }).join('');
+}
+
 function renderAuctions(entries) {
   if (!entries) entries = loadAuctions();
+  refreshAucKpis(entries);
   var grid = document.getElementById('auc-grid');
   if (!grid) return;
-  var statusColors = {Entered:'#7c3aed','Reserve Met':'#1a7f37',Sold:'#003DA5','No Sale':'#C8102E',Pending:'#d4980a'};
+  var statusColors = {Entered:'#7c3aed','Reserve Met':'#1a7f37',Sold:'#003DA5','No Sale':'#C8102E','Awaiting Drop-off':'#d4980a',Pending:'#d4980a'};
   if (!entries.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--ink3)"><i class="fas fa-gavel" style="font-size:28px;opacity:.2;display:block;margin-bottom:10px"></i>No auction entries yet — click Add Entry to get started</div>';
     return;
@@ -594,7 +587,7 @@ function renderAuctions(entries) {
       <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Auction House</label><input id="aucHouse" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px" placeholder="e.g. BCA Enfield"></div>
       <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Lot Number</label><input id="aucLot" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
       <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Auction Date</label><input type="date" id="aucDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
-      <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Status</label><select id="aucStatus" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"><option>Pending</option><option>Entered</option><option>Reserve Met</option><option>Sold</option><option>No Sale</option></select></div>
+      <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Status</label><select id="aucStatus" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"><option>Awaiting Drop-off</option><option>Entered</option><option>Reserve Met</option><option>Sold</option><option>No Sale</option></select></div>
       <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Reserve (£)</label><input type="number" id="aucReserve" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
       <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Sale Price (£)</label><input type="number" id="aucSalePrice" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
       <div style="grid-column:1/-1"><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);display:block;margin-bottom:4px">Notes</label><textarea id="aucNotes" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;resize:vertical"></textarea></div>
@@ -605,6 +598,6 @@ function renderAuctions(entries) {
     </div>
   </div>
 </div>
-<script src="mobile-menu.js?v=20261020-v2c"></script>
+<script src="mobile-menu.js?v=20261031"></script>
 </body>
 </html>

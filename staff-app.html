@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261020-v2cb">
+<link rel="manifest" href="staff-manifest.json?v=20261031b">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye 2.0.2 — Staff App</title>
+<title>CapEye 2.0.3 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2c"></script>
-<script src="./ac-data.js?v=20261020-v2c"></script>
-<script src="firebase-init.js?v=20261020-v2c"></script>
-<script src="jobs-sync.js?v=20261020-v2c"></script>
+<script src="firebase-config.js?v=20261031"></script>
+<script src="./ac-data.js?v=20261031"></script>
+<script src="firebase-init.js?v=20261031"></script>
+<script src="jobs-sync.js?v=20261031"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -281,11 +281,12 @@ html,
     </div>
     <div class="topbar-right">
       <div id="modeBadge" style="display:none;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:8px;margin-right:6px"></div>
-      <div class="staff-pill" id="staffPill">—</div>
+      <div class="staff-pill" id="staffPill" onclick="toggleUserMenu()" style="cursor:pointer">—</div>
       <div class="notif-btn" onclick="showScreen('tasks')">
         <i class="fas fa-bell"></i>
         <div class="notif-dot" id="notifDot" style="display:none"></div>
       </div>
+      <button onclick="appSignOut()" title="Sign out" style="background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px"><i class="fas fa-right-from-bracket"></i></button>
     </div>
   </div>
 
@@ -581,6 +582,24 @@ function doInstall(){
   else { /* iOS: instructions already shown */ }
 }
 function skipInstall(){ try{localStorage.setItem('ce_browser_ok','1');}catch(e){} location.reload(); }
+
+// Sign out: clear the session and return to the PIN screen (keeps the device
+// "installed"/permissions state so they just re-enter their PIN).
+function appSignOut(){
+  if (!confirm('Sign out of CapEye?')) return;
+  try {
+    localStorage.removeItem('ac_staff_id');
+    localStorage.removeItem('ac_staff_session');
+  } catch(e){}
+  currentStaff = null; _pinPerson = null; _pinEntry = '';
+  // If this is an individual-link device, go back to that person's PIN entry;
+  // otherwise show the name picker.
+  var id = (new URLSearchParams(location.search)).get('id');
+  showScreenEl('loginScreen');
+  if (id) { setPinPerson(id); } else { var pk=document.getElementById('pinPicker'); if(pk) pk.style.display=''; var w=document.getElementById('pinWho'); if(w) w.textContent='Welcome'; }
+  renderPinDots();
+}
+function toggleUserMenu(){ appSignOut(); }
 
 function setPinPerson(id){
   var s = AC_STAFF.find(function(x){return x.id===id;}); if (!s) return;

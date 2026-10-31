@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye 2.0.2 — Dashboard</title>
+<title>CapEye 2.0.3 — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2c"></script>
-<script src="ac-data.js?v=20261020-v2c"></script>
-<script src="firebase-init.js?v=20261020-v2c"></script>
-<script src="jobs-sync.js?v=20261020-v2c"></script>
-<script src="live-sync.js?v=20261020-v2c"></script>
+<script src="firebase-config.js?v=20261031"></script>
+<script src="ac-data.js?v=20261031"></script>
+<script src="firebase-init.js?v=20261031"></script>
+<script src="jobs-sync.js?v=20261031"></script>
+<script src="live-sync.js?v=20261031"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,7 +47,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2c"></script>
+<script src="notifications.js?v=20261031"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -249,7 +249,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2c">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261031">
 </head>
 <body>
 
@@ -438,13 +438,30 @@ function getLiveStageName(stockNo) {
   var live = getLiveStage(stockNo);
   return live ? live.name : null;
 }
+// Live status by registration from the vehicles collection + confirmed sales.
+var LIVE_STATUS_BY_REG = {};   // REG -> 'Sold' | 'Ready for Sale' | 'Sale Pending' | ...
+function _ceLoadLiveStatuses(){
+  if (typeof FS==='undefined' || !FS) { return; }
+  var apply = function(){ try { _ceRefreshDashboard(); } catch(e){} };
+  FS.collection('vehicles').onSnapshot(function(snap){
+    snap.forEach(function(d){ var x=d.data()||{}; var r=(x.registration||d.id||'').toUpperCase(); if(r&&x.status) LIVE_STATUS_BY_REG[r]=x.status; });
+    apply();
+  }, function(e){ console.warn('[CapEye] vehicles status listener', e); });
+  FS.collection('sales').onSnapshot(function(snap){
+    snap.forEach(function(d){ var x=d.data()||{}; var r=(x.reg||d.id||'').toUpperCase(); if(r&&x.status==='Sold') LIVE_STATUS_BY_REG[r]='Sold'; });
+    apply();
+  }, function(e){ console.warn('[CapEye] sales status listener', e); });
+}
+
 function getLiveVehicles() {
   return AC_VEHICLES.map(function(v) {
+    var out = Object.assign({}, v);
     var live = getLiveStage(v.stockNo);
-    if (!live) return v;
-    var updated = Object.assign({}, v, {workflowStage: live.name});
-    if (live.enteredAt) updated.stageStarted = live.enteredAt;
-    return updated;
+    if (live) { out.workflowStage = live.name; if (live.enteredAt) out.stageStarted = live.enteredAt; }
+    // Overlay the authoritative live status (Sold / Ready for Sale) by registration.
+    var ls = LIVE_STATUS_BY_REG[(v.registration||'').toUpperCase()];
+    if (ls) { out.status = ls; if (ls==='Sold') out.workflowStage='Sold'; }
+    return out;
   });
 }
 document.addEventListener('DOMContentLoaded', function() {
@@ -593,6 +610,7 @@ if (window.CE_LIVE) {
   });
 }
 _ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
+_ceLoadLiveStatuses();   // live Sold / Ready-for-Sale status by registration
 
 // ── WELCOME BAR ──────────────────────────────────────────────────
 function buildWelcome() {
@@ -892,7 +910,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=20261020-v2c"></script>
+<script src="mobile-menu.js?v=20261031"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">

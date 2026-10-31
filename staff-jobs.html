@@ -17,11 +17,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261020-v2c"></script>
-<script src="ac-data.js?v=20261020-v2c"></script>
-<script src="firebase-init.js?v=20261020-v2c"></script>
-<script src="live-sync.js?v=20261020-v2c"></script>
-<script src="jobs-sync.js?v=20261020-v2c"></script>
+<script src="firebase-config.js?v=20261031"></script>
+<script src="ac-data.js?v=20261031"></script>
+<script src="firebase-init.js?v=20261031"></script>
+<script src="live-sync.js?v=20261031"></script>
+<script src="jobs-sync.js?v=20261031"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261020-v2c"></script>
+<script src="notifications.js?v=20261031"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -345,7 +345,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261020-v2c">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261031">
 </head>
 <body>
 
@@ -505,24 +505,20 @@ function loadJobs() {
 
 function saveJobs() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
-  // Also sync latest job to Firestore
-  if (typeof FS !== 'undefined' && FS && jobs.length) {
-    // Sync all jobs to Firestore
-    jobs.forEach(function(job) {
-      var docId = job._id || 'job_'+job.id;
-      FS.collection('staff_jobs').doc(String(docId)).set(job).catch(function(){});
-    });
-  }
+  // Firestore sync now goes through CE_JOBS.upsert (auth-gated) when a job is
+  // created or its status changes — see saveJob() and status handlers — so we
+  // don't blind-write every job here (which previously failed before auth and
+  // wiped jobs on refresh).
 }
 
 function seedDemoJobs() {
   const now = Date.now();
   const day = 86400000;
   jobs = [
-    { id: 1, title: 'Tidy forecourt and arrange display vans', notes: 'Move the three vans at the back row to front row display positions. Check tyre pressures on all forecourt stock.', assignedTo: 'Gorgino Barnes', assignedBy: 'Keith Hardy', priority: 'High', status: 'To Do', created: now - day*2, deadline: new Date(Date.now() + 3*3600000).toISOString().slice(0,16), reminder: '60' },
+    { id: 1, title: 'Tidy forecourt and arrange display vans', notes: 'Move the three vans at the back row to front row display positions. Check tyre pressures on all forecourt stock.', assignedTo: 'Gorginho Barnes', assignedBy: 'Keith Hardy', priority: 'High', status: 'To Do', created: now - day*2, deadline: new Date(Date.now() + 3*3600000).toISOString().slice(0,16), reminder: '60' },
     { id: 2, title: 'File all V5 documents received this week', notes: 'Three V5s arrived Tuesday — need to match to stock numbers and file in the cabinet.', assignedTo: 'Germaine Dua', assignedBy: 'Keith Hardy', priority: 'Medium', status: 'In Progress', created: now - day, deadline: '', reminder: '' },
     { id: 3, title: 'Update price boards on showroom floor', notes: 'New prices were approved Friday. All retail boards need updating before the weekend.', assignedTo: 'Haider Ahmed', assignedBy: 'Keith Hardy', priority: 'High', status: 'To Do', created: now - day*3, deadline: new Date(Date.now() - 2*3600000).toISOString().slice(0,16), reminder: '' },
-    { id: 4, title: 'Order coffee machine pods and office supplies', notes: 'Running low on pods. Also need printer paper and a new stapler.', assignedTo: 'Moamel Alameri', assignedBy: 'Germaine Dua', priority: 'Low', status: 'Done', created: now - day*5, deadline: '', reminder: '' },
+    { id: 4, title: 'Order coffee machine pods and office supplies', notes: 'Running low on pods. Also need printer paper and a new stapler.', assignedTo: 'Moamel Al Ameri', assignedBy: 'Germaine Dua', priority: 'Low', status: 'Done', created: now - day*5, deadline: '', reminder: '' },
     { id: 5, title: 'Check and top up all forecourt vehicle screenwashes', notes: 'Six vehicles on the front row — check and fill. Fluid is in the workshop store.', assignedTo: 'Fred', assignedBy: 'Ibrahim Ata', priority: 'Medium', status: 'Done', created: now - day*4, deadline: '', reminder: '' },
     { id: 6, title: 'Print and laminate new MOT price list for reception', notes: 'Updated list is saved on the shared drive. Print A3 and laminate. Put in reception stand.', assignedTo: 'Ismael Al Ameri', assignedBy: 'Keith Hardy', priority: 'Low', status: 'To Do', created: now - 3600000, deadline: '', reminder: '' },
   ];
@@ -547,14 +543,18 @@ function deadlineLabel(job) {
 }
 const PRIORITY_COLOR = { High: '#ef4444', Medium: '#d4980a', Low: '#94a3b8' };
 
+// Active (non-archived) jobs power the KPIs, tabs and default lists.
+function activeJobs(){ return jobs.filter(j => !j.archived); }
+
 // ── KPIs ─────────────────────────────────────────────────────────────
 function buildKPIs() {
-  const todo = jobs.filter(j => j.status === 'To Do').length;
-  const progress = jobs.filter(j => j.status === 'In Progress').length;
-  const done = jobs.filter(j => j.status === 'Done').length;
-  const overdue = jobs.filter(j => isOverdue(j)).length;
+  const A = activeJobs();
+  const todo = A.filter(j => j.status === 'To Do').length;
+  const progress = A.filter(j => j.status === 'In Progress').length;
+  const done = A.filter(j => j.status === 'Done').length;
+  const overdue = A.filter(j => isOverdue(j)).length;
   const kpis = [
-    { v: jobs.length, l: 'Total Jobs', c: '#003DA5' },
+    { v: A.length, l: 'Total Jobs', c: '#003DA5' },
     { v: todo, l: 'To Do', c: '#6366f1' },
     { v: progress, l: 'In Progress', c: '#d4980a' },
     { v: overdue, l: 'Overdue', c: '#ef4444' },
@@ -570,12 +570,14 @@ function buildKPIs() {
 
 // ── FILTER TABS ───────────────────────────────────────────────────────
 function buildTabs() {
+  const A = activeJobs();
   const tabs = [
-    { id: 'all', label: 'All', count: jobs.length },
-    { id: 'todo', label: 'To Do', count: jobs.filter(j => j.status === 'To Do').length },
-    { id: 'progress', label: 'In Progress', count: jobs.filter(j => j.status === 'In Progress').length },
-    { id: 'overdue', label: 'Overdue', count: jobs.filter(j => isOverdue(j)).length, cls: 'overdue' },
-    { id: 'done', label: 'Done', count: jobs.filter(j => j.status === 'Done').length, cls: 'done' },
+    { id: 'all', label: 'All', count: A.length },
+    { id: 'todo', label: 'To Do', count: A.filter(j => j.status === 'To Do').length },
+    { id: 'progress', label: 'In Progress', count: A.filter(j => j.status === 'In Progress').length },
+    { id: 'overdue', label: 'Overdue', count: A.filter(j => isOverdue(j)).length, cls: 'overdue' },
+    { id: 'done', label: 'Done', count: A.filter(j => j.status === 'Done').length, cls: 'done' },
+    { id: 'archived', label: 'Archived', count: jobs.filter(j => j.archived).length },
   ];
   document.getElementById('status-tabs').innerHTML = tabs.map(t =>
     `<div class="ftab ${t.cls||''} ${activeFilter === t.id ? 'active' : ''}" onclick="setFilter('${t.id}')">
@@ -630,6 +632,10 @@ function renderJobs() {
     });
   }
 
+  // Archived vs active
+  if (activeFilter === 'archived') { filtered = filtered.filter(j => j.archived); }
+  else { filtered = filtered.filter(j => !j.archived); }
+
   // Status filter
   if (activeFilter === 'todo') filtered = filtered.filter(j => j.status === 'To Do');
   else if (activeFilter === 'progress') filtered = filtered.filter(j => j.status === 'In Progress');
@@ -664,17 +670,21 @@ function renderJobs() {
     const cardCls = over ? 'overdue' : (job.priority || 'medium').toLowerCase() + '-priority';
     const isDone = job.status === 'Done';
 
+    const jid = JSON.stringify(String(job.id));   // safe for numeric or string ids
     let actionBtns = '';
-    if (isDone) {
-      actionBtns = `<div class="jc-btn reopen" onclick="setStatus(${job.id},'To Do')"><i class="fas fa-undo"></i> Reopen</div>`;
+    if (job.archived) {
+      actionBtns = `<div class="jc-btn reopen" onclick="unarchiveJob(${jid})"><i class="fas fa-box-open"></i> Restore</div>`;
+    } else if (isDone) {
+      actionBtns = `<div class="jc-btn reopen" onclick="setStatus(${jid},'To Do')"><i class="fas fa-undo"></i> Reopen</div>
+        <div class="jc-btn" onclick="archiveJob(${jid})"><i class="fas fa-box-archive"></i> Archive</div>`;
     } else if (job.status === 'To Do') {
       actionBtns = `
-        <div class="jc-btn progress" onclick="setStatus(${job.id},'In Progress')"><i class="fas fa-play"></i> Start</div>
-        <div class="jc-btn complete" onclick="setStatus(${job.id},'Done')"><i class="fas fa-check"></i> Done</div>`;
+        <div class="jc-btn progress" onclick="setStatus(${jid},'In Progress')"><i class="fas fa-play"></i> Start</div>
+        <div class="jc-btn complete" onclick="setStatus(${jid},'Done')"><i class="fas fa-check"></i> Done</div>`;
     } else {
       actionBtns = `
-        <div class="jc-btn" onclick="setStatus(${job.id},'To Do')"><i class="fas fa-pause"></i> Pause</div>
-        <div class="jc-btn complete" onclick="setStatus(${job.id},'Done')"><i class="fas fa-check"></i> Complete</div>`;
+        <div class="jc-btn" onclick="setStatus(${jid},'To Do')"><i class="fas fa-pause"></i> Pause</div>
+        <div class="jc-btn complete" onclick="setStatus(${jid},'Done')"><i class="fas fa-check"></i> Complete</div>`;
     }
 
     return `<div class="job-card ${cardCls} ${isDone ? 'done-card' : ''}">
@@ -694,29 +704,56 @@ function renderJobs() {
       </div>
       <div class="jc-actions">
         ${actionBtns}
-        <div class="jc-btn" style="flex:0;padding:7px 10px" onclick="editJob(${job.id})" title="Edit"><i class="fas fa-edit"></i></div>
-        <div class="jc-btn" style="flex:0;padding:7px 10px;color:#ef4444" onclick="deleteJob(${job.id})" title="Delete"><i class="fas fa-trash"></i></div>
+        ${job.archived ? '' : `<div class="jc-btn" style="flex:0;padding:7px 10px" onclick="editJob(${jid})" title="Edit"><i class="fas fa-edit"></i></div>`}
+        <div class="jc-btn" style="flex:0;padding:7px 10px;color:#ef4444" onclick="deleteJob(${jid})" title="Delete"><i class="fas fa-trash"></i></div>
       </div>
     </div>`;
   }).join('');
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────
+function _syncJob(job){
+  if (typeof CE_JOBS !== 'undefined' && job) {
+    try { CE_JOBS.upsert(Object.assign({}, job, { status: job.status, updatedAt: Date.now() })); } catch(e){}
+  }
+}
 function setStatus(id, status) {
-  const job = jobs.find(j => j.id === id);
+  const job = jobs.find(j => String(j.id) === String(id));
   if (!job) return;
   job.status = status;
   if (status === 'Done') job.completedAt = Date.now();
   saveJobs();
+  _syncJob(job);
   buildKPIs();
   buildTabs();
   renderJobs();
   showToast(status === 'Done' ? '✓ Job marked complete' : 'Status updated', 'success');
 }
 
+// Archive keeps the record but moves it out of the active lists.
+function archiveJob(id) {
+  const job = jobs.find(j => String(j.id) === String(id));
+  if (!job) return;
+  job.archived = true;
+  job.archivedAt = Date.now();
+  saveJobs();
+  _syncJob(job);
+  buildKPIs(); buildTabs(); renderJobs();
+  showToast('Job archived', 'info');
+}
+function unarchiveJob(id) {
+  const job = jobs.find(j => String(j.id) === String(id));
+  if (!job) return;
+  job.archived = false;
+  saveJobs();
+  _syncJob(job);
+  buildKPIs(); buildTabs(); renderJobs();
+  showToast('Job restored', 'success');
+}
+
 function deleteJob(id) {
   if (!confirm('Delete this job?')) return;
-  jobs = jobs.filter(j => j.id !== id);
+  jobs = jobs.filter(j => String(j.id) !== String(id));
   saveJobs();
   buildKPIs();
   buildTabs();
@@ -725,7 +762,7 @@ function deleteJob(id) {
 }
 
 function editJob(id) {
-  const job = jobs.find(j => j.id === id);
+  const job = jobs.find(j => String(j.id) === String(id));
   if (!job) return;
   editingId = id;
   document.getElementById('modal-title').textContent = 'Edit Job';
@@ -768,7 +805,7 @@ function saveJob() {
   if (!assign) { showToast('Please assign the job to a staff member', 'error'); return; }
 
   if (editingId) {
-    const job = jobs.find(j => j.id === editingId);
+    const job = jobs.find(j => String(j.id) === String(editingId));
     if (job) {
       job.title = title;
       job.notes = document.getElementById('j-notes').value.trim();
@@ -777,13 +814,17 @@ function saveJob() {
       job.priority = document.getElementById('j-priority').value;
       job.deadline = document.getElementById('j-deadline').value;
       job.reminder = document.getElementById('j-reminder').value;
+      if (typeof CE_JOBS !== 'undefined') { try { CE_JOBS.upsert(Object.assign({}, job)); } catch(e){} }
     }
     showToast('Job updated', 'success');
   } else {
-    jobs.unshift({
-      id: Date.now(),
+    var sid = 'sjob_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    var newJob = {
+      id: sid,
       title,
+      stageName: title,                 // so the staff app card shows the title
       notes: document.getElementById('j-notes').value.trim(),
+      note: document.getElementById('j-notes').value.trim(),
       assignedTo: assign,
       assignedBy: document.getElementById('j-assignedby').value,
       priority: document.getElementById('j-priority').value,
@@ -791,7 +832,12 @@ function saveJob() {
       reminder: document.getElementById('j-reminder').value,
       status: 'To Do',
       created: Date.now(),
-    });
+      createdAt: Date.now(),
+      assignedAt: Date.now(),
+    };
+    jobs.unshift(newJob);
+    // Route through the shared, auth-gated writer so it reaches every device/app.
+    if (typeof CE_JOBS !== 'undefined') { try { CE_JOBS.upsert(Object.assign({}, newJob)); } catch(e){} }
     showToast('Job created and assigned to ' + assign, 'success');
   }
 
@@ -896,6 +942,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261020-v2c"></script>
+<script src="mobile-menu.js?v=20261031"></script>
 </body>
 </html>
