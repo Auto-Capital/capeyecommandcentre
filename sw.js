@@ -1,6 +1,6 @@
 // CapEye Auto Capital | CapEye Final V1.1
 // Build: v20261020  (bump this on each release so old caches are purged)
-const CACHE_NAME = 'capeye-v20261031';
+const CACHE_NAME = 'capeye-v20261103';
 
 // Install — activate immediately, don't wait
 self.addEventListener('install', e => {

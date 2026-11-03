@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye 2.0.3 — Workflow</title>
+<title>CapEye 2.0.4 — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261031"></script>
-<script src="ac-data.js?v=20261031"></script>
-<script src="firebase-init.js?v=20261031"></script>
-<script src="jobs-sync.js?v=20261031"></script>
-<script src="live-sync.js?v=20261031"></script>
+<script src="firebase-config.js?v=20261103"></script>
+<script src="ac-data.js?v=20261103"></script>
+<script src="firebase-init.js?v=20261103"></script>
+<script src="jobs-sync.js?v=20261103"></script>
+<script src="live-sync.js?v=20261103"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261031"></script>
+<script src="notifications.js?v=20261103"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261031">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261103">
 </head><body>
 
 <nav class="nav">
@@ -1812,6 +1812,11 @@ function loadSavedPhotos(stageData) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  // Warn if a job write doesn't reach the server (so a handover that didn't
+  // sync is obvious instead of silently local-only).
+  try { if (typeof CE_JOBS!=='undefined' && CE_JOBS.onWrite) CE_JOBS.onWrite(function(ok, code){
+    if (!ok) showToast('⚠ Job saved locally but did NOT sync to server ('+(code||'error')+'). Check connection.', 'error');
+  }); } catch(e){}
   // Resolve live Firestore data into cache FIRST, then render, then go live.
   CE_LIVE.bootstrap(vehicles).then(function() {
     init();
@@ -1920,6 +1925,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261031"></script>
+<script src="mobile-menu.js?v=20261103"></script>
 </body>
 </html>

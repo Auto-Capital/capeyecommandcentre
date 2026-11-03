@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.1 — Aftersales</title>
+<title>CapEye Final V1.1 â Aftersales</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,13 +14,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261031"></script>
-<script src="ac-data.js?v=20261031"></script>
-<script src="firebase-init.js?v=20261031"></script>
-<script src="jobs-sync.js?v=20261031"></script>
-<script src="live-sync.js?v=20261031"></script>
+<script src="firebase-config.js?v=20261103"></script>
+<script src="ac-data.js?v=20261103"></script>
+<script src="firebase-init.js?v=20261103"></script>
+<script src="jobs-sync.js?v=20261103"></script>
+<script src="live-sync.js?v=20261103"></script>
 <script>
-// ── SESSION CHECK ────────────────────────────────────────────
+// ââ SESSION CHECK ââââââââââââââââââââââââââââââââââââââââââââ
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
   var TTL = 12 * 60 * 60 * 1000; // 12 hours
@@ -35,9 +35,9 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261031"></script>
+<script src="notifications.js?v=20261103"></script>
 <style>
-/* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
+/* ââ STANDARD LAYOUT â optimised for 19-24 inch screens ââ */
 .shell,.main{
   margin-top:54px;
   height:calc(100vh - 54px);
@@ -130,11 +130,11 @@ html,
 .form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font);color:var(--ink);resize:vertical;min-height:80px}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 
-/* ── NOTIFICATION BELL ── */
+/* ââ NOTIFICATION BELL ââ */
 
 
 
-/* ── NOTIFICATION PANEL ── */
+/* ââ NOTIFICATION PANEL ââ */
 .notif-overlay{display:none;position:fixed;inset:0;z-index:200}
 .notif-overlay.open{display:block}
 .notif-panel{position:fixed;top:52px;right:12px;width:340px;max-height:500px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:201;display:flex;flex-direction:column;transform:translateY(-8px);opacity:0;pointer-events:none;transition:all .2s}
@@ -158,12 +158,12 @@ html,
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 
 
-/* ═══════════════════════════════════════════════════════════
-   CAPEYE — GLOBAL TYPOGRAPHY & SPACING SYSTEM
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   CAPEYE â GLOBAL TYPOGRAPHY & SPACING SYSTEM
    All pages must use these values. Do not override.
-   ═══════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-/* Page title — the big heading at top of each page */
+/* Page title â the big heading at top of each page */
 .page-title, h1.page-title, h1 {
   font-size: 22px !important;
   font-weight: 800 !important;
@@ -244,7 +244,7 @@ td, .ac-table td {
   margin-top: 4px !important;
 }
 
-/* Buttons — consistent sizing */
+/* Buttons â consistent sizing */
 .btn, button[class*="btn"], .tb-btn {
   font-size: 12px !important;
   font-weight: 700 !important;
@@ -272,20 +272,20 @@ input, select, textarea {
   font-family: 'IBM Plex Sans', sans-serif !important;
 }
 
-/* Nav links — keep compact */
+/* Nav links â keep compact */
 .nav-link {
   font-size: 11.5px !important;
   font-weight: 600 !important;
 }
 
-/* Registration plates — always mono */
+/* Registration plates â always mono */
 [class*="reg"], [class*="-plate"] {
   font-family: 'IBM Plex Mono', monospace !important;
   font-weight: 700 !important;
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261031">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261103">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -316,7 +316,7 @@ input, select, textarea {
       <a class="nav-tool" href="https://www.autocapital.co.uk/finance.php" target="_blank">Finance</a>
       <a class="nav-tool" href="https://video.citnow.com/dashboard/overview/service" target="_blank">CitNow</a>
     </div>
-    <span class="nav-import" id="lastImportBadge">—</span>
+    <span class="nav-import" id="lastImportBadge">â</span>
     <button onclick="if(confirm('Sign out of CapEye?'))doLogout()" style="padding:5px 12px;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.2);border-radius:6px;color:#C8102E;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
     <span class="nav-user" id="nav-user">Keith Hardy</span>
   </div>
@@ -372,7 +372,7 @@ document.getElementById('nav-user').textContent = getCurrentUser().name;
 
 const DEMO_ISSUES = [
   {reg:'GH22RST',make:'PEUGEOT',model:'EXPERT',issue:'Customer reports clutch slipping after 2 weeks',reportedBy:'Germaine Dua',tech:'David',status:'Open',priority:'Urgent',date:'12/03/2026'},
-  {reg:'GH22RST',make:'PEUGEOT',model:'EXPERT',issue:'Warning light appeared — DPF',reportedBy:'Customer',tech:'Marcin Kiljan',status:'In Progress',priority:'Normal',date:'15/03/2026'},
+  {reg:'GH22RST',make:'PEUGEOT',model:'EXPERT',issue:'Warning light appeared â DPF',reportedBy:'Customer',tech:'Marcin Kiljan',status:'In Progress',priority:'Normal',date:'15/03/2026'},
 ];
 
 function refreshAfKpis() {
@@ -389,12 +389,12 @@ refreshAfKpis();
 
 // Faults render to af-list via renderFaultsList(), driven live by
 // Firestore (afAttachLive). We deliberately do NOT seed demo issues into
-// the shared collection any more — real logged faults are the source of
+// the shared collection any more â real logged faults are the source of
 // truth and seeding would show phantom faults to every user.
 renderFaultsList();
 
 function openLogFault() {
-  // af-reg is a free-text input (type any reg) — nothing to populate there.
+  // af-reg is a free-text input (type any reg) â nothing to populate there.
   var regEl = document.getElementById('af-reg');
   if (regEl) regEl.value = '';
   // Populate technician dropdown if present (guard AC_STAFF).
@@ -411,7 +411,7 @@ function openLogFault() {
 const AF_KEY = 'ce_aftersales_faults';
 function loadFaultsData() { try { return JSON.parse(localStorage.getItem(AF_KEY)||'[]'); } catch(e) { return []; } }
 
-// Local cache write only — Firestore writes happen per-fault via helpers
+// Local cache write only â Firestore writes happen per-fault via helpers
 // below so each fault keeps a STABLE id (not an array index that shifts
 // every time a new fault is unshifted to the front of the list).
 function saveFaultsData(d) {
@@ -471,9 +471,9 @@ function renderFaultsList() {
       '<select onchange="updateFaultStat('+i+',this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px">'+
       ['Open','In Progress','Resolved','Closed'].map(function(s){ return '<option'+(f.status===s?' selected':'')+'>'+s+'</option>'; }).join('')+
       '</select>'+
-      '<button onclick="deleteFaultEntry('+i+')" style="border:1px solid #fecaca;border-radius:5px;background:#fff;color:#C8102E;padding:3px 8px;font-size:11px;cursor:pointer">✕</button></div></div>'+
+      '<button onclick="deleteFaultEntry('+i+')" style="border:1px solid #fecaca;border-radius:5px;background:#fff;color:#C8102E;padding:3px 8px;font-size:11px;cursor:pointer">â</button></div></div>'+
       '<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+f.issue+'</div>'+
-      '<div style="font-size:10px;color:var(--ink3)">'+f.loggedBy+' · '+new Date(f.loggedAt).toLocaleDateString('en-GB')+'</div></div>';
+      '<div style="font-size:10px;color:var(--ink3)">'+f.loggedBy+' Â· '+new Date(f.loggedAt).toLocaleDateString('en-GB')+'</div></div>';
   }).join('');
 }
 function updateFaultStat(idx,status) {
@@ -511,8 +511,8 @@ function logFault() {
     try { CE_JOBS.upsert({
       id: 'af_' + (fault._id || Date.now()),
       reg: reg,
-      title: 'Aftersales — ' + reg,
-      stageName: 'Aftersales — ' + reg,
+      title: 'Aftersales â ' + reg,
+      stageName: 'Aftersales â ' + reg,
       note: issue, notes: issue,
       assignedTo: tech,
       assignedBy: (getCurrentUser?getCurrentUser().name:'Aftersales'),
@@ -523,13 +523,14 @@ function logFault() {
       createdAt: Date.now(), assignedAt: Date.now()
     }); } catch(e){}
   }
-  showToast('Fault logged for '+reg + (tech?(' · assigned to '+tech):''),'success');
+  showToast('Fault logged for '+reg + (tech?(' Â· assigned to '+tech):''),'success');
   document.getElementById('fault-modal').classList.remove('open');
   renderFaultsList();
   refreshAfKpis();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  try { if (typeof CE_JOBS!=="undefined" && CE_JOBS.onWrite) CE_JOBS.onWrite(function(ok, code){ if(!ok && typeof showToast==="function") showToast("⚠ Job saved locally but did NOT sync ("+(code||"error")+"). Check connection.","error"); }); } catch(e){}
   // Go live: sync faults across all logged-in users in real time.
   afAttachLive();
 });
@@ -564,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class="notif-list" id="notifList"></div>
 </div>
 <script>
-// ── NAV BELL ──────────────────────────────────────────────────────
+// ââ NAV BELL ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function updateBell() {
   var count = getUnreadCount();
   var badge = document.getElementById('bellBadge');
@@ -605,8 +606,8 @@ function renderNotifPanel() {
       '<span class="notif-reg">' + n.reg + '</span>' +
       '<span class="notif-type ' + n.type + '">' + typeLabel + '</span>' +
       '</div>' +
-      '<div class="notif-body">' + n.vehicle + ' — ' + n.stage + (n.fromName ? ' · from ' + n.fromName : '') + '</div>' +
-      (n.note ? '<div class="notif-meta">"' + n.note.slice(0,60) + (n.note.length>60?'…':'') + '"</div>' : '') +
+      '<div class="notif-body">' + n.vehicle + ' â ' + n.stage + (n.fromName ? ' Â· from ' + n.fromName : '') + '</div>' +
+      (n.note ? '<div class="notif-meta">"' + n.note.slice(0,60) + (n.note.length>60?'â¦':'') + '"</div>' : '') +
       '<div class="notif-meta">' + ago + '</div>' +
       '</div>';
   }).join('');
@@ -624,6 +625,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261031"></script>
+<script src="mobile-menu.js?v=20261103"></script>
 </body>
 </html>

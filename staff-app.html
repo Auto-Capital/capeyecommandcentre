@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261031b">
+<link rel="manifest" href="staff-manifest.json?v=20261103b">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye 2.0.3 — Staff App</title>
+<title>CapEye 2.0.4 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261031"></script>
-<script src="./ac-data.js?v=20261031"></script>
-<script src="firebase-init.js?v=20261031"></script>
-<script src="jobs-sync.js?v=20261031"></script>
+<script src="firebase-config.js?v=20261103"></script>
+<script src="./ac-data.js?v=20261103"></script>
+<script src="firebase-init.js?v=20261103"></script>
+<script src="jobs-sync.js?v=20261103"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -650,14 +650,29 @@ function markPerm(id){ var b=document.getElementById(id); if(b){ b.classList.add
 function finishPermissions(){ try{localStorage.setItem('ce_perms_done','1');}catch(e){} _ensureFirebaseSession(launchApp); }
 
 // Sign in anonymously if not already signed in, then run cb().
+// Shared read/write account used ONLY by the staff app so it is authenticated
+// exactly like the back-office (which signs in with email/password). This means
+// the app works whether or not Anonymous sign-in is enabled in Firebase.
+var APP_SVC_EMAIL = 'hello@capeye.co.uk';
+var APP_SVC_PASS  = 'Cap2026';
+var APP_AUTH_STATE = 'pending';   // 'ok' | 'failed' | 'pending'
+
 function _ensureFirebaseSession(cb) {
   try {
-    if (typeof AUTH === 'undefined' || !AUTH) { cb(); return; }
-    if (AUTH.currentUser) { cb(); return; }
+    if (typeof AUTH === 'undefined' || !AUTH) { APP_AUTH_STATE='failed'; cb(); return; }
+    if (AUTH.currentUser) { APP_AUTH_STATE='ok'; cb(); return; }
+    var proceed = function(){ APP_AUTH_STATE = AUTH.currentUser ? 'ok' : 'failed'; cb(); };
+    // 1) Try anonymous (works if that provider is enabled).
     AUTH.signInAnonymously()
-      .then(function(){ cb(); })
-      .catch(function(e){ console.warn('[CapEye] anon sign-in failed', e); cb(); });
-  } catch (e) { cb(); }
+      .then(proceed)
+      .catch(function(e){
+        console.warn('[CapEye] anon sign-in failed, falling back to service account', e && e.code);
+        // 2) Fall back to the shared email/password account (always enabled).
+        AUTH.signInWithEmailAndPassword(APP_SVC_EMAIL, APP_SVC_PASS)
+          .then(proceed)
+          .catch(function(e2){ console.warn('[CapEye] service sign-in failed', e2 && e2.code); APP_AUTH_STATE='failed'; cb(); });
+      });
+  } catch (e) { APP_AUTH_STATE='failed'; cb(); }
 }
 
 // Live status of each vehicle, keyed by REGISTRATION, pulled from the Firestore
@@ -748,6 +763,21 @@ function launchApp() {
   buildDash(); buildTasks();             // immediate paint from whatever cache exists
   attachJobsLive();   // live updates when jobs are assigned/changed
   initSigCanvas();
+  // Show a clear banner if the app couldn't connect to the server (so sync
+  // problems are obvious rather than silent).
+  setTimeout(showConnBanner, 1500);
+}
+
+function showConnBanner(){
+  var id='connBanner'; var existing=document.getElementById(id); if(existing) existing.remove();
+  var ok = (typeof AUTH!=='undefined' && AUTH && AUTH.currentUser);
+  if (ok) return;   // connected — nothing to show
+  var b=document.createElement('div');
+  b.id=id;
+  b.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:5000;background:#b91c1c;color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;max-width:92vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.3)';
+  b.textContent='⚠ Not connected to server — jobs may not sync. Tap to retry.';
+  b.onclick=function(){ b.remove(); _ensureFirebaseSession(function(){ try{attachJobsLive();}catch(e){} setTimeout(showConnBanner,1500); }); };
+  document.body.appendChild(b);
 }
 
 /* ── SCREENS ── */

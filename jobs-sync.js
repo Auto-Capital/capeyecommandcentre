@@ -48,14 +48,19 @@ var CE_JOBS = (function () {
     _pendingIds[job.id] = Date.now();
     _awaitAuth(function () {
       FS.collection(COL).doc(String(job.id)).set(job, { merge: true })
-        .then(function () { delete _pendingIds[job.id]; })
+        .then(function () { delete _pendingIds[job.id]; _lastWrite = { ok:true, at:Date.now() }; if (_onWrite) _onWrite(true); })
         .catch(function (e) {
-          console.warn('[CapEye] job write failed', e);
+          console.warn('[CapEye] job write failed', e && e.code, e);
+          _lastWrite = { ok:false, code:(e&&e.code)||'error', at:Date.now() };
           if (!attempt) { setTimeout(function () { _writeFS(job, 1); }, 1500); }
-          else { delete _pendingIds[job.id]; }
+          else { delete _pendingIds[job.id]; if (_onWrite) _onWrite(false, (e&&e.code)); }
         });
     });
   }
+  var _lastWrite = null;      // { ok, code, at }
+  var _onWrite = null;        // optional callback(ok, code) pages can set
+  function lastWriteStatus(){ return _lastWrite; }
+  function onWrite(cb){ _onWrite = cb; }
 
   // Create (or update) one job. Writes to Firestore AND localStorage.
   function upsert(job) {
@@ -148,5 +153,6 @@ var CE_JOBS = (function () {
   }
 
   return { upsert: upsert, assignFromHandover: assignFromHandover, complete: complete,
-           all: all, forStaff: forStaff, subscribe: subscribe };
+           all: all, forStaff: forStaff, subscribe: subscribe,
+           lastWriteStatus: lastWriteStatus, onWrite: onWrite };
 })();
