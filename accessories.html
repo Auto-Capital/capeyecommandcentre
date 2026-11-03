@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Final V1.1 â Accessories</title>
+<title>CapEye 2.0.5 — Accessories</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,12 +14,12 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261103"></script>
-<script src="ac-data.js?v=20261103"></script>
-<script src="firebase-init.js?v=20261103"></script>
-<script src="jobs-sync.js?v=20261103"></script>
+<script src="firebase-config.js?v=20261103b"></script>
+<script src="ac-data.js?v=20261103b"></script>
+<script src="firebase-init.js?v=20261103b"></script>
+<script src="jobs-sync.js?v=20261103b"></script>
 <script>
-// ââ SESSION CHECK ââââââââââââââââââââââââââââââââââââââââââââ
+// ── SESSION CHECK ────────────────────────────────────────────
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
   var TTL = 12 * 60 * 60 * 1000; // 12 hours
@@ -34,9 +34,9 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=20261103"></script>
+<script src="notifications.js?v=20261103b"></script>
 <style>
-/* ââ STANDARD LAYOUT â optimised for 19-24 inch screens ââ */
+/* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
   margin-top:54px;
   height:calc(100vh - 54px);
@@ -126,11 +126,11 @@ html,
 .form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--font);color:var(--ink);resize:vertical;min-height:70px}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 
-/* ââ NOTIFICATION BELL ââ */
+/* ── NOTIFICATION BELL ── */
 
 
 
-/* ââ NOTIFICATION PANEL ââ */
+/* ── NOTIFICATION PANEL ── */
 .notif-overlay{display:none;position:fixed;inset:0;z-index:200}
 .notif-overlay.open{display:block}
 .notif-panel{position:fixed;top:52px;right:12px;width:340px;max-height:500px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:201;display:flex;flex-direction:column;transform:translateY(-8px);opacity:0;pointer-events:none;transition:all .2s}
@@ -154,12 +154,12 @@ html,
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   CAPEYE â GLOBAL TYPOGRAPHY & SPACING SYSTEM
+/* ═══════════════════════════════════════════════════════════
+   CAPEYE — GLOBAL TYPOGRAPHY & SPACING SYSTEM
    All pages must use these values. Do not override.
-   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+   ═══════════════════════════════════════════════════════════ */
 
-/* Page title â the big heading at top of each page */
+/* Page title — the big heading at top of each page */
 .page-title, h1.page-title, h1 {
   font-size: 22px !important;
   font-weight: 800 !important;
@@ -240,7 +240,7 @@ td, .ac-table td {
   margin-top: 4px !important;
 }
 
-/* Buttons â consistent sizing */
+/* Buttons — consistent sizing */
 .btn, button[class*="btn"], .tb-btn {
   font-size: 12px !important;
   font-weight: 700 !important;
@@ -268,20 +268,20 @@ input, select, textarea {
   font-family: 'IBM Plex Sans', sans-serif !important;
 }
 
-/* Nav links â keep compact */
+/* Nav links — keep compact */
 .nav-link {
   font-size: 11.5px !important;
   font-weight: 600 !important;
 }
 
-/* Registration plates â always mono */
+/* Registration plates — always mono */
 [class*="reg"], [class*="-plate"] {
   font-family: 'IBM Plex Mono', monospace !important;
   font-weight: 700 !important;
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=20261103">
+<link rel="stylesheet" href="mobile-responsive.css?v=20261103b">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -312,7 +312,7 @@ input, select, textarea {
       <a class="nav-tool" href="https://www.autocapital.co.uk/finance.php" target="_blank">Finance</a>
       <a class="nav-tool" href="https://video.citnow.com/dashboard/overview/service" target="_blank">CitNow</a>
     </div>
-    <span class="nav-import" id="lastImportBadge">â</span>
+    <span class="nav-import" id="lastImportBadge">—</span>
     <button onclick="if(confirm('Sign out of CapEye?'))doLogout()" style="padding:5px 12px;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.2);border-radius:6px;color:#C8102E;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
     <span class="nav-user" id="nav-user">Keith Hardy</span>
   </div>
@@ -321,7 +321,7 @@ input, select, textarea {
   <div class="page-hdr">
     <div>
       <div class="page-title"><i class="fas fa-wrench" style="color:var(--navy)"></i> Accessories</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:2px">Customer vehicle accessory fittings â Marcin, Ibrahim & Keith</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:2px">Customer vehicle accessory fittings — Marcin, Ibrahim & Keith</div>
     </div>
     <button class="tb-btn btn-red" onclick="openBooking()"><i class="fas fa-plus"></i> New Booking</button>
   </div>
@@ -364,25 +364,49 @@ document.getElementById('nav-user').textContent = getCurrentUser().name;
 const DEMO_BOOKINGS = [
   {customer:'James Wilson',reg:'PL21KFH',model:'Vauxhall Vivaro',items:'Roof rack + ladder clamps',supplier:'Rhino Accessories',date:'26/03/2026',assignedTo:'Marcin Kiljan',status:'Booked'},
   {customer:'Auto Capital Stock',reg:'SB21DEF',model:'VW Transporter',items:'Internal racking system',supplier:'Van Vault',date:'27/03/2026',assignedTo:'Ibrahim Ata',status:'In Progress'},
-  {customer:'David Freeman',reg:'KT71XYZ',model:'Ford Transit',items:'Tow bar + wiring kit',supplier:'External â BPS Motors',date:'28/03/2026',assignedTo:'Marcin Kiljan',status:'Booked'},
+  {customer:'David Freeman',reg:'KT71XYZ',model:'Ford Transit',items:'Tow bar + wiring kit',supplier:'External — BPS Motors',date:'28/03/2026',assignedTo:'Marcin Kiljan',status:'Booked'},
   {customer:'Sarah Ahmed',reg:'NK22LPQ',model:'Mercedes Vito',items:'Parking sensors + reversing cam',supplier:'',date:'01/04/2026',assignedTo:'Marcin Kiljan',status:'Done'},
 ];
 
 const statusCls={Booked:'s-booked','In Progress':'s-progress',Done:'s-done'};
-const kpis=[{v:DEMO_BOOKINGS.length,l:'Total',c:'#3b82f6'},{v:DEMO_BOOKINGS.filter(b=>b.status==='Booked').length,l:'Booked',c:'#6366f1'},{v:DEMO_BOOKINGS.filter(b=>b.status==='In Progress').length,l:'In Progress',c:'#f59e0b'},{v:DEMO_BOOKINGS.filter(b=>b.status==='Done').length,l:'Completed',c:'#10b981'}];
-document.getElementById('acc-kpis').innerHTML=kpis.map(k=>`<div style="background:#fff;border-radius:10px;padding:12px 16px;border:1px solid var(--border);border-top:3px solid ${k.c}"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:${k.c}">${k.v}</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-top:3px">${k.l}</div></div>`).join('');
 
-document.getElementById('acc-grid').innerHTML=DEMO_BOOKINGS.map(b=>`
-  <div class="booking-card" style="cursor:pointer" onclick="location.href='vehicle-overview.html?reg=${encodeURIComponent(b.reg||'')}'">
-    <div class="bc-hdr">
-      <div><div class="bc-reg">${b.reg}</div><div style="font-size:11px;color:var(--ink3)">${b.customer}</div></div>
-      <span class="bc-status ${statusCls[b.status]||'s-booked'}">${b.status}</span>
-    </div>
-    <div style="font-size:13px;color:var(--ink2);margin-bottom:8px">${b.model}</div>
-    <div style="font-size:12px;color:var(--ink2);margin-bottom:4px"><strong>Accessories:</strong> ${b.items}</div>
-    ${b.supplier?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px"><i class="fas fa-truck"></i> Supplier: ${b.supplier}</div>`:''}
-    <div style="font-size:11px;color:var(--ink3)"><i class="fas fa-calendar"></i> ${b.date} Â· <i class="fas fa-user"></i> ${b.assignedTo}</div>
-  </div>`).join('');
+// ── BOOKINGS DATA (persisted + live) ──
+var ACC_KEY='ce_accessories';
+function loadBookings(){
+  try { var s=localStorage.getItem(ACC_KEY); if(s) return JSON.parse(s); } catch(e){}
+  try { localStorage.setItem(ACC_KEY, JSON.stringify(DEMO_BOOKINGS)); } catch(e){}
+  return DEMO_BOOKINGS.slice();
+}
+function saveBookingsData(a){ try { localStorage.setItem(ACC_KEY, JSON.stringify(a)); } catch(e){} }
+
+function renderBookings(list){
+  if(!list) list=loadBookings();
+  var kpis=[{v:list.length,l:'Total',c:'#3b82f6'},{v:list.filter(b=>b.status==='Booked').length,l:'Booked',c:'#6366f1'},{v:list.filter(b=>b.status==='In Progress').length,l:'In Progress',c:'#f59e0b'},{v:list.filter(b=>b.status==='Done').length,l:'Completed',c:'#10b981'}];
+  var kw=document.getElementById('acc-kpis'); if(kw) kw.innerHTML=kpis.map(k=>`<div style="background:#fff;border-radius:10px;padding:12px 16px;border:1px solid var(--border);border-top:3px solid ${k.c}"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:${k.c}">${k.v}</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-top:3px">${k.l}</div></div>`).join('');
+  var grid=document.getElementById('acc-grid'); if(!grid) return;
+  if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink3)">No accessory bookings yet — click New Booking.</div>'; return; }
+  grid.innerHTML=list.map(b=>`
+    <div class="booking-card" style="cursor:pointer" onclick="location.href='vehicle-overview.html?reg=${encodeURIComponent(b.reg||'')}'">
+      <div class="bc-hdr">
+        <div><div class="bc-reg">${b.reg}</div><div style="font-size:11px;color:var(--ink3)">${b.customer||''}</div></div>
+        <span class="bc-status ${statusCls[b.status]||'s-booked'}">${b.status}</span>
+      </div>
+      <div style="font-size:13px;color:var(--ink2);margin-bottom:8px">${b.model||''}</div>
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:4px"><strong>Accessories:</strong> ${b.items||''}</div>
+      ${b.supplier?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px"><i class="fas fa-truck"></i> Supplier: ${b.supplier}</div>`:''}
+      <div style="font-size:11px;color:var(--ink3)"><i class="fas fa-calendar"></i> ${b.date||'—'} · <i class="fas fa-user"></i> ${b.assignedTo||'—'}</div>
+    </div>`).join('');
+}
+
+function attachBookingsLive(){
+  if(typeof FS==='undefined'||!FS) return;
+  FS.collection('accessories').onSnapshot(function(snap){
+    if(snap.empty) return;
+    var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({id:d.id}, d.data())); });
+    arr.sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
+    saveBookingsData(arr); renderBookings(arr);
+  }, function(e){ console.warn('[CapEye] accessories listener', e); });
+}
 
 function openBooking() { document.getElementById('booking-modal').classList.add('open'); }
 function saveBooking() {
@@ -394,20 +418,30 @@ function saveBooking() {
   const supplier = g('acc-supplier');
   const date = g('acc-date');
   const assignedTo = g('acc-assign');
+  const bid = 'acc_'+Date.now();
 
-  // Create a SHARED job so the assigned person sees it (app + staff jobs).
+  // 1) Persist the booking so it STAYS on the Accessories page (and syncs).
+  var booking = { id:bid, reg:reg, customer:customer, model:g('acc-model')||'', items:items,
+    supplier:supplier, date:date||new Date().toLocaleDateString('en-GB'),
+    assignedTo:assignedTo, status:'Booked', createdAt:Date.now() };
+  var list = loadBookings(); list.unshift(booking); saveBookingsData(list);
+  if (typeof FS!=='undefined' && FS){ try { FS.collection('accessories').doc(bid).set(booking); } catch(e){} }
+  renderBookings(list);
+
+  // 2) Create a SHARED job so the assigned person sees it (app + staff jobs).
   if (typeof CE_JOBS !== 'undefined' && assignedTo) {
     CE_JOBS.upsert({
+      id: 'accjob_'+bid,
       stockNo: reg,
       reg: reg,
       stageName: 'Accessories',
-      title: 'Accessories â ' + (items || 'fitment') + ' Â· ' + reg,
-      note: (items||'') + (supplier?(' Â· Supplier: '+supplier):'') + (customer?(' Â· Customer: '+customer):''),
+      title: 'Accessories — ' + (items || 'fitment') + ' · ' + reg,
+      note: (items||'') + (supplier?(' · Supplier: '+supplier):'') + (customer?(' · Customer: '+customer):''),
       assignedTo: assignedTo,
       assignedBy: (typeof getCurrentUser==='function'?getCurrentUser().name:'Accessories'),
       priority: 'Normal',
       status: 'pending',
-      vehicle: reg + ' â ' + customer,
+      vehicle: reg + ' — ' + customer,
       assignedAt: Date.now(),
       createdAt: Date.now()
     });
@@ -421,13 +455,14 @@ function saveBooking() {
       priority: 'Normal', link: 'https://www.capeye.co.uk/accessories.html'
     });
   }
-  showToast('Booking saved & sent to ' + (assignedTo||'team') + ' â','success');
+  showToast('Booking saved & sent to ' + (assignedTo||'team') + ' ✓','success');
   document.getElementById('booking-modal').classList.remove('open');
 }
 
 document.addEventListener("DOMContentLoaded", function() {
   try { if (typeof CE_JOBS!=="undefined" && CE_JOBS.onWrite) CE_JOBS.onWrite(function(ok, code){ if(!ok && typeof showToast==="function") showToast("⚠ Job saved locally but did NOT sync ("+(code||"error")+"). Check connection.","error"); }); } catch(e){}
-
+  renderBookings();
+  attachBookingsLive();
 });
 
 </script>
@@ -460,7 +495,7 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class="notif-list" id="notifList"></div>
 </div>
 <script>
-// ââ NAV BELL ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── NAV BELL ──────────────────────────────────────────────────────
 function updateBell() {
   var count = getUnreadCount();
   var badge = document.getElementById('bellBadge');
@@ -501,8 +536,8 @@ function renderNotifPanel() {
       '<span class="notif-reg">' + n.reg + '</span>' +
       '<span class="notif-type ' + n.type + '">' + typeLabel + '</span>' +
       '</div>' +
-      '<div class="notif-body">' + n.vehicle + ' â ' + n.stage + (n.fromName ? ' Â· from ' + n.fromName : '') + '</div>' +
-      (n.note ? '<div class="notif-meta">"' + n.note.slice(0,60) + (n.note.length>60?'â¦':'') + '"</div>' : '') +
+      '<div class="notif-body">' + n.vehicle + ' — ' + n.stage + (n.fromName ? ' · from ' + n.fromName : '') + '</div>' +
+      (n.note ? '<div class="notif-meta">"' + n.note.slice(0,60) + (n.note.length>60?'…':'') + '"</div>' : '') +
       '<div class="notif-meta">' + ago + '</div>' +
       '</div>';
   }).join('');
@@ -520,6 +555,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=20261103"></script>
+<script src="mobile-menu.js?v=20261103b"></script>
 </body>
 </html>
