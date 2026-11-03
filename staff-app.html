@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261103cb">
+<link rel="manifest" href="staff-manifest.json?v=20261103db">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -33,10 +33,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261103c"></script>
-<script src="./ac-data.js?v=20261103c"></script>
-<script src="firebase-init.js?v=20261103c"></script>
-<script src="jobs-sync.js?v=20261103c"></script>
+<script src="firebase-config.js?v=20261103d"></script>
+<script src="./ac-data.js?v=20261103d"></script>
+<script src="firebase-init.js?v=20261103d"></script>
+<script src="jobs-sync.js?v=20261103d"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -1385,12 +1385,44 @@ function doLogout(){window.location.href='./login.html';}
 <div id="appSaleOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:6000;overflow-y:auto"></div>
 
 <script>
-// Register the service worker so the staff app installs as a PWA.
-if ('serviceWorker' in navigator) {
+// ── SELF-HEALING SERVICE WORKER ──────────────────────────────────────────
+// Phones can get stuck on an OLD cached version (old service worker keeps
+// serving stale files even after reinstalling). This forces a one-time clean
+// update: if the running code's version doesn't match, clear every cache,
+// update the service worker, and reload once.
+var CE_APP_VERSION = '2.0.6';   // bump each release
+(function(){
+  if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    try {
+      var seen = null;
+      try { seen = localStorage.getItem('ce_app_version'); } catch(e){}
+
+      navigator.serviceWorker.register('sw.js').then(function(reg){
+        // Ask the SW to check for a new version right away.
+        try { reg.update(); } catch(e){}
+        // When a new SW takes control, reload once so fresh files load.
+        navigator.serviceWorker.addEventListener('controllerchange', function(){
+          if (!window.__ceReloaded) { window.__ceReloaded = true; location.reload(); }
+        });
+      }).catch(function(){});
+
+      // If this device has never run 2.0.6 (or ran an older version), do a hard
+      // cache clear + reload ONCE to break out of the stale-cache loop.
+      if (seen !== CE_APP_VERSION) {
+        try { localStorage.setItem('ce_app_version', CE_APP_VERSION); } catch(e){}
+        if (!sessionStorage.getItem('ce_hardrefreshed')) {
+          sessionStorage.setItem('ce_hardrefreshed','1');
+          if (window.caches && caches.keys) {
+            caches.keys().then(function(keys){
+              return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+            }).then(function(){ location.reload(true); }).catch(function(){});
+          }
+        }
+      }
+    } catch(e){}
   });
-}
+})();
 </script>
 </body>
 </html>
