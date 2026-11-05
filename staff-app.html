@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=20261103db">
+<link rel="manifest" href="staff-manifest.json?v=20261105b">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye 2.0.6 — Staff App</title>
+<title>CapEye 2.0.7 — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=20261103d"></script>
-<script src="./ac-data.js?v=20261103d"></script>
-<script src="firebase-init.js?v=20261103d"></script>
-<script src="jobs-sync.js?v=20261103d"></script>
+<script src="firebase-config.js?v=20261105"></script>
+<script src="./ac-data.js?v=20261105"></script>
+<script src="firebase-init.js?v=20261105"></script>
+<script src="jobs-sync.js?v=20261105"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -431,8 +431,10 @@ function getMyTasks(staffName) {
     return {
       id: j.id,
       stockNo: j.stockNo,
+      reg: j.reg,
       stageId: j.stageId,
       stageName: j.stageName,
+      title: j.title,
       note: j.note,
       priority: (j.priority || 'normal').toLowerCase(),
       status: (j.status === 'done' || j.status === 'Done') ? 'done' : 'pending',
@@ -1072,12 +1074,12 @@ function renderTaskCard(task, compact) {
     <div class="task-card-inner">
       <div class="task-top">
         <div>
-          <span class="task-reg" style="margin-right:8px;margin-bottom:4px;display:inline-block">${v.registration||task.stockNo}</span>
+          <span class="task-reg" style="margin-right:8px;margin-bottom:4px;display:inline-block">${v.registration||task.reg||(task.stockNo&&task.stockNo!=='undefined'?task.stockNo:'Task')}</span>
           <div class="task-vehicle">${v.make||''} ${v.model||''}</div>
         </div>
         <span class="pri-badge ${priBadge}">${priLabel}</span>
       </div>
-      <div class="task-stage"><i class="fas fa-arrow-right" style="font-size:10px;margin-right:4px;color:var(--blue)"></i>Stage ${task.stageId}: ${task.stageName}</div>
+      <div class="task-stage"><i class="fas fa-arrow-right" style="font-size:10px;margin-right:4px;color:var(--blue)"></i>${(task.stageId!=null&&task.stageId!=='')?('Stage '+task.stageId+': '):''}${task.stageName||task.title||'Task'}</div>
       ${task.note?`<div class="task-note">"${task.note}"</div>`:''}
       <div class="task-meta">
         <span class="task-time"><i class="fas fa-clock"></i> Assigned ${ago}</span>
@@ -1390,7 +1392,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = '2.0.6';   // bump each release
+var CE_APP_VERSION = '2.0.7';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){

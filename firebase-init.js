@@ -7,31 +7,26 @@
 
 var _firebaseApp, DB, AUTH, STORE, FS;
 
-try {
-  _firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
-  DB    = firebase.database();
-  AUTH  = firebase.auth();
-  STORE = firebase.storage ? firebase.storage() : null;
-  FS    = firebase.firestore ? firebase.firestore() : null;
-  // Enable Firestore offline persistence so it works if signal drops briefly
-  if (FS) {
-    FS.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-      if (err.code === 'failed-precondition') {
-        // Multiple tabs open — persistence only works in one tab at a time
-        console.log('[CapEye] Firestore persistence: multiple tabs open');
-      } else if (err.code === 'unimplemented') {
-        console.log('[CapEye] Firestore persistence not available in this browser');
-      }
-    });
-  }
-} catch(e) {
+// IMPORTANT: each Firebase service is initialised INDEPENDENTLY and guarded.
+// The staff app does NOT load the Realtime Database SDK, so firebase.database()
+// throws there — previously that crashed the whole init and left FS undefined
+// (the "no-firebase" banner). Now one missing SDK can't break the others.
+try { _firebaseApp = firebase.initializeApp(FIREBASE_CONFIG); }
+catch(e){ try { _firebaseApp = firebase.app(); } catch(e2){ console.warn('[CapEye] firebase app init failed', e2); } }
+
+try { AUTH  = (firebase.auth)      ? firebase.auth()      : null; } catch(e){ AUTH=null;  console.warn('[CapEye] auth unavailable', e); }
+try { FS    = (firebase.firestore) ? firebase.firestore() : null; } catch(e){ FS=null;    console.warn('[CapEye] firestore unavailable', e); }
+try { STORE = (firebase.storage)   ? firebase.storage()   : null; } catch(e){ STORE=null; }
+try { DB    = (firebase.database)  ? firebase.database()   : null; } catch(e){ DB=null; }   // optional — app doesn't load this SDK
+
+// Firestore offline persistence (best-effort; never fatal).
+if (FS) {
   try {
-    _firebaseApp = firebase.app();
-    DB    = firebase.database();
-    AUTH  = firebase.auth();
-    STORE = firebase.storage ? firebase.storage() : null;
-    FS    = firebase.firestore ? firebase.firestore() : null;
-  } catch(e2) { console.warn('[CapEye] Firebase init error', e2); }
+    FS.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+      if (err && err.code === 'failed-precondition') { console.log('[CapEye] Firestore persistence: multiple tabs open'); }
+      else if (err && err.code === 'unimplemented') { console.log('[CapEye] Firestore persistence not available'); }
+    });
+  } catch(e){}
 }
 
 // PWA service worker
