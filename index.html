@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26 — Dashboard</title>
+<title>CapEye Nov 26b — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26"></script>
-<script src="ac-data.js?v=nov26"></script>
-<script src="firebase-init.js?v=nov26"></script>
-<script src="jobs-sync.js?v=nov26"></script>
-<script src="live-sync.js?v=nov26"></script>
+<script src="firebase-config.js?v=nov26b"></script>
+<script src="ac-data.js?v=nov26b"></script>
+<script src="firebase-init.js?v=nov26b"></script>
+<script src="jobs-sync.js?v=nov26b"></script>
+<script src="live-sync.js?v=nov26b"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,7 +47,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26"></script>
+<script src="notifications.js?v=nov26b"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -249,7 +249,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26b">
 </head>
 <body>
 
@@ -388,6 +388,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
       <div class="scroll-y" style="max-height:280px" id="stc-list"></div>
     </div>
 
+    <!-- SOLD VEHICLES — confirmed sales register -->
+    <div class="card" id="sold-card" style="display:none;border-top:3px solid #16a34a">
+      <div class="card-h-row">
+        <div class="card-h"><i class="fas fa-circle-check" style="color:#16a34a"></i> Sold Vehicles</div>
+        <span id="sold-count-lbl" style="font-size:11px;color:var(--ink3)"></span>
+      </div>
+      <div class="scroll-y" style="max-height:280px" id="sold-list"></div>
+    </div>
+
     <!-- COL 2 ROW 2: Department Workload — full width -->
     <div class="card">
       <div class="card-h"><i class="fas fa-people-group" style="color:var(--navy)"></i> Department Workload</div>
@@ -440,6 +449,19 @@ function getLiveStageName(stockNo) {
 }
 // Live status by registration from the vehicles collection + confirmed sales.
 var LIVE_STATUS_BY_REG = {};   // REG -> 'Sold' | 'Ready for Sale' | 'Sale Pending' | ...
+// Simple toast (dashboard had none of its own).
+if (typeof window.showToast !== 'function') {
+  window.showToast = function(msg, type){
+    var t=document.createElement('div');
+    var bg = type==='error'?'#C8102E':type==='warning'?'#b45309':'#16a34a';
+    t.textContent=msg;
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:'+bg+';color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){t.remove();},400); },2800);
+  };
+}
+
+var CE_SOLD_SALES = {};   // reg -> confirmed sale record (the "Sold" register)
 function _ceLoadLiveStatuses(){
   if (typeof FS==='undefined' || !FS) { return; }
   var apply = function(){ try { _ceRefreshDashboard(); } catch(e){} };
@@ -448,9 +470,22 @@ function _ceLoadLiveStatuses(){
     apply();
   }, function(e){ console.warn('[CapEye] vehicles status listener', e); });
   FS.collection('sales').onSnapshot(function(snap){
-    snap.forEach(function(d){ var x=d.data()||{}; var r=(x.reg||d.id||'').toUpperCase(); if(r&&x.status==='Sold') LIVE_STATUS_BY_REG[r]='Sold'; });
+    CE_SOLD_SALES = {};
+    snap.forEach(function(d){
+      var x=d.data()||{}; var r=(x.reg||d.id||'').toUpperCase(); if(!r) return;
+      if (x.status==='Sold') { LIVE_STATUS_BY_REG[r]='Sold'; x.reg=r; CE_SOLD_SALES[r]=x; }
+    });
     apply();
   }, function(e){ console.warn('[CapEye] sales status listener', e); });
+}
+
+// Count of confirmed sold vehicles — authoritative (from the sales register),
+// unioned with any vehicle whose live status is Sold.
+function ceSoldCount(){
+  var regs = {};
+  Object.keys(CE_SOLD_SALES).forEach(function(r){ regs[r]=1; });
+  Object.keys(LIVE_STATUS_BY_REG).forEach(function(r){ if(LIVE_STATUS_BY_REG[r]==='Sold') regs[r]=1; });
+  return Object.keys(regs).length;
 }
 
 function getLiveVehicles() {
@@ -479,6 +514,7 @@ function _ceRefreshDashboard() {
     buildOverdue();
     buildReadyForSale();
     buildSalesToConfirm();
+    buildSoldList();
   } catch (e) { console.warn('[CapEye] dashboard refresh error', e); }
 }
 
@@ -508,6 +544,25 @@ function buildSalesToConfirm(){
       '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+(s.make||'')+' '+(s.model||'')+'</div>'+
       '<div style="font-size:11px;color:var(--ink3)">'+(s.customerName?('Customer: '+s.customerName+' · '):'')+(s.submittedBy||'')+(dt?(' · '+dt):'')+'</div></div>'+
       '<button onclick="openConfirmSale(\''+s.reg+'\')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Confirm</button></div>';
+  }).join('');
+}
+
+// Sold register — where a confirmed sale GOES. Visible to everyone so the whole
+// team can see what's been sold, who confirmed it and when.
+function buildSoldList(){
+  var card=document.getElementById('sold-card'); var el=document.getElementById('sold-list'); if(!card||!el) return;
+  var sold=Object.keys(CE_SOLD_SALES).map(function(k){return CE_SOLD_SALES[k];})
+    .sort(function(a,b){ return (new Date(b.confirmedAt||b.submittedAt||0)) - (new Date(a.confirmedAt||a.submittedAt||0)); });
+  var lbl=document.getElementById('sold-count-lbl'); if(lbl) lbl.textContent = sold.length + (sold.length===1?' sold':' sold');
+  if(!sold.length){ card.style.display='none'; return; }
+  card.style.display='';
+  el.innerHTML = sold.map(function(s){
+    var dt = s.confirmedAt ? new Date(s.confirmedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid var(--border)">'+
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">'+s.reg+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+(s.make||'')+' '+(s.model||'')+(s.price?(' · '+formatGBP(s.price)):'')+'</div>'+
+      '<div style="font-size:11px;color:var(--ink3)">'+(s.customerName?('Customer: '+s.customerName+' · '):'')+'Confirmed by '+(s.confirmedBy||'—')+(dt?(' · '+dt):'')+'</div></div>'+
+      '<span style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase">Sold</span></div>';
   }).join('');
 }
 function _ceLoadPendingSales(){
@@ -550,7 +605,13 @@ function submitConfirmSale(){
     if (s.stockNo){ try{ FS.collection('workflows').doc(String(s.stockNo)).set({8:{completed:true, completedAt:when, completedBy:by}}, {merge:true}); }catch(e){} }
   }
   try { if (typeof writeAuditLog==='function') writeAuditLog('complete', reg, 'Sale confirmed — Sold', reg+' · confirmed by '+by, by, 'normal'); } catch(e){}
+  // Reflect it immediately in the local registers so the UI updates at once.
+  LIVE_STATUS_BY_REG[reg.toUpperCase()] = 'Sold';
+  CE_SOLD_SALES[reg.toUpperCase()] = Object.assign({}, s, {reg:reg.toUpperCase(), status:'Sold', confirmed:true, confirmedBy:by, confirmedAt:when});
+  delete CE_PENDING_SALES[reg];
   closeConfirmSale();
+  try { _ceRefreshDashboard(); } catch(e){}
+  showToast && showToast('✓ '+reg+' marked Sold — it\'s now in the Sold Vehicles list','success');
   // Generate the paste-ready thank-you email.
   openSaleEmail(s, sendReview);
 }
@@ -639,7 +700,7 @@ function updateClock() {
 function buildKPIs() {
   var v = getLiveVehicles();
   var inStock  = v.filter(function(x){ return x.status==='In Stock'; }).length;
-  var sold     = v.filter(function(x){ return x.status==='Sold'; }).length;
+  var sold     = ceSoldCount();   // authoritative, from the sales register
   var offSite  = v.filter(function(x){ return x.status==='Off-site'; }).length;
   function readyFlag(x){ try{ var wf=JSON.parse(localStorage.getItem('ac_wf_'+x.stockNo)||'{}'); return !!(wf[7]&&wf[7].completed)&&!(wf[8]&&wf[8].completed);}catch(e){return false;} }
   var ready    = v.filter(readyFlag).length;
@@ -910,7 +971,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=nov26"></script>
+<script src="mobile-menu.js?v=nov26b"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
