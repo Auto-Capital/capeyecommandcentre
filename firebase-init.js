@@ -70,6 +70,37 @@ function isManager() {
 }
 function isAdmin() { return !!getCurrentUser().admin; }
 
+// ── DESKTOP ACCESS CONTROL ────────────────────────────────────────────
+// Full-access people (Keith, Ibrahim, Ajay, David + admins/Management) see the
+// whole site. Lite staff who log into the website see only the operational
+// pages they need; management-only pages are hidden and blocked.
+var CE_FULL_PAGES = ['index.html','workflow.html','inventory.html','alerts.html','analytics.html','auction.html','accessories.html','aftersales.html','staff-jobs.html','import.html','audit.html','team.html','admin.html'];
+var CE_LITE_PAGES = ['workflow.html','inventory.html','accessories.html','aftersales.html','staff-jobs.html'];
+function ceUserIsFull(){
+  try { var u=getCurrentUser(); return (typeof ceIsFullAccess==='function') ? ceIsFullAccess(u) : (!!u.admin||u.dept==='Management'); }
+  catch(e){ return true; }
+}
+function ceApplyDesktopAccess(){
+  try {
+    if (ceUserIsFull()) return;                 // full access — nothing to hide
+    var allowed = CE_LITE_PAGES;
+    // Hide nav links that aren't allowed.
+    document.querySelectorAll('.nav-link').forEach(function(a){
+      var href=(a.getAttribute('href')||'').split('?')[0];
+      if (href && allowed.indexOf(href) === -1) a.style.display='none';
+    });
+    // If they've landed on a page they shouldn't see, send them to Workflow.
+    var here=(location.pathname.split('/').pop()||'index.html');
+    if (allowed.indexOf(here) === -1 && CE_FULL_PAGES.indexOf(here) !== -1) {
+      location.replace('workflow.html');
+    }
+  } catch(e){ console.warn('[CapEye] access gate', e); }
+}
+// Run automatically once the page + nav exist.
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(ceApplyDesktopAccess, 0); });
+}
+
 function doLogout() {
   ['ce_user_id','ce_user_name','ce_user_dept','ce_user_email',
    'ce_user_admin','ce_user_price','ce_user_mgr','ce_auth_ts'].forEach(function(k){

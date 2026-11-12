@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=nov26bb">
+<link rel="manifest" href="staff-manifest.json?v=nov26cb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,16 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Nov 26b — Staff App</title>
+<title>CapEye Nov 26c — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26b"></script>
-<script src="./ac-data.js?v=nov26b"></script>
-<script src="firebase-init.js?v=nov26b"></script>
-<script src="jobs-sync.js?v=nov26b"></script>
+<script src="firebase-config.js?v=nov26c"></script>
+<script src="./ac-data.js?v=nov26c"></script>
+<script src="firebase-init.js?v=nov26c"></script>
+<script src="jobs-sync.js?v=nov26c"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -594,12 +594,19 @@ function appSignOut(){
     localStorage.removeItem('ac_staff_session');
   } catch(e){}
   currentStaff = null; _pinPerson = null; _pinEntry = '';
-  // If this is an individual-link device, go back to that person's PIN entry;
-  // otherwise show the name picker.
-  var id = (new URLSearchParams(location.search)).get('id');
+  // Full sign out ALWAYS returns to the person picker so a shared device can
+  // switch user. Strip any ?id= from the URL so it doesn't auto-log-in again.
+  try {
+    if (location.search && history.replaceState) {
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch(e){}
   showScreenEl('loginScreen');
-  if (id) { setPinPerson(id); } else { var pk=document.getElementById('pinPicker'); if(pk) pk.style.display=''; var w=document.getElementById('pinWho'); if(w) w.textContent='Welcome'; }
-  renderPinDots();
+  var sel = document.getElementById('loginSelect'); if (sel) sel.value='';
+  var pk=document.getElementById('pinPicker'); if(pk) pk.style.display='';   // show name picker to switch user
+  var w=document.getElementById('pinWho'); if(w) w.textContent='Select your name';
+  var h=document.getElementById('pinHint'); if(h) h.textContent='Choose who you are, then enter your PIN';
+  renderPinDots && renderPinDots();
 }
 function toggleUserMenu(){ appSignOut(); }
 
@@ -1086,11 +1093,107 @@ function renderTaskCard(task, compact) {
         <span class="task-time">${v.location||''}</span>
       </div>
     </div>
-    ${task.status==='pending'?`<div class="task-actions">
-      <button class="t-btn t-btn-start" onclick="openInspForTask('${task.stockNo}','${task.id}')">📋 Inspect Vehicle</button>
-      <button class="t-btn t-btn-done" onclick="openSignoff('${task.id}','${task.stockNo}')">✏️ Sign Off</button>
-    </div>`:'<div style="padding:8px 16px;font-size:12px;color:var(--green);font-weight:700">✓ Completed '+timeAgo(new Date(task.completedAt||Date.now()))+'</div>'}
+    ${task.status==='pending'?renderTaskActions(task):'<div style="padding:8px 16px;font-size:12px;color:var(--green);font-weight:700">✓ Completed '+timeAgo(new Date(task.completedAt||Date.now()))+'</div>'}
   </div>`;
+}
+
+// The checklist items each stage shows in the app (mirrors the desktop pipeline).
+var APP_STAGE_CHECKLISTS = {
+  'Intake':        [['recd','Vehicle received & logged'],['keys','Keys & V5 present'],['walkcond','Walk-round condition noted']],
+  'Bodywork':      [['panels','Panel repairs done'],['paint','Paint / touch-ups done'],['bodyqc','Bodywork quality checked']],
+  'Dent Repair':   [['dents','Dents removed'],['dentqc','Finish checked']],
+  'Mechanical':    [['service','Service / mechanical check done'],['parts','Parts fitted'],['mot','MOT sorted'],['mechqc','Road / safety check done']],
+  'External Work': [['tyres','Tyres OK'],['extjobs','External jobs completed'],['extqc','Checked']],
+  'Valeting':      [['valet','Full valet done'],['photosbefore','Before photos taken'],['photosafter','After photos taken']],
+  'Prep for Sale': [['turntable','Turntable video'],['walkaround','Walk-around video'],['images','Images'],['touchups','Touch-ups'],
+                    ['doc_v5','V5 Logbook'],['doc_sh','Service History'],['doc_key','Spare Key'],['doc_mot','MOT Certificate'],['doc_hpi','HPI Clear']],
+  'Accessories':   [['accfit','Accessories fitted'],['acctest','Tested / working']]
+};
+// Map a stage name to the next stage (so completing hands over correctly).
+var APP_STAGE_ORDER = ['Intake','Bodywork','Dent Repair','Mechanical','External Work','Valeting','Prep for Sale','Sold'];
+function appStageIdByName(name){ var ids={'Intake':1,'Bodywork':2,'Dent Repair':3,'Mechanical':4,'External Work':5,'Valeting':6,'Prep for Sale':7,'Sold':8}; return ids[name]||null; }
+
+// Does this task map to a real workflow stage (so we show its checklist)?
+function taskStage(task){
+  var n = task.stageName||'';
+  if (APP_STAGE_CHECKLISTS[n]) return n;
+  // Accessories jobs
+  if (/accessor/i.test(task.title||n)) return 'Accessories';
+  return null;
+}
+
+function renderTaskActions(task){
+  var stage = taskStage(task);
+  if (stage){
+    return '<div class="task-actions">'+
+      '<button class="t-btn t-btn-done" style="flex:1" onclick="openStageComplete(\''+task.id+'\',\''+(task.stockNo||'')+'\',\''+stage+'\')">✅ Complete '+stage+'</button>'+
+    '</div>';
+  }
+  // General (non-stage) job: simple complete + optional inspect.
+  return '<div class="task-actions">'+
+    '<button class="t-btn t-btn-start" onclick="openInspForTask(\''+(task.stockNo||'')+'\',\''+task.id+'\')">📋 Inspect</button>'+
+    '<button class="t-btn t-btn-done" onclick="completeGeneralJob(\''+task.id+'\')">✅ Mark Done</button>'+
+  '</div>';
+}
+
+// ── STAGE COMPLETE (the fix: do your actual stage from the app) ──
+var _stageCtx = null;
+function openStageComplete(jobId, stockNo, stageName){
+  var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:stageName, veh:veh };
+  var items = APP_STAGE_CHECKLISTS[stageName] || [];
+  var nextStage = APP_STAGE_ORDER[APP_STAGE_ORDER.indexOf(stageName)+1] || null;
+  var ov = document.getElementById('appSaleOverlay');   // reuse the full-screen overlay
+  ov.innerHTML = '<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">'+stageName+'</div>'+
+      '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
+    '<div style="font-size:13px;color:#475569;margin-bottom:10px">Tick off your part, then complete the stage'+(nextStage?(' — it will hand over to <b>'+nextStage+'</b>'):'')+'.</div>'+
+    '<div id="stageChecks">'+
+      items.map(function(it){ return '<label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer">'+
+        '<input type="checkbox" id="sc_'+it[0]+'" style="width:18px;height:18px;accent-color:#C8102E">'+
+        '<span style="font-size:14px;font-weight:500">'+it[1]+'</span></label>'; }).join('')+
+    '</div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px">Notes (optional)</label>'+
+    '<textarea id="sc_notes" rows="2" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="flex:1;background:#eef1f5;border:none;border-radius:12px;padding:15px;font-weight:700;cursor:pointer">Cancel</button>'+
+      '<button onclick="submitStageComplete()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">✅ Complete '+stageName+'</button>'+
+    '</div>'+
+  '</div>';
+  ov.style.display='block';
+}
+
+function submitStageComplete(){
+  if (!_stageCtx) return;
+  var c=_stageCtx, stageName=c.stageName, stockNo=c.stockNo;
+  var sid = appStageIdByName(stageName);
+  var checks={}; (APP_STAGE_CHECKLISTS[stageName]||[]).forEach(function(it){ var el=document.getElementById('sc_'+it[0]); checks[it[0]]=!!(el&&el.checked); });
+  var notes=(document.getElementById('sc_notes')||{}).value||'';
+  var now=new Date().toISOString();
+  // Write the stage completion to the workflows collection (advances pipeline).
+  if (sid && typeof FS!=='undefined' && FS){
+    var patch={}; patch[sid]={ completed:true, completedAt:now, completedBy:currentStaff, checklist:checks, notes:notes };
+    try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
+    // Prep for Sale completing → vehicle becomes Ready for Sale.
+    if (stageName==='Prep for Sale' && c.veh){
+      try { FS.collection('vehicles').doc(String(c.veh.registration)).set({registration:c.veh.registration, status:'Ready for Sale', workflowStage:'Ready for Sale', readyForSaleAt:now}, {merge:true}); } catch(e){}
+    }
+    try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
+  }
+  // Mark the job done.
+  if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  document.getElementById('appSaleOverlay').style.display='none';
+  _stageCtx=null;
+  showToast('✓ '+stageName+' completed');
+  buildTasks(); buildDash();
+}
+
+function completeGeneralJob(jobId){
+  if (typeof CE_JOBS!=='undefined'){ try { CE_JOBS.complete(jobId, currentStaff); } catch(e){} }
+  showToast('✓ Job completed');
+  buildTasks(); buildDash();
 }
 
 /* ── INSPECTION ── */
@@ -1392,7 +1495,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = 'Nov26b';   // bump each release
+var CE_APP_VERSION = 'Nov26c';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){
