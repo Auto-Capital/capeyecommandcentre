@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26c — Workflow</title>
+<title>CapEye Nov 26d — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26c"></script>
-<script src="ac-data.js?v=nov26c"></script>
-<script src="firebase-init.js?v=nov26c"></script>
-<script src="jobs-sync.js?v=nov26c"></script>
-<script src="live-sync.js?v=nov26c"></script>
+<script src="firebase-config.js?v=nov26d"></script>
+<script src="ac-data.js?v=nov26d"></script>
+<script src="firebase-init.js?v=nov26d"></script>
+<script src="jobs-sync.js?v=nov26d"></script>
+<script src="live-sync.js?v=nov26d"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26c"></script>
+<script src="notifications.js?v=nov26d"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +369,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26c">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26d">
 </head><body>
 
 <nav class="nav">
@@ -805,6 +805,12 @@ function updateCompleteBtn(stageId) {
   }
 }
 
+// Clear a saved-draft job for a stock/stage once the stage is completed/handed over.
+function _clearDraftJob(stockNo, sid){
+  if (typeof CE_JOBS==='undefined') return;
+  try { CE_JOBS.complete('draft_' + stockNo + '_' + sid, getCurrentUser().name); } catch(e){}
+}
+
 function completeJobOnly() {
   if (!currentVehicle) return;
   const stage = AC_WORKFLOW_STAGES[currentStageIdx];
@@ -812,6 +818,7 @@ function completeJobOnly() {
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString(),completedBy:getCurrentUser().name};
   saveWorkflow(currentVehicle.stockNo, wf);
+  _clearDraftJob(currentVehicle.stockNo, sid);
 
   if (stage.name === 'Prep for Sale') {
     // No handover — the vehicle is now READY FOR SALE. Persist that status so
@@ -1447,10 +1454,33 @@ function collectForm() {
 function saveDraft() {
   if (!currentVehicle) return;
   const wf = getWorkflow(currentVehicle.stockNo);
-  const id = AC_WORKFLOW_STAGES[currentStageIdx].id;
-  wf[id] = {...wf[id],...collectForm(),completed:false};
+  const stage = AC_WORKFLOW_STAGES[currentStageIdx];
+  const id = stage.id;
+  wf[id] = {...wf[id],...collectForm(),completed:false,draftBy:getCurrentUser().name,draftAt:new Date().toISOString()};
   saveWorkflow(currentVehicle.stockNo, wf);
-  showToast('Draft saved','success');
+  // Keep the draft under this person's name in their app until they complete it.
+  // A deterministic id means repeated saves update the SAME job (no duplicates),
+  // and completing the stage clears it.
+  if (typeof CE_JOBS !== 'undefined') {
+    try { CE_JOBS.upsert({
+      id: 'draft_' + currentVehicle.stockNo + '_' + id,
+      stockNo: currentVehicle.stockNo,
+      reg: currentVehicle.registration,
+      stageId: id,
+      stageName: stage.name,
+      title: stage.name + ' (draft) — ' + currentVehicle.registration,
+      note: 'Draft in progress — finish and complete this stage.',
+      workRequired: (typeof _collectWorkRequired==='function') ? _collectWorkRequired(wf, id) : '',
+      assignedTo: getCurrentUser().name,
+      assignedBy: getCurrentUser().name,
+      priority: 'Normal',
+      status: 'pending',
+      vehicle: currentVehicle.registration + ' ' + currentVehicle.make + ' ' + currentVehicle.model,
+      isDraft: true,
+      createdAt: Date.now(), assignedAt: Date.now()
+    }); } catch(e){}
+  }
+  showToast('Draft saved — it will stay in your app until completed','success');
 }
 
 /* ── HANDOVER MODAL ── */
@@ -1531,6 +1561,30 @@ function writeAuditLog(type, reg, title, desc, staff, priority) {
     localStorage.setItem(key, JSON.stringify(log.slice(0, 200)));
   } catch(e) {}
 }
+// Gather the work the inspector flagged from completed stages, so the next
+// person's job card tells them exactly what to do on this vehicle.
+function _collectWorkRequired(wf, uptoStageId){
+  var out = [];
+  try {
+    // Intake condition notes
+    if (wf[1] && wf[1].f_notes) out.push('Intake notes: ' + wf[1].f_notes);
+    // Mechanical parts required / notes
+    if (wf[4]) {
+      if (wf[4].f_parts) out.push('Parts required: ' + wf[4].f_parts);
+      if (wf[4].f_notes) out.push('Workshop notes: ' + wf[4].f_notes);
+      // AA inspection items flagged as faults (value 'fault' / 'attention')
+      Object.keys(wf[4]).forEach(function(k){
+        if (/^aa_/.test(k) && (wf[4][k]==='fault' || wf[4][k]==='attention' || wf[4][k]==='no')) {
+          out.push('Check: ' + k.replace(/^aa_/,'').replace(/_/g,' '));
+        }
+      });
+    }
+    // Bodywork notes
+    if (wf[2] && wf[2].f_notes) out.push('Bodywork notes: ' + wf[2].f_notes);
+  } catch(e){}
+  return out.join('\n');
+}
+
 function confirmHandover() {
   const rawTarget = document.getElementById('hoTarget').value;
   const priority = document.getElementById('hoPriority').value;
@@ -1541,9 +1595,11 @@ function confirmHandover() {
   const toName = isDept ? (rawTarget.slice(5) + ' Team') : rawTarget;
   const toDept = isDept ? rawTarget.slice(5) : '';
   const stage = AC_WORKFLOW_STAGES[currentStageIdx];
+  window._lastHandoverStageId = stage.id;
   const wf = getWorkflow(currentVehicle.stockNo);
   const sid = stage.id;
   wf[sid] = {...wf[sid],...collectForm(),completed:true,completedAt:new Date().toISOString()};
+  _clearDraftJob(currentVehicle.stockNo, sid);
   if (sid < AC_WORKFLOW_STAGES.length) { if(!wf[sid+1])wf[sid+1]={}; wf[sid+1].startedAt=new Date().toISOString(); }
   // Advance the vehicle's displayed stage to the next one (fixes pipeline/bar
   // still showing the old stage after a handover).
@@ -1564,15 +1620,23 @@ function confirmHandover() {
   saveHandover(currentVehicle.stockNo, sid, {toName, priority, note, fromStage:stage.name});
   // Create a SHARED job so the assignee sees it live on their own login / phone.
   if (typeof CE_JOBS !== 'undefined') {
+    // The job is for the DESTINATION stage (where it's handed TO), so the
+    // assignee's app opens THAT stage's checklist — e.g. hand to Valeting →
+    // the job is a Valeting job, not the stage just completed.
+    var destStage = nextStageObj || stage;
+    // Carry forward the work the inspector flagged, so the next person sees the
+    // required tasks on their job card.
+    var workRequired = _collectWorkRequired(wf, sid);
     CE_JOBS.assignFromHandover({
       stockNo: currentVehicle.stockNo,
       reg: currentVehicle.registration,
-      stageId: sid + 1,
-      stageName: (AC_WORKFLOW_STAGES[sid] ? AC_WORKFLOW_STAGES[sid].name : stage.name),
+      stageId: destStage.id,
+      stageName: destStage.name,
       assignedTo: toName,
       assignedToDept: toDept,   // set when handed to a whole department
       assignedBy: getCurrentUser().name,
       note: note,
+      workRequired: workRequired,   // inspector's flagged tasks for this vehicle
       priority: priority,
       vehicle: currentVehicle.registration + ' ' + currentVehicle.make + ' ' + currentVehicle.model
     });
@@ -1927,6 +1991,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26c"></script>
+<script src="mobile-menu.js?v=nov26d"></script>
 </body>
 </html>

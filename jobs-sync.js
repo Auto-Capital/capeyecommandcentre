@@ -86,16 +86,29 @@ var CE_JOBS = (function () {
       stageName: opts.stageName,
       title: (opts.stageName || 'Stage') + ' — ' + (opts.vehicle || opts.stockNo),
       note: opts.note || '',
+      workRequired: opts.workRequired || '',   // inspector's flagged tasks
+      jobType: opts.jobType || '',             // '' normal, 'authorise' = sign-off check
       assignedTo: opts.assignedTo || '',
       assignedToDept: opts.assignedToDept || '',
       assignedBy: opts.assignedBy || '',
       priority: opts.priority || 'Normal',
       status: 'pending',
       vehicle: opts.vehicle || '',
+      startedAt: null,
       assignedAt: Date.now(),
       completedAt: null,
       createdAt: Date.now()
     });
+  }
+
+  // Record that a staff member has STARTED a job (date/time started).
+  function start(jobId, byName) {
+    var arr = _lsLoad();
+    var job = arr.find(function (j) { return j.id === jobId; });
+    if (!job) return null;
+    if (!job.startedAt) { job.startedAt = Date.now(); job.startedBy = byName || ''; }
+    upsert(job);
+    return job;
   }
 
   // Mark a job complete.
@@ -153,6 +166,6 @@ var CE_JOBS = (function () {
   }
 
   return { upsert: upsert, assignFromHandover: assignFromHandover, complete: complete,
-           all: all, forStaff: forStaff, subscribe: subscribe,
+           start: start, all: all, forStaff: forStaff, subscribe: subscribe,
            lastWriteStatus: lastWriteStatus, onWrite: onWrite };
 })();

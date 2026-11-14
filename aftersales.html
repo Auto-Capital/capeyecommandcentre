@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26c — Aftersales</title>
+<title>CapEye Nov 26d — Aftersales</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26c"></script>
-<script src="ac-data.js?v=nov26c"></script>
-<script src="firebase-init.js?v=nov26c"></script>
-<script src="jobs-sync.js?v=nov26c"></script>
-<script src="live-sync.js?v=nov26c"></script>
+<script src="firebase-config.js?v=nov26d"></script>
+<script src="ac-data.js?v=nov26d"></script>
+<script src="firebase-init.js?v=nov26d"></script>
+<script src="jobs-sync.js?v=nov26d"></script>
+<script src="live-sync.js?v=nov26d"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,7 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26c"></script>
+<script src="notifications.js?v=nov26d"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -285,7 +285,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26c">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26d">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -473,7 +473,14 @@ function renderFaultsList() {
       '</select>'+
       '<button onclick="deleteFaultEntry('+i+')" style="border:1px solid #fecaca;border-radius:5px;background:#fff;color:#C8102E;padding:3px 8px;font-size:11px;cursor:pointer">✕</button></div></div>'+
       '<div style="font-size:13px;font-weight:600;margin-bottom:2px">'+f.issue+'</div>'+
-      '<div style="font-size:10px;color:var(--ink3)">'+f.loggedBy+' · '+new Date(f.loggedAt).toLocaleDateString('en-GB')+'</div></div>';
+      '<div style="font-size:10px;color:var(--ink3)">'+f.loggedBy+' · '+new Date(f.loggedAt).toLocaleDateString('en-GB')+(f.tech?(' · Tech: '+f.tech):'')+'</div>'+
+      ((f.techNotes&&f.techNotes.length)
+        ? '<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">'+
+            '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:4px">🔧 Technician notes</div>'+
+            f.techNotes.map(function(n){ return '<div style="font-size:12px;color:#334155;background:#f8fafc;border-radius:6px;padding:6px 8px;margin-bottom:4px"><b>'+(n.by||'Tech')+'</b> · '+new Date(n.at).toLocaleString('en-GB')+'<br>'+String(n.text||'').replace(/</g,'&lt;')+'</div>'; }).join('')+
+          '</div>'
+        : '')+
+      '</div>';
   }).join('');
 }
 function updateFaultStat(idx,status) {
@@ -509,7 +516,7 @@ function logFault() {
   // Create a staff job for the assigned technician so it appears in their app.
   if (tech && typeof CE_JOBS !== 'undefined') {
     try { CE_JOBS.upsert({
-      id: 'af_' + (fault._id || Date.now()),
+      id: 'afjob_' + fault.id,
       reg: reg,
       title: 'Aftersales — ' + reg,
       stageName: 'Aftersales — ' + reg,
@@ -520,6 +527,7 @@ function logFault() {
       status: 'pending',
       vehicle: reg,
       source: 'aftersales',
+      faultId: fault.id,
       createdAt: Date.now(), assignedAt: Date.now()
     }); } catch(e){}
   }
@@ -625,6 +633,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26c"></script>
+<script src="mobile-menu.js?v=nov26d"></script>
 </body>
 </html>
