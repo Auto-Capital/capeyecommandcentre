@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=nov26db">
+<link rel="manifest" href="staff-manifest.json?v=nov26eb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,16 +27,18 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Nov 26d — Staff App</title>
+<title>CapEye Nov 26e — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26d"></script>
-<script src="./ac-data.js?v=nov26d"></script>
-<script src="firebase-init.js?v=nov26d"></script>
-<script src="jobs-sync.js?v=nov26d"></script>
+<script src="firebase-config.js?v=nov26e"></script>
+<script src="./ac-data.js?v=nov26e"></script>
+<script src="firebase-init.js?v=nov26e"></script>
+<script src="jobs-sync.js?v=nov26e"></script>
+<script src="notifications.js?v=nov26e"></script>
+<script src="notifications-sync.js?v=nov26e"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -986,12 +988,13 @@ function vehicleFinderSearch(q){
   }).join('');
 }
 
-// Open the inspection flow for a reg from the finder.
+// Intake for a reg from the finder — opens the working Intake stage form
+// (stage 1), which writes to the shared workflow and auto-hands to Bodywork,
+// exactly like the desktop intake. Replaces the old broken inspection screen.
 function appInspectReg(reg){
   var v = vehicles.find(function(x){ return (x.registration||'').toUpperCase()===(reg||'').toUpperCase(); });
   if(!v) return;
-  document.getElementById('appSaleOverlay').style.display='none';
-  openInspForTask(v.stockNo, null);
+  openStageComplete('intake_'+v.stockNo, v.stockNo, 'Intake');
 }
 
 // Back-compat: the old entry points now open the unified finder.
@@ -1179,10 +1182,113 @@ function startJob(jobId){
 
 // ── STAGE COMPLETE (the fix: do your actual stage from the app) ──
 var _stageCtx = null;
+
+// Full stage-4 mechanical inspection for the app — the SAME checklist the
+// desktop uses (AA_INSPECTION_CHECKLIST), so Morteza/mechanics complete the
+// whole inspection on their phone. Each item is OK / Attention / Fault, and the
+// field ids match the desktop (aa_<slug>) so results sync straight back.
+function _aaSlug(section, item){ return 'aa_'+(section+'_'+item).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+function appMechFormHTML(wf){
+  if (typeof AA_INSPECTION_CHECKLIST==='undefined') return '';
+  var ex = wf || {};
+  var html = '<div style="font-size:12px;color:#64748b;margin-bottom:10px">Full vehicle inspection — mark each item. Anything set to <b>Attention</b> or <b>Fault</b> is flagged to the office.</div>';
+  Object.keys(AA_INSPECTION_CHECKLIST).forEach(function(section){
+    html += '<details style="border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px" open>'+
+      '<summary style="font-size:13px;font-weight:800;color:#001a4d;padding:10px 12px;cursor:pointer">'+section+'</summary>'+
+      '<div style="padding:4px 12px 10px">';
+    AA_INSPECTION_CHECKLIST[section].forEach(function(item){
+      var id=_aaSlug(section,item); var cur=ex[id]||'ok';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9">'+
+        '<span style="font-size:13px;flex:1">'+item+'</span>'+
+        '<select id="'+id+'" style="font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px">'+
+          ['ok|✓ OK','attention|⚠ Attention','fault|✗ Fault','na|N/A'].map(function(o){var p=o.split('|');return '<option value="'+p[0]+'"'+(cur===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+
+        '</select>'+
+      '</div>';
+    });
+    html += '</div></details>';
+  });
+  html += '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px">Parts required</label>'+
+    '<textarea id="f_parts" rows="2" placeholder="List any parts needed…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px">'+(ex.f_parts||'').replace(/</g,'&lt;')+'</textarea>';
+  return html;
+}
+
+// App Intake form — mirrors the desktop intake so anyone can take a vehicle in
+// from their phone, and it syncs straight back to the desktop (stage 1 fields).
+function appIntakeFormHTML(wf){
+  var ex = wf||{};
+  var today=new Date().toISOString().split('T')[0];
+  var nowT=new Date().toTimeString().slice(0,5);
+  var staff=(typeof AC_STAFF!=='undefined'?AC_STAFF.filter(function(s){return s.role!=='Test User'&&s.id!=='master';}):[]);
+  function sel(id,opts,cur){ return '<select id="'+id+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+opts.map(function(o){var p=(''+o).split('|');var val=p[0],lab=p[1]||p[0];return '<option value="'+val+'"'+((cur||'')===val?' selected':'')+'>'+lab+'</option>';}).join('')+'</select>'; }
+  return ''+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Date arrived</label>'+
+    '<input type="date" id="f_dateIn" value="'+(ex.f_dateIn||today)+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Time arrived</label>'+
+    '<input type="time" id="f_timeIn" value="'+(ex.f_timeIn||nowT)+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Received by</label>'+
+    sel('f_receivedBy', staff.map(function(s){return s.name;}), ex.f_receivedBy||currentStaff)+
+    '<div style="height:8px"></div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Arrived from</label>'+
+    '<input type="text" id="f_arrivedFrom" value="'+(ex.f_arrivedFrom||'').replace(/"/g,'&quot;')+'" placeholder="Auction, Private, Part Exchange…" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Mileage</label>'+
+    '<input type="number" id="f_mileage" value="'+(ex.f_mileage||'')+'" placeholder="Mileage on arrival" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Keys received</label>'+
+    sel('f_keysReceived',['2|2 Keys','1|1 Key','0|No Keys'], ex.f_keysReceived||'2')+
+    '<div style="height:8px"></div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">V5 present?</label>'+
+    sel('f_v5',['yes|Yes','no|No','applied|Applied For'], ex.f_v5||'yes')+
+    '<div style="height:8px"></div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Condition on arrival</label>'+
+    '<textarea id="f_notes" rows="3" placeholder="General condition, any issues noticed on arrival, fuel level…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px">'+(ex.f_notes||'').replace(/</g,'&lt;')+'</textarea>';
+}
+
+// Downscale a photo to a small JPEG data URL so it can be stored in Firestore
+// without blowing the document size limit. Returns a Promise<dataURL>.
+function scResizeImage(file, maxDim){
+  maxDim = maxDim || 900;
+  return new Promise(function(resolve){
+    try {
+      var fr=new FileReader();
+      fr.onload=function(){
+        var img=new Image();
+        img.onload=function(){
+          var w=img.width,h=img.height; var scale=Math.min(1,maxDim/Math.max(w,h));
+          var c=document.createElement('canvas'); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
+          c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+          try { resolve(c.toDataURL('image/jpeg',0.7)); } catch(e){ resolve(''); }
+        };
+        img.onerror=function(){ resolve(''); };
+        img.src=fr.result;
+      };
+      fr.onerror=function(){ resolve(''); };
+      fr.readAsDataURL(file);
+    } catch(e){ resolve(''); }
+  });
+}
+// Show small previews of the photos the user just picked.
+function scPhotoPreview(input, targetId){
+  var box=document.getElementById(targetId); if(!box) return;
+  box.innerHTML='';
+  var files=Array.prototype.slice.call(input.files||[]).slice(0,6);
+  files.forEach(function(f){ scResizeImage(f,160).then(function(u){ if(!u) return;
+    var im=document.createElement('img'); im.src=u; im.style.cssText='width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e4e7ec'; box.appendChild(im);
+  }); });
+}
+// Collect all photos from an input as resized data URLs (Promise<array>).
+function scCollectPhotos(inputId){
+  var el=document.getElementById(inputId);
+  if(!el || !el.files || !el.files.length) return Promise.resolve([]);
+  var files=Array.prototype.slice.call(el.files).slice(0,6);
+  return Promise.all(files.map(function(f){ return scResizeImage(f,900); })).then(function(a){ return a.filter(Boolean); });
+}
+
 function openStageComplete(jobId, stockNo, stageName){
   var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
   var task = getMyTasks(currentStaff).find(function(t){ return t.id===jobId; }) || {};
-  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:stageName, veh:veh, task:task };
+  var wf = {}; try { wf = JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'); } catch(e){}
+  var sidNum = appStageIdByName(stageName);
+  var stageWf = (wf && wf[sidNum]) ? wf[sidNum] : {};
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:stageName, veh:veh, task:task, wf:stageWf };
   var items = APP_STAGE_CHECKLISTS[stageName] || [];
   var isMech = (stageName==='Mechanical');
   var nextStage = APP_STAGE_ORDER[APP_STAGE_ORDER.indexOf(stageName)+1] || null;
@@ -1194,19 +1300,44 @@ function openStageComplete(jobId, stockNo, stageName){
         '<div style="font-size:13px;color:#7c2d12;white-space:pre-wrap;line-height:1.5">'+work.replace(/</g,'&lt;')+'</div>'+
       '</div>'
     : '';
+  // Stages that need before/after (or work) photos.
+  var isValet = (stageName==='Valeting');
+  var needsPhotos = isValet || stageName==='Bodywork' || stageName==='Dent Repair' || isMech;
+  var photoBlock = needsPhotos ? (
+    '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-top:10px">'+
+      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 '+(isValet?'Before / after photos':'Photos of work done')+'</div>'+
+      (isValet
+        ? '<label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:3px">Before</label>'+
+          '<input type="file" id="sc_photo_before" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevBefore\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
+          '<div id="scPrevBefore" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>'+
+          '<label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:3px">After</label>'+
+          '<input type="file" id="sc_photo_after" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevAfter\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
+          '<div id="scPrevAfter" style="display:flex;gap:6px;flex-wrap:wrap"></div>'
+        : '<input type="file" id="sc_photo_work" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevWork\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
+          '<div id="scPrevWork" style="display:flex;gap:6px;flex-wrap:wrap"></div>')+
+    '</div>'
+  ) : '';
+  // When a job is assigned to a whole team, make it clear THIS person's name is
+  // the one being recorded as doing it.
+  var teamLine = (task.assignedToDept || /team/i.test(task.assignedTo||''))
+    ? '<div style="font-size:12px;color:#0ea5e9;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 12px;margin-bottom:10px">👤 You are completing this as <b>'+currentStaff+'</b> — your name is recorded as who did the job.</div>'
+    : '';
   var ov = document.getElementById('appSaleOverlay');   // reuse the full-screen overlay
   ov.innerHTML = '<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
       '<div><div style="font-size:21px;font-weight:800;color:#001a4d">'+stageName+(isMech?' inspection':'')+'</div>'+
       '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
       '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
-    jobCard+
+    jobCard+ teamLine+
     '<div style="font-size:13px;color:#475569;margin-bottom:10px">'+(isMech?'Work through the full inspection, then complete — a mechanic completing repairs goes to <b>David &amp; Morteza</b> to authorise before it moves on.':('Tick off your part, then complete the stage'+(nextStage?(' — it will hand over to <b>'+nextStage+'</b>'):'')+'.'))+'</div>'+
     '<div id="stageChecks">'+
+      (stageName==='Intake' ? appIntakeFormHTML(c.wf||{}) :
+       isMech ? appMechFormHTML(c.wf||{}) :
       items.map(function(it){ return '<label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer">'+
         '<input type="checkbox" id="sc_'+it[0]+'" style="width:18px;height:18px;accent-color:#C8102E">'+
-        '<span style="font-size:14px;font-weight:500">'+it[1]+'</span></label>'; }).join('')+
+        '<span style="font-size:14px;font-weight:500">'+it[1]+'</span></label>'; }).join(''))+
     '</div>'+
+    photoBlock+
     '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px">Notes (optional)</label>'+
     '<textarea id="sc_notes" rows="2" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
@@ -1221,13 +1352,97 @@ function openStageComplete(jobId, stockNo, stageName){
 var CE_AUTHORISERS = ['David Lupu','Morteza Rahamian'];
 function ceAmAuthoriser(){ return CE_AUTHORISERS.indexOf(currentStaff)>-1 || ceAmFull(); }
 
+// The pipeline order + which department each stage hands to.
+var APP_STAGE_DEPT = {Intake:'Intake',Bodywork:'Bodyshop','Dent Repair':'Bodyshop',Mechanical:'Workshop','External Work':'Workshop',Valeting:'Valeting','Prep for Sale':'Advertising',Sold:'Sales'};
+// Which team/dept the NEXT stage belongs to (so the handover job lands with the
+// right department, matching the desktop handover).
+function appNextStage(stageName){ var i=APP_STAGE_ORDER.indexOf(stageName); return (i>-1 && i<APP_STAGE_ORDER.length-1) ? APP_STAGE_ORDER[i+1] : null; }
+
+// Auto-advance: when a stage is completed on the app, hand the vehicle to the
+// next department automatically — create their job AND notify them — exactly
+// like the desktop "handover". This is what makes valeting → advertising →
+// sales flow without anyone touching the desktop.
+function appAdvanceToNext(ctx, fromStageName){
+  var next = appNextStage(fromStageName);
+  if (!next) return;
+  var veh = ctx.veh || {};
+  var reg = veh.registration || ctx.task && ctx.task.reg || '';
+  var nextDept = APP_STAGE_DEPT[next] || '';
+  var vehLabel = veh.registration ? (veh.registration+' '+(veh.make||'')+' '+(veh.model||'')).trim() : (ctx.stockNo||'');
+  // Advance the vehicle's displayed stage so desktop/app pipeline match.
+  if (typeof FS!=='undefined' && FS && reg){
+    try { FS.collection('vehicles').doc(String(reg)).set({registration:reg, workflowStage:next}, {merge:true}); } catch(e){}
+  }
+  // Create the next department's job (team handover — to the whole dept).
+  if (typeof CE_JOBS!=='undefined'){
+    try { CE_JOBS.assignFromHandover({
+      stockNo: ctx.stockNo, reg: reg,
+      stageId: appStageIdByName(next), stageName: next,
+      assignedTo: nextDept ? (nextDept+' Team') : next, assignedToDept: nextDept,
+      assignedBy: currentStaff,
+      note: 'Handed over from '+fromStageName+' by '+currentStaff+'.',
+      workRequired: (ctx.task&&ctx.task.workRequired)||'',
+      priority:'Normal',
+      vehicle: vehLabel
+    }); } catch(e){}
+  }
+  // Notify the next department (cross-device bell + email).
+  if (typeof CE_NOTIFY!=='undefined'){
+    try { CE_NOTIFY.push({ toName: nextDept ? (nextDept+' Team') : next, type:'handover',
+      reg:reg, vehicle:(veh.make||'')+' '+(veh.model||''), stage:next, fromName:currentStaff,
+      note:'Ready for '+next+'.', priority:'Normal',
+      link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+  }
+}
+
 function submitStageComplete(){
+  if (!_stageCtx) return;
+  // Gather any photos first (they resize asynchronously), then do the write.
+  var stageName0=_stageCtx.stageName;
+  var photoBtn=event&&event.target; if(photoBtn){ photoBtn.disabled=true; photoBtn.textContent='Saving…'; }
+  Promise.all([
+    scCollectPhotos('sc_photo_before'),
+    scCollectPhotos('sc_photo_after'),
+    scCollectPhotos('sc_photo_work')
+  ]).then(function(res){
+    _doStageComplete({ before:res[0]||[], after:res[1]||[], work:res[2]||[] });
+  });
+}
+function _doStageComplete(photos){
+  photos = photos || {before:[],after:[],work:[]};
   if (!_stageCtx) return;
   var c=_stageCtx, stageName=c.stageName, stockNo=c.stockNo, task=c.task||{};
   var sid = appStageIdByName(stageName);
   var checks={}; (APP_STAGE_CHECKLISTS[stageName]||[]).forEach(function(it){ var el=document.getElementById('sc_'+it[0]); checks[it[0]]=!!(el&&el.checked); });
   var notes=(document.getElementById('sc_notes')||{}).value||'';
   var now=new Date().toISOString();
+  // For the full mechanical inspection, collect every aa_ field + parts, and
+  // build a flagged-items summary (Attention/Fault) that becomes the job card
+  // for whoever works it next.
+  var aaFields={}, aaFlags=[];
+  if (stageName==='Mechanical' && typeof AA_INSPECTION_CHECKLIST!=='undefined'){
+    Object.keys(AA_INSPECTION_CHECKLIST).forEach(function(section){
+      AA_INSPECTION_CHECKLIST[section].forEach(function(item){
+        var id=_aaSlug(section,item); var el=document.getElementById(id);
+        if (el){ aaFields[id]=el.value; if (el.value==='attention'||el.value==='fault') aaFlags.push((el.value==='fault'?'✗ ':'⚠ ')+section+': '+item); }
+      });
+    });
+    var pEl=document.getElementById('f_parts'); if (pEl) aaFields.f_parts=pEl.value;
+  }
+  var mechWorkSummary = aaFlags.length ? ('Flagged at inspection:\n'+aaFlags.join('\n')+(aaFields.f_parts?('\nParts: '+aaFields.f_parts):'')) : '';
+  // Intake fields (mirror the desktop intake, so the office sees the full record).
+  var intakeFields={};
+  if (stageName==='Intake'){
+    ['f_dateIn','f_timeIn','f_receivedBy','f_arrivedFrom','f_mileage','f_keysReceived','f_v5','f_notes'].forEach(function(id){
+      var el=document.getElementById(id); if(el) intakeFields[id]=el.value;
+    });
+  }
+  // Photo payload stored on the stage record (desktop can display these).
+  var photoData = {};
+  if ((photos.before||[]).length) photoData.photosBefore = photos.before;
+  if ((photos.after||[]).length)  photoData.photosAfter  = photos.after;
+  if ((photos.work||[]).length)   photoData.photosWork   = photos.work;
+  var photoCount = (photos.before||[]).length+(photos.after||[]).length+(photos.work||[]).length;
 
   // ── MECHANIC SIGN-OFF LOOP ──
   // When a mechanic (not an authoriser) finishes Mechanical repairs, the vehicle
@@ -1236,11 +1451,16 @@ function submitStageComplete(){
   if (stageName==='Mechanical' && !ceAmAuthoriser()){
     if (sid && typeof FS!=='undefined' && FS){
       var mpatch={}; mpatch[sid]={ repairsDone:true, repairsDoneAt:now, repairsDoneBy:currentStaff,
-                                   checklist:checks, notes:notes, awaitingAuth:true };
+                                   checklist:checks, notes:notes, f_notes:notes, awaitingAuth:true };
+      // Mirror checklist at top level so the desktop mechanical form shows the ticks.
+      Object.keys(checks).forEach(function(k){ mpatch[sid][k]=checks[k]; });
+      Object.assign(mpatch[sid], aaFields);   // full inspection results sync to desktop
+      Object.assign(mpatch[sid], photoData);
       try { FS.collection('workflows').doc(String(stockNo)).set(mpatch, {merge:true}); } catch(e){}
       try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), mpatch))); } catch(e){}
     }
-    // Create an authorise job for each authoriser.
+    var vlabel = c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo;
+    // Create an authorise job for each authoriser, and notify them (cross-device).
     if (typeof CE_JOBS!=='undefined'){
       CE_AUTHORISERS.forEach(function(auth){
         try { CE_JOBS.assignFromHandover({
@@ -1249,10 +1469,16 @@ function submitStageComplete(){
           assignedTo: auth, assignedToDept:'',
           assignedBy: currentStaff, jobType:'authorise',
           note:'Repairs completed by '+currentStaff+' — please double-check and authorise.',
-          workRequired: task.workRequired||'',
+          workRequired: mechWorkSummary || task.workRequired||'',
           priority:'Urgent',
-          vehicle:(c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo)
+          vehicle: vlabel
         }); } catch(e){}
+        if (typeof CE_NOTIFY!=='undefined'){
+          try { CE_NOTIFY.push({ toName:auth, type:'urgent', reg:(c.veh&&c.veh.registration)||task.reg||'',
+            vehicle:(c.veh?(c.veh.make+' '+c.veh.model):''), stage:'Mechanical — authorise',
+            fromName:currentStaff, note:'Repairs done by '+currentStaff+' — needs your sign-off.',
+            priority:'Urgent', link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+        }
       });
     }
     // Mark the mechanic's own job done (their repairs are finished).
@@ -1269,21 +1495,75 @@ function submitStageComplete(){
     // Write checklist values at the TOP level of the stage object too, so the
     // desktop form (which reads wf[sid][key]) shows them ticked — this is what
     // makes a Sales / docs tick in the app sync back to the office screen.
-    var patch={}; patch[sid]={ completed:true, completedAt:now, completedBy:currentStaff, checklist:checks, notes:notes, f_notes:notes };
+    var patch={}; patch[sid]={ completed:true, completedAt:now, completedBy:currentStaff, checklist:checks, notes:notes, f_notes:(stageName==='Intake'?(intakeFields.f_notes||notes):notes) };
     Object.keys(checks).forEach(function(k){ patch[sid][k]=checks[k]; });
+    Object.assign(patch[sid], aaFields);
+    Object.assign(patch[sid], intakeFields);
+    Object.assign(patch[sid], photoData);
     if (stageName==='Mechanical') patch[sid].awaitingAuth=false, patch[sid].authorisedBy=currentStaff, patch[sid].authorisedAt=now;
     try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
-    // Prep for Sale completing → vehicle becomes Ready for Sale.
-    if (stageName==='Prep for Sale' && c.veh){
-      try { FS.collection('vehicles').doc(String(c.veh.registration)).set({registration:c.veh.registration, status:'Ready for Sale', workflowStage:'Ready for Sale', readyForSaleAt:now}, {merge:true}); } catch(e){}
+    // Intake → record the vehicle as received / In Stock on the desktop.
+    if (stageName==='Intake' && c.veh && typeof FS!=='undefined' && FS){
+      try { FS.collection('vehicles').doc(String(c.veh.registration)).set({registration:c.veh.registration, status:'In Stock', workflowStage:'Bodywork', intakeAt:now, intakeBy:currentStaff, mileage:(intakeFields.f_mileage||c.veh.mileage||'')}, {merge:true}); } catch(e){}
     }
     try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
   }
+
+  // ── PREP FOR SALE: advertising → sales(docs) → Ready for Sale ──
+  // Advertisers (Mustafa etc.) do the photos/advertising part. When they
+  // complete, hand it to SALES to finish the documents. Only when SALES
+  // complete Prep for Sale does the vehicle become Ready for Sale.
+  if (stageName==='Prep for Sale'){
+    var meDept = (ceMyDepts()||[]).join(',').toLowerCase();
+    var amSales = /sales/.test(meDept) || ceAmFull();
+    if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+    if (!amSales){
+      // Advertiser finished → create a Sales docs job + notify sales.
+      var vlab = c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo;
+      if (typeof CE_JOBS!=='undefined'){
+        try { CE_JOBS.assignFromHandover({
+          stockNo:stockNo, reg:(c.veh&&c.veh.registration)||task.reg||'',
+          stageId:7, stageName:'Prep for Sale',
+          assignedTo:'Sales Team', assignedToDept:'Sales',
+          assignedBy:currentStaff,
+          note:'Advertising done by '+currentStaff+' — please complete the documents (V5, service history, MOT, HPI, spare key).',
+          workRequired:'Documents: V5 Logbook · Service History · Spare Key · MOT Certificate · HPI Clear',
+          priority:'Normal', vehicle:vlab
+        }); } catch(e){}
+      }
+      if (typeof CE_NOTIFY!=='undefined'){
+        try { CE_NOTIFY.push({ toName:'Sales Team', type:'handover', reg:(c.veh&&c.veh.registration)||'',
+          vehicle:(c.veh?(c.veh.make+' '+c.veh.model):''), stage:'Prep for Sale — documents',
+          fromName:currentStaff, note:'Advertising complete — documents needed to make Ready for Sale.',
+          priority:'Normal', link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+      }
+      document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
+      showToast('✓ Advertising done → sent to Sales for documents');
+      buildTasks(); buildDash(); return;
+    } else {
+      // Sales finished the documents → vehicle is Ready for Sale.
+      if (c.veh && typeof FS!=='undefined' && FS){
+        try { FS.collection('vehicles').doc(String(c.veh.registration)).set({registration:c.veh.registration, status:'Ready for Sale', workflowStage:'Ready for Sale', readyForSaleAt:now}, {merge:true}); } catch(e){}
+      }
+      if (typeof CE_NOTIFY!=='undefined'){
+        try { CE_NOTIFY.push({ toName:'Sales Team', type:'handover', reg:(c.veh&&c.veh.registration)||'',
+          vehicle:(c.veh?(c.veh.make+' '+c.veh.model):''), stage:'Ready for Sale',
+          fromName:currentStaff, note:'Documents complete — vehicle is Ready for Sale.',
+          priority:'Normal', link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+      }
+      document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
+      showToast('✓ Documents done — vehicle is Ready for Sale');
+      buildTasks(); buildDash(); return;
+    }
+  }
+
   // Mark the job done.
   if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  // Auto-advance to the next department.
+  if (stageName!=='Sold'){ appAdvanceToNext(c, stageName); }
   document.getElementById('appSaleOverlay').style.display='none';
   _stageCtx=null;
-  showToast('✓ '+stageName+' completed');
+  showToast('✓ '+stageName+' completed'+(appNextStage(stageName)?(' → sent to '+appNextStage(stageName)):''));
   buildTasks(); buildDash();
 }
 
@@ -1323,9 +1603,11 @@ function submitAuthorise(){
     try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
   }
   if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  // Now that it's authorised, hand it on to the next department automatically.
+  appAdvanceToNext(c, 'Mechanical');
   document.getElementById('appSaleOverlay').style.display='none';
   _stageCtx=null;
-  showToast('🔏 Authorised — vehicle moves on');
+  showToast('🔏 Authorised — sent to '+(appNextStage('Mechanical')||'next stage'));
   buildTasks(); buildDash();
 }
 
@@ -1690,7 +1972,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = 'Nov26d';   // bump each release
+var CE_APP_VERSION = 'Nov26e';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){

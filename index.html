@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26d — Dashboard</title>
+<title>CapEye Nov 26e — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26d"></script>
-<script src="ac-data.js?v=nov26d"></script>
-<script src="firebase-init.js?v=nov26d"></script>
-<script src="jobs-sync.js?v=nov26d"></script>
-<script src="live-sync.js?v=nov26d"></script>
+<script src="firebase-config.js?v=nov26e"></script>
+<script src="ac-data.js?v=nov26e"></script>
+<script src="firebase-init.js?v=nov26e"></script>
+<script src="jobs-sync.js?v=nov26e"></script>
+<script src="live-sync.js?v=nov26e"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,7 +47,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26d"></script>
+<script src="notifications.js?v=nov26e"></script>
+<script src="notifications-sync.js?v=nov26e"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -249,7 +250,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26d">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26e">
 </head>
 <body>
 
@@ -506,6 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // then re-run them whenever any user changes anything.
 function _ceRefreshDashboard() {
   try {
+    buildKPIs();          // <- was missing: this is what fills the Prep/Sold/Ready numbers
     buildPipeline();
     buildEmployeeChart();
     buildAgeChart();
@@ -516,6 +518,21 @@ function _ceRefreshDashboard() {
     buildSalesToConfirm();
     buildSoldList();
   } catch (e) { console.warn('[CapEye] dashboard refresh error', e); }
+}
+
+// Live workflow listener — mirrors every stage change (from the app or desktop)
+// into the ac_wf_ cache so the dashboard's stage counts stay current.
+function _ceLoadLiveWorkflows(){
+  if (typeof FS==='undefined' || !FS) return;
+  FS.collection('workflows').onSnapshot(function(snap){
+    snap.forEach(function(d){
+      try {
+        var cur = JSON.parse(localStorage.getItem('ac_wf_'+d.id)||'{}');
+        localStorage.setItem('ac_wf_'+d.id, JSON.stringify(Object.assign(cur, d.data()||{})));
+      } catch(e){}
+    });
+    try { _ceRefreshDashboard(); } catch(e){}
+  }, function(e){ console.warn('[CapEye] workflows listener', e); });
 }
 
 // ── SALES TO CONFIRM (two-stage sale) ─────────────────────────────────
@@ -575,7 +592,14 @@ function _ceLoadPendingSales(){
 }
 
 function openConfirmSale(reg){
-  var s = CE_PENDING_SALES[reg]; if(!s) return;
+  var s = CE_PENDING_SALES[reg];
+  // Fall back to a case/space-insensitive match so the Confirm button always opens.
+  if (!s){
+    var want=(reg||'').toUpperCase().replace(/\s+/g,'');
+    var k=Object.keys(CE_PENDING_SALES).find(function(key){ return key.toUpperCase().replace(/\s+/g,'')===want; });
+    if (k) { s=CE_PENDING_SALES[k]; reg=k; }
+  }
+  if(!s){ showToast && showToast('Could not open that sale — please refresh the dashboard','warning'); return; }
   var m = document.getElementById('confirmSaleModal');
   document.getElementById('cs-reg').textContent = reg;
   document.getElementById('cs-veh').textContent = (s.make||'')+' '+(s.model||'')+(s.price?(' · '+formatGBP(s.price)):'');
@@ -672,6 +696,7 @@ if (window.CE_LIVE) {
 }
 _ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
 _ceLoadLiveStatuses();   // live Sold / Ready-for-Sale status by registration
+_ceLoadLiveWorkflows();  // live stage changes (from app or desktop) → dashboard counts
 
 // ── WELCOME BAR ──────────────────────────────────────────────────
 function buildWelcome() {
@@ -971,7 +996,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=nov26d"></script>
+<script src="mobile-menu.js?v=nov26e"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">

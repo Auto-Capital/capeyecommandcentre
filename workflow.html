@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26d — Workflow</title>
+<title>CapEye Nov 26e — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26d"></script>
-<script src="ac-data.js?v=nov26d"></script>
-<script src="firebase-init.js?v=nov26d"></script>
-<script src="jobs-sync.js?v=nov26d"></script>
-<script src="live-sync.js?v=nov26d"></script>
+<script src="firebase-config.js?v=nov26e"></script>
+<script src="ac-data.js?v=nov26e"></script>
+<script src="firebase-init.js?v=nov26e"></script>
+<script src="jobs-sync.js?v=nov26e"></script>
+<script src="live-sync.js?v=nov26e"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,7 +35,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26d"></script>
+<script src="notifications.js?v=nov26e"></script>
+<script src="notifications-sync.js?v=nov26e"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -369,7 +370,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26d">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26e">
 </head><body>
 
 <nav class="nav">
@@ -1422,6 +1423,13 @@ function buildForm(stage, ex) {
     f+=`<div class="form-field"><div class="form-label">Assigned To</div><select class="form-control" id="f_assignedTo"><option value="">— Select —</option>${staffOpts}</select></div>
     <div class="form-field full"><div class="form-label">Notes</div><textarea class="form-control" id="f_notes" rows="3">${v('f_notes')}</textarea></div>`;
   }
+  // Show any photos a technician uploaded from the app for this stage.
+  var _ph = [].concat(ex.photosBefore||[], ex.photosWork||[], ex.photosAfter||[]);
+  if (_ph.length){
+    var lbl = function(arr,name){ return (arr&&arr.length)?('<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:6px 0 4px">'+name+'</div>'+arr.map(function(u){return '<img src="'+u+'" style="width:84px;height:84px;object-fit:cover;border-radius:6px;border:1px solid var(--border);margin:0 6px 6px 0;cursor:pointer" onclick="window.open(this.src)">';}).join('')):''; };
+    f += '<div class="form-field full"><div class="form-label">Photos from the team (app)</div>'+
+      lbl(ex.photosBefore,'Before')+lbl(ex.photosWork,'Work done')+lbl(ex.photosAfter,'After')+'</div>';
+  }
   return f+'</div>';
 }
 
@@ -1991,6 +1999,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26d"></script>
+<script src="mobile-menu.js?v=nov26e"></script>
 </body>
 </html>

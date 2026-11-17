@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26d — Alerts</title>
+<title>CapEye Nov 26e — Alerts</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,10 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26d"></script>
-<script src="ac-data.js?v=nov26d"></script>
-<script src="firebase-init.js?v=nov26d"></script>
-<script src="jobs-sync.js?v=nov26d"></script>
+<script src="firebase-config.js?v=nov26e"></script>
+<script src="ac-data.js?v=nov26e"></script>
+<script src="firebase-init.js?v=nov26e"></script>
+<script src="jobs-sync.js?v=nov26e"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -34,7 +34,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26d"></script>
+<script src="notifications.js?v=nov26e"></script>
+<script src="notifications-sync.js?v=nov26e"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -271,7 +272,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26d">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26e">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -345,6 +346,34 @@ function buildAlerts() {
   const motAlerts = allAlerts.filter(a=>a.type==='mot');
   motAlerts.sort((a,b)=>getMOTDaysLeft(AC_VEHICLES.find(v=>v.registration===a.reg)?.mot||'') - getMOTDaysLeft(AC_VEHICLES.find(v=>v.registration===b.reg)?.mot||''));
 
+  // ── TODAY ACTIVITY ──
+  // Everything that happened today: handovers/completions (shared notifications,
+  // cross-device) + the local audit log (stage completes, sales, etc.).
+  var startOfDay = new Date(); startOfDay.setHours(0,0,0,0); var sod = startOfDay.getTime();
+  var seen = {};
+  function pushActivity(ts, reg, title, desc, icon, color){
+    var key=(ts||'')+'|'+(title||''); if(seen[key]) return; seen[key]=1;
+    allAlerts.push({type:'activity', reg:reg||'', title:title, desc:desc||'',
+      color:color||'#10b981', icon:icon||'fas fa-check', ts:ts,
+      link: reg?('vehicle-overview.html?reg='+reg):'#'});
+  }
+  try {
+    (typeof getMyNotifications==='function'?getMyNotifications():[]).forEach(function(n){
+      if ((n.ts||0) >= sod){
+        var lbl={handover:'Handover',urgent:'Urgent',skip:'Skipped',sendback:'Sent back',fault:'Fault'}[n.type]||'Update';
+        pushActivity(n.ts, n.reg, n.reg+' — '+lbl+(n.stage?(' · '+n.stage):''), (n.vehicle||'')+(n.fromName?(' · from '+n.fromName):'')+(n.note?(' — '+n.note):''), 'fas fa-bell', '#10b981');
+      }
+    });
+  } catch(e){}
+  try {
+    var log = JSON.parse(localStorage.getItem('ac_audit_log')||'[]');
+    log.forEach(function(a){ if ((a.ts||0) >= sod){
+      pushActivity(a.ts, a.reg, (a.reg?a.reg+' — ':'')+(a.title||'Activity'), (a.desc||'')+(a.staff?(' · '+a.staff):''), 'fas fa-check', '#10b981');
+    }});
+  } catch(e){}
+  // Newest activity first.
+  allAlerts.sort(function(a,b){ if(a.type==='activity'&&b.type==='activity') return (b.ts||0)-(a.ts||0); return 0; });
+
   renderTabs();
   renderAlerts('all');
 }
@@ -380,6 +409,11 @@ function renderAlerts(type) {
 
 document.addEventListener("DOMContentLoaded", function() {
 buildAlerts();
+// Refresh the activity feed live when notifications arrive on any device.
+try {
+  var uid = localStorage.getItem('ce_user_id');
+  if (uid && typeof CE_NOTIFY!=='undefined'){ CE_NOTIFY.subscribe(uid, function(){ try { buildAlerts(); } catch(e){} }); }
+} catch(e){}
 });
 
 </script>
@@ -472,6 +506,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26d"></script>
+<script src="mobile-menu.js?v=nov26e"></script>
 </body>
 </html>

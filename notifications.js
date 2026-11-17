@@ -215,6 +215,13 @@ function urlBase64ToUint8Array(base64String) {
 // Always works — no external services needed
 // Staff see their notifications when they open the system
 function storeInAppNotification(type, payload, recipients) {
+  // When the shared cross-device layer is present, let it own the in-app store
+  // so notifications reach every device — but avoid a double write when the
+  // caller was CE_NOTIFY.push() itself (it passes _fromCeNotify).
+  if (typeof CE_NOTIFY !== 'undefined' && !payload._fromCeNotify) {
+    try { CE_NOTIFY.push(Object.assign({}, payload, { type: type, _noEmail: true })); } catch(e){}
+    return;
+  }
   var recipientIds = [];
   var recips = Array.isArray(recipients) ? recipients : [recipients];
   recips.forEach(function(r) {
@@ -254,10 +261,13 @@ function storeInAppNotification(type, payload, recipients) {
 }
 
 // ── NOTIFICATION BELL ─────────────────────────────────────────────
-// Call this to render unread count badge on the nav bell
+// These now defer to the shared CE_NOTIFY store (notifications-sync.js) when
+// present, so the bell is the SAME across every device. localStorage remains
+// the fallback when the shared layer isn't loaded.
 function getUnreadCount() {
   var uid = localStorage.getItem('ce_user_id');
   if (!uid) return 0;
+  if (typeof CE_NOTIFY !== 'undefined') return CE_NOTIFY.unreadCount(uid);
   try {
     var notifs = JSON.parse(localStorage.getItem('ce_notifs_' + uid) || '[]');
     return notifs.filter(function(n){ return !n.read; }).length;
@@ -267,6 +277,7 @@ function getUnreadCount() {
 function markAllRead() {
   var uid = localStorage.getItem('ce_user_id');
   if (!uid) return;
+  if (typeof CE_NOTIFY !== 'undefined') { CE_NOTIFY.markAllRead(uid); return; }
   try {
     var notifs = JSON.parse(localStorage.getItem('ce_notifs_' + uid) || '[]');
     notifs.forEach(function(n){ n.read = true; });
@@ -277,6 +288,7 @@ function markAllRead() {
 function getMyNotifications() {
   var uid = localStorage.getItem('ce_user_id');
   if (!uid) return [];
+  if (typeof CE_NOTIFY !== 'undefined') return CE_NOTIFY.forUser(uid);
   try { return JSON.parse(localStorage.getItem('ce_notifs_' + uid) || '[]'); } catch(e) { return []; }
 }
 
