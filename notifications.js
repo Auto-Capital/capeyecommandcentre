@@ -12,6 +12,21 @@ var EMAILJS_TEMPLATE_ID = 'd1e8l6s';          // your template ID from EmailJS
 var EMAILJS_PUBLIC_KEY  = 'qgmaToXYFDvmgWAJO'; // your EmailJS public key
 var EMAILJS_ENABLED = true;  // emails now active
 
+// Initialise EmailJS once the library is present (works for v3 and v4). Without
+// this, some EmailJS setups reject sends even with the key passed to .send().
+(function _initEmailJS(){
+  function go(){
+    try {
+      if (typeof emailjs !== 'undefined' && emailjs.init) {
+        try { emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }  // v4
+        catch(e){ try { emailjs.init(EMAILJS_PUBLIC_KEY); } catch(e2){} } // v3 fallback
+      }
+    } catch(e){}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+  else go();
+})();
+
 // ── PWA PUSH CONFIG ───────────────────────────────────────────────
 // VAPID public key from Firebase Console → Project Settings → Cloud Messaging
 var VAPID_PUBLIC_KEY = 'BJH6WXRok-dtL8nMtUsnjrsRpdG6Gk7xqgfAQzgtTJI_r4WyTA2kc3Sqti8KdLWtK5HopjRdereP5yki3iQ3Bgo'; // Firebase Web Push key

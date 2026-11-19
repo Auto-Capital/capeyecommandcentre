@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26e — Dashboard</title>
+<title>CapEye Nov 26f — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26e"></script>
-<script src="ac-data.js?v=nov26e"></script>
-<script src="firebase-init.js?v=nov26e"></script>
-<script src="jobs-sync.js?v=nov26e"></script>
-<script src="live-sync.js?v=nov26e"></script>
+<script src="firebase-config.js?v=nov26f"></script>
+<script src="ac-data.js?v=nov26f"></script>
+<script src="firebase-init.js?v=nov26f"></script>
+<script src="jobs-sync.js?v=nov26f"></script>
+<script src="live-sync.js?v=nov26f"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,8 +47,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26e"></script>
-<script src="notifications-sync.js?v=nov26e"></script>
+<script src="notifications.js?v=nov26f"></script>
+<script src="notifications-sync.js?v=nov26f"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -250,7 +250,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26e">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26f">
 </head>
 <body>
 
@@ -500,8 +500,6 @@ function getLiveVehicles() {
     return out;
   });
 }
-document.addEventListener('DOMContentLoaded', function() {
-
 // Pull live Firestore data into the ac_wf_ cache BEFORE the dashboard
 // builders run (they read live stage from that cache via getLiveStage),
 // then re-run them whenever any user changes anything.
@@ -688,15 +686,19 @@ function buildReadyForSale() {
       '<span style="font-size:10px;font-weight:700;color:#0891b2;background:rgba(8,145,178,.1);padding:3px 8px;border-radius:10px">READY</span></div>';
   }).join('');
 }
-if (window.CE_LIVE) {
-  CE_LIVE.bootstrap(AC_VEHICLES).then(function() {
-    _ceRefreshDashboard();
-    CE_LIVE.attachListeners(AC_VEHICLES, _ceRefreshDashboard);
-  });
+// Live data bootstrap — runs once the DOM is ready (see the init block at the
+// end of this script). Kept as a function so it isn't nested inside any other.
+function _ceBootstrapLive(){
+  if (window.CE_LIVE) {
+    CE_LIVE.bootstrap(AC_VEHICLES).then(function() {
+      _ceRefreshDashboard();
+      CE_LIVE.attachListeners(AC_VEHICLES, _ceRefreshDashboard);
+    });
+  }
+  _ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
+  _ceLoadLiveStatuses();   // live Sold / Ready-for-Sale status by registration
+  _ceLoadLiveWorkflows();  // live stage changes (from app or desktop) → dashboard counts
 }
-_ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
-_ceLoadLiveStatuses();   // live Sold / Ready-for-Sale status by registration
-_ceLoadLiveWorkflows();  // live stage changes (from app or desktop) → dashboard counts
 
 // ── WELCOME BAR ──────────────────────────────────────────────────
 function buildWelcome() {
@@ -925,18 +927,19 @@ function buildOverdue() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
-buildWelcome();
-buildKPIs();
-buildToday();
-buildPipeline();
-buildEmployeeChart();
-buildAgeChart();
-buildAlerts();
-buildStockSummary();
-buildOverdue();
-buildReadyForSale();
-
-}); // end DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+  _ceBootstrapLive();
+  buildWelcome();
+  buildKPIs();
+  buildToday();
+  buildPipeline();
+  buildEmployeeChart();
+  buildAgeChart();
+  buildAlerts();
+  buildStockSummary();
+  buildOverdue();
+  buildReadyForSale();
+});
 
 // ── LAST IMPORT BADGE ─────────────────────────────────────────────
 (function(){
@@ -996,7 +999,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=nov26e"></script>
+<script src="mobile-menu.js?v=nov26f"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
