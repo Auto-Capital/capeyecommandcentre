@@ -38,9 +38,22 @@ var CE_NOTIFY = (function () {
 
   // Raise a notification for one recipient (name or department). Writes a
   // doc per recipient so each person's bell can query just their own.
+  // Management / full-access staff who should see EVERY notification on their
+  // bell, so the office always has the full activity picture across devices.
+  function _managers(){
+    if (typeof AC_STAFF==='undefined') return [];
+    var ids = (typeof CE_FULL_ACCESS_IDS!=='undefined') ? CE_FULL_ACCESS_IDS : ['keith','ibrahim','ajay','david'];
+    return AC_STAFF.filter(function(s){ return ids.indexOf(s.id)>-1; });
+  }
+
   function push(opts){
     // opts: {toName, type, reg, vehicle, stage, fromName, note, priority, link}
     var recips = _resolveRecipients(opts.toName);
+    // Always copy management in (deduped), so the office bell sees all activity.
+    if (!opts._noManagers){
+      var seen={}; recips.forEach(function(s){ seen[s.id]=1; });
+      _managers().forEach(function(m){ if(!seen[m.id]){ seen[m.id]=1; recips.push(m); } });
+    }
     recips.forEach(function(s){
       var n = {
         id: _id(),

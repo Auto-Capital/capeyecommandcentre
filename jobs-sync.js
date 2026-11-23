@@ -78,8 +78,15 @@ var CE_JOBS = (function () {
   // Assign a job from a workflow handover (called by confirmHandover).
   function assignFromHandover(opts) {
     // opts: {stockNo, stageId, stageName, assignedTo, assignedBy, note, priority, vehicle}
+    // ONE shared job per vehicle+stage (deterministic id). Re-advancing the same
+    // vehicle to the same stage updates that ONE job instead of creating a
+    // duplicate for every department member — and because it's a single doc,
+    // completing it clears it for the whole team at once. Authorise/technician
+    // sign-off jobs get their own suffix so they don't collide with the stage job.
+    var detId = 'stage_' + opts.stockNo + '_' + opts.stageId +
+                (opts.jobType ? ('_' + opts.jobType + (opts.assignedTo ? '_' + String(opts.assignedTo).toLowerCase().replace(/[^a-z0-9]+/g,'') : '')) : '');
     return upsert({
-      id: _id(),
+      id: opts.id || detId,
       stockNo: opts.stockNo,
       reg: opts.reg || '',            // registration — the unique cross-section link
       stageId: opts.stageId,
@@ -140,6 +147,29 @@ var CE_JOBS = (function () {
     });
   }
 
+  // Collapse duplicate PENDING stage jobs for the same vehicle+stage+dept down
+  // to one (the newest), so legacy duplicates created before deterministic ids
+  // don't keep showing for every department member. A job that's done, or a
+  // one-off (accessories/aftersales/authorise), is never collapsed.
+  function _dedupeStageJobs(list) {
+    var seen = {}; var out = [];
+    (list || []).forEach(function (j) {
+      var isStage = /^stage_/.test(j.id || '') || (j.stageId && j.stageName && !j.jobType && !j.source);
+      var pending = !(j.status === 'done' || j.status === 'Done');
+      if (isStage && pending) {
+        var key = (j.stockNo || j.reg || '') + '|' + (j.stageId || j.stageName || '') + '|' + ((j.assignedToDept || j.assignedTo || '').toLowerCase());
+        if (seen[key]) {
+          // Drop the older duplicate; if it still lives on the server, delete it.
+          if (typeof FS !== 'undefined' && FS && /^job_/.test(j.id)) { try { FS.collection(COL).doc(String(j.id)).delete().catch(function(){}); } catch(e){} }
+          return;
+        }
+        seen[key] = 1;
+      }
+      out.push(j);
+    });
+    return out;
+  }
+
   // Live subscription — calls cb() whenever jobs change. Pre-warms cache too.
   // Waits for auth first so the first read isn't rejected, and MERGES any
   // locally-written jobs whose Firestore write hasn't landed yet, so a job
@@ -158,6 +188,7 @@ var CE_JOBS = (function () {
           if (!serverIds[j.id] && _pendingIds[j.id]) server.push(j);
         });
         server.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        server = _dedupeStageJobs(server);
         _lsSave(server);
         if (cb) cb(server);
       }, function (err) { console.warn('[CapEye] jobs listener error', err); if (cb) cb(_lsLoad()); });

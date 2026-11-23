@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26f — Vehicle Overview</title>
+<title>CapEye Nov 26g — Vehicle Overview</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,10 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26f"></script>
-<script src="ac-data.js?v=nov26f"></script>
-<script src="firebase-init.js?v=nov26f"></script>
-<script src="jobs-sync.js?v=nov26f"></script>
+<script src="firebase-config.js?v=nov26g"></script>
+<script src="ac-data.js?v=nov26g"></script>
+<script src="firebase-init.js?v=nov26g"></script>
+<script src="jobs-sync.js?v=nov26g"></script>
 <style>
 :root{--red:#C8102E;--navy:#003DA5;--ink:#111827;--ink2:#374151;--ink3:#6B7280;--bg:#F7F8FA;--border:#E5E7EB;--font:'IBM Plex Sans',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -186,7 +186,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26f">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26g">
 </head><body>
 <nav class="nav">
   <a class="nav-brand" href="index.html"><img src="auto-capital-logo.png" alt="AC" onerror="this.style.display='none'"><span class="nav-mark" style="margin-left:4px">CE</span></a>
@@ -288,13 +288,36 @@ function renderVehicle(vehicle){
       '</div>'+
     '</div>';
 
-  // Real history from the audit log (keyed by registration), newest first.
+  // Real history from the audit log (desktop actions), keyed by registration.
   var events = [];
   try {
     var log = JSON.parse(localStorage.getItem('ac_audit_log')||'[]');
-    events = log.filter(function(e){ return (e.reg||'').toUpperCase()===(vehicle.registration||'').toUpperCase(); })
-                .sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    events = log.filter(function(e){ return (e.reg||'').toUpperCase()===(vehicle.registration||'').toUpperCase(); });
   } catch(e){}
+
+  // App actions — build from the vehicle's workflow doc so stage completions,
+  // inspections, repairs and handovers done ON THE APP show in the history too,
+  // not just desktop actions.
+  var photos = [];
+  try {
+    var wf = JSON.parse(localStorage.getItem('ac_wf_'+vehicle.stockNo)||'{}');
+    var stageName = function(id){ var s=(typeof AC_WORKFLOW_STAGES!=='undefined')?AC_WORKFLOW_STAGES.find(function(x){return x.id===id;}):null; return s?s.name:('Stage '+id); };
+    Object.keys(wf).forEach(function(k){
+      var st = wf[k]; if (!st || typeof st!=='object') return;
+      var id = Number(k); var nm = stageName(id);
+      if (st.completedAt||st.completed) events.push({ts:Date.parse(st.completedAt)||0, title:nm+' completed', desc:st.notes||st.f_notes||'', staff:st.completedBy||st.repairsBy||''});
+      if (st.inspectionDone) events.push({ts:Date.parse(st.inspectedAt)||0, title:'Mechanical inspection done', desc:st.workSummary||'', staff:st.inspectedBy||''});
+      if (st.assignedTech) events.push({ts:Date.parse(st.assignedTechAt)||0, title:'Technician assigned: '+st.assignedTech, desc:'', staff:st.assignedTechBy||''});
+      if (st.repairsBy && st.repairsAt) events.push({ts:Date.parse(st.repairsAt)||0, title:'Repairs signed off', desc:st.repairNotes||'', staff:st.repairsBy});
+      // Collect photos from every stage.
+      ['photosBefore','photosWork','photosAfter'].forEach(function(key){
+        (st[key]||[]).forEach(function(u){ photos.push({u:u, label:nm+' · '+key.replace('photos','')}); });
+      });
+    });
+    if (wf.currentStage) { /* current stage shown in header already */ }
+  } catch(e){}
+
+  events = events.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
 
   var historyHtml = events.length ? events.map(function(e){
     var d = e.ts ? new Date(e.ts) : null;
@@ -305,11 +328,14 @@ function renderVehicle(vehicle){
       '<div class="tl-user"><i class="fas fa-user"></i> '+(e.staff||e.user||'')+'</div></div>';
   }).join('') : '<div style="padding:18px;color:var(--ink3);font-size:13px;font-style:italic">No history logged yet for this vehicle. Actions in Workflow, Handovers and Sales will appear here.</div>';
 
+  var photosHtml = photos.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:8px">'+photos.map(function(p){ return '<div style="text-align:center"><img src="'+p.u+'" style="width:92px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="window.open(this.src)"><div style="font-size:9px;color:var(--ink3);margin-top:2px">'+p.label+'</div></div>'; }).join('')+'</div>'
+    : '<div style="font-size:12px;color:var(--ink3);font-style:italic">No photos uploaded from the app yet for this vehicle.</div>';
+
   document.getElementById('right-panel').innerHTML =
     '<div class="card"><div class="card-h"><i class="fas fa-timeline"></i> Complete Vehicle History</div>'+
       '<div class="timeline">'+historyHtml+'</div></div>'+
-    '<div class="card"><div class="card-h"><i class="fas fa-camera"></i> Photos</div>'+
-      '<div style="font-size:12px;color:var(--ink3);font-style:italic">Photos captured on the Sales app (key, 4-side, walkaround) will appear here once Firebase Storage is enabled.</div></div>';
+    '<div class="card"><div class="card-h"><i class="fas fa-camera"></i> Photos ('+photos.length+')</div>'+photosHtml+'</div>';
 }
 
 // ── EDIT MODE ──
@@ -363,6 +389,18 @@ if (!CURRENT_VEHICLE) {
   document.getElementById('shell').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--ink3)"><i class="fas fa-car-burst" style="font-size:48px;margin-bottom:16px;display:block"></i><div style="font-size:18px;font-weight:700;margin-bottom:8px">Vehicle not found</div><a href="inventory.html" style="color:var(--red)">Go to Inventory</a></div>';
 } else {
   renderVehicle(CURRENT_VEHICLE);
+  // Pull the live workflow doc from Firestore so app actions + photos show here.
+  if (typeof FS!=='undefined' && FS && CURRENT_VEHICLE.stockNo){
+    try {
+      FS.collection('workflows').doc(String(CURRENT_VEHICLE.stockNo)).get().then(function(doc){
+        if (doc.exists){
+          try { var cur=JSON.parse(localStorage.getItem('ac_wf_'+CURRENT_VEHICLE.stockNo)||'{}');
+            localStorage.setItem('ac_wf_'+CURRENT_VEHICLE.stockNo, JSON.stringify(Object.assign(cur, doc.data()||{}))); } catch(e){}
+          renderVehicle(CURRENT_VEHICLE);
+        }
+      }).catch(function(){});
+    } catch(e){}
+  }
   // If live stage data exists for this stock, reflect the real current stage.
   try {
     var wf = JSON.parse(localStorage.getItem('ac_wf_'+CURRENT_VEHICLE.stockNo)||'{}');
@@ -395,7 +433,7 @@ if (!CURRENT_VEHICLE) {
   } catch(e) {}
 })();
 </script>
-<script src="mobile-menu.js?v=nov26f"></script>
+<script src="mobile-menu.js?v=nov26g"></script>
 
 <!-- EDIT VEHICLE MODAL -->
 <div id="editVehModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">

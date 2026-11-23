@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26f — Dashboard</title>
+<title>CapEye Nov 26g — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26f"></script>
-<script src="ac-data.js?v=nov26f"></script>
-<script src="firebase-init.js?v=nov26f"></script>
-<script src="jobs-sync.js?v=nov26f"></script>
-<script src="live-sync.js?v=nov26f"></script>
+<script src="firebase-config.js?v=nov26g"></script>
+<script src="ac-data.js?v=nov26g"></script>
+<script src="firebase-init.js?v=nov26g"></script>
+<script src="jobs-sync.js?v=nov26g"></script>
+<script src="live-sync.js?v=nov26g"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,8 +47,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26f"></script>
-<script src="notifications-sync.js?v=nov26f"></script>
+<script src="notifications.js?v=nov26g"></script>
+<script src="notifications-sync.js?v=nov26g"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -250,7 +250,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26f">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26g">
 </head>
 <body>
 
@@ -429,6 +429,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 function getLiveStage(stockNo) {
   try {
     var wf = JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}');
+    // Prefer an explicit current stage the app/desktop set on advance — this is
+    // accurate even when optional stages (Bodywork/Dent/External) were skipped,
+    // which the "highest completed +1" method below can't tell.
+    if (wf.currentStage) {
+      var cs = (typeof AC_WORKFLOW_STAGES!=='undefined') ? AC_WORKFLOW_STAGES.find(function(s){ return s.name===wf.currentStage; }) : null;
+      return { name: wf.currentStage, enteredAt: wf.currentStageAt || null };
+    }
     var done = Object.keys(wf).map(Number).filter(function(n){ return wf[n]&&wf[n].completed; });
     if (done.length) {
       var max = Math.max.apply(null,done);
@@ -605,8 +612,30 @@ function openConfirmSale(reg){
   document.getElementById('cs-method').textContent = s.method + (s.deliveryAddress?(' — '+s.deliveryAddress):'');
   ['cs-payment','cs-checks'].forEach(function(id){ var e=document.getElementById(id); if(e) e.checked=false; });
   var rev=document.getElementById('cs-review'); if(rev) rev.checked=true;
+  // Build the handover-document view from what the staff completed in Prep for Sale.
+  try { document.getElementById('cs-handover').innerHTML = _buildHandoverDoc(s); } catch(e){ document.getElementById('cs-handover').textContent='Handover details unavailable.'; }
   m.dataset.reg = reg;
   m.classList.add('open');
+}
+
+// Render the completed handover document: the documents + advertising items the
+// staff ticked in Prep for Sale, who completed it and when. This is what the
+// manager reviews before confirming the sale.
+function _buildHandoverDoc(s){
+  var stock = s.stockNo;
+  if (!stock){ var v=AC_VEHICLES.find(function(x){ return (x.registration||'').toUpperCase()===(s.reg||'').toUpperCase(); }); if(v) stock=v.stockNo; }
+  var wf={}; try { wf=JSON.parse(localStorage.getItem('ac_wf_'+stock)||'{}'); } catch(e){}
+  var p=wf[7]||{};
+  var docs=[['doc_v5','V5 Logbook'],['doc_sh','Service History'],['doc_key','Spare Key'],['doc_mot','MOT Certificate'],['doc_hpi','HPI Clear']];
+  var adv=[['f_turntable','Turntable video'],['f_walkaround','Walk-around video'],['f_images','Images'],['f_touchups','Touch-ups']];
+  function row(k,l){ var on=p[k]===true||p[k]==='true'||p[k]==='on'; return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><span style="color:'+(on?'#16a34a':'#cbd5e1')+'">'+(on?'✓':'○')+'</span><span style="color:'+(on?'#0f172a':'#94a3b8')+'">'+l+'</span></div>'; }
+  var any = docs.concat(adv).some(function(x){ return p[x[0]]; });
+  if (!any && !p.completedBy) return '<div style="color:#94a3b8;font-style:italic">No handover document completed on the app yet for this vehicle. You can still confirm, but check the paperwork manually.</div>';
+  var html='<div style="font-weight:700;margin-bottom:4px">Documents</div>'+docs.map(function(x){return row(x[0],x[1]);}).join('')+
+    '<div style="font-weight:700;margin:8px 0 4px">Advertising / prep</div>'+adv.map(function(x){return row(x[0],x[1]);}).join('');
+  if (p.notes) html+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e4e7ec"><b>Notes:</b> '+String(p.notes).replace(/</g,'&lt;')+'</div>';
+  if (p.completedBy) html+='<div style="margin-top:6px;font-size:11px;color:#64748b">Completed by '+p.completedBy+(p.completedAt?(' · '+new Date(p.completedAt).toLocaleDateString('en-GB')):'')+'</div>';
+  return html;
 }
 function closeConfirmSale(){ document.getElementById('confirmSaleModal').classList.remove('open'); }
 
@@ -999,7 +1028,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=nov26f"></script>
+<script src="mobile-menu.js?v=nov26g"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
@@ -1013,9 +1042,20 @@ document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1
       <div style="font-size:14px;font-weight:600;margin-bottom:2px" id="cs-veh"></div>
       <div style="font-size:12px;color:#64748b;margin-bottom:2px">Customer: <span id="cs-cust"></span></div>
       <div style="font-size:12px;color:#64748b;margin-bottom:16px" id="cs-method"></div>
+
+      <!-- 1. HANDOVER CHECK — what the staff completed, to review before confirming -->
+      <div style="font-size:11px;font-weight:800;color:#001a4d;letter-spacing:.04em;margin-bottom:6px">1 · HANDOVER CHECK</div>
+      <div id="cs-handover" style="background:#f8fafc;border:1px solid #e4e7ec;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px"></div>
+
+      <!-- 2. DEALER CHECK -->
+      <div style="font-size:11px;font-weight:800;color:#001a4d;letter-spacing:.04em;margin-bottom:6px">2 · DEALER CHECK</div>
       <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-payment" style="width:18px;height:18px"> Payment received</label>
-      <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-checks" style="width:18px;height:18px"> All checks OK</label>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:16px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-checks" style="width:18px;height:18px"> Dealer checks OK</label>
+
+      <!-- 3. SEND REVIEW -->
+      <div style="font-size:11px;font-weight:800;color:#001a4d;letter-spacing:.04em;margin-bottom:6px">3 · SEND REVIEW</div>
       <label style="display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:16px;cursor:pointer;font-size:14px;font-weight:600"><input type="checkbox" id="cs-review" checked style="width:18px;height:18px"> Send customer Google review link</label>
+
       <div style="display:flex;gap:10px">
         <button onclick="closeConfirmSale()" style="flex:1;background:#eef1f5;border:none;border-radius:10px;padding:13px;font-weight:700;cursor:pointer">Cancel</button>
         <button onclick="submitConfirmSale()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:13px;font-weight:800;cursor:pointer"><i class="fas fa-check-circle"></i> Confirm & Mark Sold</button>
