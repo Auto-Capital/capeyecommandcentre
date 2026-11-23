@@ -136,16 +136,21 @@ var CE_LIVE = (function () {
     var u1 = FS.collection('workflows').onSnapshot(function (snap) {
       snap.docChanges().forEach(function (change) {
         var doc = change.doc;
+        var data = doc.data() || {};
+        // MERGE into the cache (don't clobber fields written by another device).
         try {
-          localStorage.setItem('ac_wf_' + doc.id, JSON.stringify(doc.data()));
+          var curCache = JSON.parse(localStorage.getItem('ac_wf_' + doc.id) || '{}');
+          localStorage.setItem('ac_wf_' + doc.id, JSON.stringify(Object.assign(curCache, data)));
         } catch (e) {}
-        // Reflect currentStage / workflowStage back onto the vehicle row
-        var data = doc.data();
+        // Reflect the current stage back onto the vehicle row. The app writes the
+        // live stage as `currentStage` on the workflow doc, so honour that first.
         var idx = vehiclesArr.findIndex(function (v) { return v.stockNo === doc.id; });
         if (idx >= 0) {
-          if (data.workflowStage) vehiclesArr[idx].workflowStage = data.workflowStage;
+          var liveStage = data.currentStage || data.workflowStage;
+          if (liveStage) vehiclesArr[idx].workflowStage = liveStage;
           if (data.status)        vehiclesArr[idx].status = data.status;
-          if (data.stageStarted)  vehiclesArr[idx].stageStarted = data.stageStarted;
+          if (data.currentStageAt) vehiclesArr[idx].stageStarted = data.currentStageAt;
+          else if (data.stageStarted)  vehiclesArr[idx].stageStarted = data.stageStarted;
           if (typeof data.urgent === 'boolean') vehiclesArr[idx].urgent = data.urgent;
         }
       });

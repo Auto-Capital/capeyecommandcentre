@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=nov26gb">
+<link rel="manifest" href="staff-manifest.json?v=nov26hb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,19 +27,19 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Nov 26g — Staff App</title>
+<title>CapEye Nov 26h — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26g"></script>
-<script src="./ac-data.js?v=nov26g"></script>
-<script src="firebase-init.js?v=nov26g"></script>
-<script src="jobs-sync.js?v=nov26g"></script>
+<script src="firebase-config.js?v=nov26h"></script>
+<script src="./ac-data.js?v=nov26h"></script>
+<script src="firebase-init.js?v=nov26h"></script>
+<script src="jobs-sync.js?v=nov26h"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26g"></script>
-<script src="notifications-sync.js?v=nov26g"></script>
+<script src="notifications.js?v=nov26h"></script>
+<script src="notifications-sync.js?v=nov26h"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -1214,9 +1214,11 @@ var _stageCtx = null;
 
 // Full stage-4 mechanical inspection for the app — the SAME checklist the
 // desktop uses (AA_INSPECTION_CHECKLIST), so Morteza/mechanics complete the
-// whole inspection on their phone. Each item is OK / Attention / Fault, and the
-// field ids match the desktop (aa_<slug>) so results sync straight back.
-function _aaSlug(section, item){ return 'aa_'+(section+'_'+item).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+// whole inspection on their phone. The field ids and values match the DESKTOP
+// exactly (ci_<item> = g/a/r/na, sec_notes_<section>) so Attention/Fault states
+// and section notes highlight on the office screen.
+function _aaSlug(section, item){ return 'ci_'+String(item).replace(/[^a-z0-9]/gi,'_'); }
+function _aaSecNote(section){ return 'sec_notes_'+String(section).replace(/[^a-z0-9]/gi,'_'); }
 function appMechFormHTML(wf){
   if (typeof AA_INSPECTION_CHECKLIST==='undefined') return '';
   var ex = wf || {};
@@ -1226,14 +1228,18 @@ function appMechFormHTML(wf){
       '<summary style="font-size:13px;font-weight:800;color:#001a4d;padding:10px 12px;cursor:pointer">'+section+'</summary>'+
       '<div style="padding:4px 12px 10px">';
     AA_INSPECTION_CHECKLIST[section].forEach(function(item){
-      var id=_aaSlug(section,item); var cur=ex[id]||'ok';
+      var id=_aaSlug(section,item); var cur=ex[id]||'g';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9">'+
         '<span style="font-size:13px;flex:1">'+item+'</span>'+
         '<select id="'+id+'" style="font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px">'+
-          ['ok|✓ OK','attention|⚠ Attention','fault|✗ Fault','na|N/A'].map(function(o){var p=o.split('|');return '<option value="'+p[0]+'"'+(cur===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+
+          ['g|✓ OK','a|⚠ Attention','r|✗ Fault','na|N/A'].map(function(o){var p=o.split('|');return '<option value="'+p[0]+'"'+(cur===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+
         '</select>'+
       '</div>';
     });
+    // Notes box for THIS section (same key the desktop reads).
+    var noteId=_aaSecNote(section);
+    html += '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;margin:8px 0 3px">Notes — '+section+'</label>'+
+      '<textarea id="'+noteId+'" rows="2" placeholder="Notes for '+section.toLowerCase()+'…" style="width:100%;padding:8px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px">'+(ex[noteId]||'').replace(/</g,'&lt;')+'</textarea>';
     html += '</div></details>';
   });
   html += '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px">Parts required</label>'+
@@ -1269,11 +1275,10 @@ function appIntakeFormHTML(wf){
     '<div style="height:8px"></div>'+
     '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:2px 0 3px">Condition on arrival</label>'+
     '<textarea id="f_notes" rows="3" placeholder="General condition, any issues noticed on arrival, fuel level…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px;margin-bottom:12px">'+(ex.f_notes||'').replace(/</g,'&lt;')+'</textarea>'+
-    // Intake photos — up to 6, synced to the desktop.
+    // Intake photos — tap + to add, up to 6, synced to the desktop.
     '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-bottom:12px">'+
-      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Vehicle photos on arrival (up to 6)</div>'+
-      '<input type="file" id="sc_photo_work" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevWork\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
-      '<div id="scPrevWork" style="display:flex;gap:6px;flex-wrap:wrap"></div>'+
+      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Vehicle photos on arrival (tap + to add, up to 6)</div>'+
+      scGridHTML('work','')+
     '</div>'+
     // Which optional work this van needs — ticked here, the pipeline routes it to
     // those stages; left unticked, it skips straight past them to Mechanical.
@@ -1312,22 +1317,55 @@ function scResizeImage(file, maxDim){
     } catch(e){ resolve(''); }
   });
 }
-// Show small previews of the photos the user just picked.
-function scPhotoPreview(input, targetId){
-  var box=document.getElementById(targetId); if(!box) return;
-  box.innerHTML='';
-  var files=Array.prototype.slice.call(input.files||[]).slice(0,6);
-  files.forEach(function(f){ scResizeImage(f,160).then(function(u){ if(!u) return;
-    var im=document.createElement('img'); im.src=u; im.style.cssText='width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e4e7ec'; box.appendChild(im);
-  }); });
+// ── Accumulating photo picker ──
+// Photos are kept in a store keyed by slot ('before'/'after'/'work'), so each
+// time you add a picture it is ADDED (up to 6) rather than replacing the last.
+// Rendered as 6 tap-to-add squares; tap a filled square to remove it.
+var _scPhotos = { before:[], after:[], work:[] };
+function scResetPhotos(){ _scPhotos = { before:[], after:[], work:[] }; }
+
+// Render the 6-square grid for a slot into its container.
+function scRenderGrid(slot){
+  var box=document.getElementById('scGrid_'+slot); if(!box) return;
+  var arr=_scPhotos[slot]||[];
+  var html='';
+  for (var i=0;i<6;i++){
+    if (arr[i]){
+      html+='<div style="position:relative;width:62px;height:62px">'+
+        '<img src="'+arr[i]+'" style="width:62px;height:62px;object-fit:cover;border-radius:8px;border:1px solid #e4e7ec">'+
+        '<button type="button" onclick="scRemovePhoto(\''+slot+'\','+i+')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#C8102E;color:#fff;border:none;font-size:12px;line-height:1;cursor:pointer">&times;</button>'+
+      '</div>';
+    } else if (i===arr.length){
+      // the next empty square is the "add" button
+      html+='<label style="width:62px;height:62px;border:2px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:24px">+'+
+        '<input type="file" accept="image/*" capture="environment" multiple onchange="scAddPhotos(\''+slot+'\',this)" style="display:none">'+
+      '</label>';
+    } else {
+      html+='<div style="width:62px;height:62px;border:1px dashed #e4e7ec;border-radius:8px"></div>';
+    }
+  }
+  box.innerHTML=html;
 }
-// Collect all photos from an input as resized data URLs (Promise<array>).
-function scCollectPhotos(inputId){
-  var el=document.getElementById(inputId);
-  if(!el || !el.files || !el.files.length) return Promise.resolve([]);
-  var files=Array.prototype.slice.call(el.files).slice(0,6);
-  return Promise.all(files.map(function(f){ return scResizeImage(f,900); })).then(function(a){ return a.filter(Boolean); });
+// Add newly-picked files to a slot (resized), up to 6 total, then re-render.
+function scAddPhotos(slot, input){
+  var files=Array.prototype.slice.call(input.files||[]);
+  if(!files.length) return;
+  var room=6-(_scPhotos[slot]||[]).length;
+  files=files.slice(0, Math.max(0,room));
+  Promise.all(files.map(function(f){ return scResizeImage(f,900); })).then(function(urls){
+    urls.filter(Boolean).forEach(function(u){ if((_scPhotos[slot]||[]).length<6) _scPhotos[slot].push(u); });
+    scRenderGrid(slot);
+  });
+  try { input.value=''; } catch(e){}
 }
+function scRemovePhoto(slot, i){ (_scPhotos[slot]||[]).splice(i,1); scRenderGrid(slot); }
+// HTML for a photo-grid block for a given slot.
+function scGridHTML(slot, label){
+  return '<div style="font-size:12px;font-weight:600;color:#64748b;margin:6px 0 4px">'+label+'</div>'+
+    '<div id="scGrid_'+slot+'" style="display:flex;gap:8px;flex-wrap:wrap"></div>';
+}
+// Collect accumulated photos for a slot (already resized data URLs).
+function scCollectPhotos(slot){ return Promise.resolve((_scPhotos[slot]||[]).slice(0,6)); }
 
 function openStageComplete(jobId, stockNo, stageName){
   var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
@@ -1337,6 +1375,9 @@ function openStageComplete(jobId, stockNo, stageName){
   var stageWf = (wf && wf[sidNum]) ? wf[sidNum] : {};
   _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:stageName, veh:veh, task:task, wf:stageWf };
   var items = APP_STAGE_CHECKLISTS[stageName] || [];
+  // A Sales "documents" job shows only the document items (the advertiser has
+  // already done the advertising part).
+  if (task.jobType==='docs'){ items = items.filter(function(it){ return /^doc_/.test(it[0]); }); }
   var isMech = (stageName==='Mechanical');
   var nextStage = APP_STAGE_ORDER[APP_STAGE_ORDER.indexOf(stageName)+1] || null;
   // The inspector's job card: what was flagged at Intake / inspection for this vehicle.
@@ -1352,16 +1393,10 @@ function openStageComplete(jobId, stockNo, stageName){
   var needsPhotos = isValet || stageName==='Bodywork' || stageName==='Dent Repair' || isMech;
   var photoBlock = needsPhotos ? (
     '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-top:10px">'+
-      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 '+(isValet?'Before / after photos':'Photos of work done')+'</div>'+
+      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 '+(isValet?'Before / after photos (tap + to add, up to 6 each)':'Photos of work done (tap + to add, up to 6)')+'</div>'+
       (isValet
-        ? '<label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:3px">Before</label>'+
-          '<input type="file" id="sc_photo_before" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevBefore\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
-          '<div id="scPrevBefore" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>'+
-          '<label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:3px">After</label>'+
-          '<input type="file" id="sc_photo_after" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevAfter\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
-          '<div id="scPrevAfter" style="display:flex;gap:6px;flex-wrap:wrap"></div>'
-        : '<input type="file" id="sc_photo_work" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevWork\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
-          '<div id="scPrevWork" style="display:flex;gap:6px;flex-wrap:wrap"></div>')+
+        ? scGridHTML('before','Before') + '<div style="height:8px"></div>' + scGridHTML('after','After')
+        : scGridHTML('work',''))+
     '</div>'
   ) : '';
   // When a job is assigned to a whole team, make it clear THIS person's name is
@@ -1393,6 +1428,10 @@ function openStageComplete(jobId, stockNo, stageName){
     '</div>'+
   '</div>';
   ov.style.display='block';
+  // Fresh photo store for this form, then render the grids.
+  scResetPhotos();
+  if (isValet){ scRenderGrid('before'); scRenderGrid('after'); }
+  else if (needsPhotos || stageName==='Intake'){ scRenderGrid('work'); }
 }
 
 // Who can authorise a mechanic's completed repairs (double-check & sign off).
@@ -1482,9 +1521,9 @@ function submitStageComplete(ev){
   var e0 = ev || (typeof event!=='undefined' ? event : null);
   var photoBtn = e0 && e0.target; if(photoBtn){ photoBtn.disabled=true; photoBtn.textContent='Saving…'; }
   Promise.all([
-    scCollectPhotos('sc_photo_before'),
-    scCollectPhotos('sc_photo_after'),
-    scCollectPhotos('sc_photo_work')
+    scCollectPhotos('before'),
+    scCollectPhotos('after'),
+    scCollectPhotos('work')
   ]).then(function(res){
     _doStageComplete({ before:res[0]||[], after:res[1]||[], work:res[2]||[] });
   });
@@ -1505,8 +1544,12 @@ function _doStageComplete(photos){
     Object.keys(AA_INSPECTION_CHECKLIST).forEach(function(section){
       AA_INSPECTION_CHECKLIST[section].forEach(function(item){
         var id=_aaSlug(section,item); var el=document.getElementById(id);
-        if (el){ aaFields[id]=el.value; if (el.value==='attention'||el.value==='fault') aaFlags.push((el.value==='fault'?'✗ ':'⚠ ')+section+': '+item); }
+        if (el){ aaFields[id]=el.value; if (el.value==='a'||el.value==='r') aaFlags.push((el.value==='r'?'✗ ':'⚠ ')+section+': '+item); }
       });
+      // Per-section notes (same key the desktop reads).
+      var noteId=_aaSecNote(section);
+      var nEl=document.getElementById(noteId);
+      if (nEl && nEl.value.trim()){ aaFields[noteId]=nEl.value.trim(); aaFlags.push('📝 '+section+' note: '+nEl.value.trim()); }
     });
     var pEl=document.getElementById('f_parts'); if (pEl) aaFields.f_parts=pEl.value;
   }
@@ -1595,7 +1638,10 @@ function _doStageComplete(photos){
     // Write checklist values at the TOP level of the stage object too, so the
     // desktop form (which reads wf[sid][key]) shows them ticked — this is what
     // makes a Sales / docs tick in the app sync back to the office screen.
-    var patch={}; patch[sid]={ completed:true, completedAt:now, completedBy:currentStaff, checklist:checks, notes:notes, f_notes:(stageName==='Intake'?(intakeFields.f_notes||notes):notes) };
+    // Prep for Sale only counts as "completed" once SALES finish the documents;
+    // an advertiser finishing their part leaves it in progress (handed to sales).
+    var _prepByAdvertiser = (stageName==='Prep for Sale') && !(/sales/.test((ceMyDepts()||[]).join(',').toLowerCase()) || ceAmFull());
+    var patch={}; patch[sid]={ completed:!_prepByAdvertiser, completedAt:now, completedBy:currentStaff, checklist:checks, notes:notes, f_notes:(stageName==='Intake'?(intakeFields.f_notes||notes):notes) };
     Object.keys(checks).forEach(function(k){ patch[sid][k]=checks[k]; });
     Object.assign(patch[sid], aaFields);
     Object.assign(patch[sid], intakeFields);
@@ -1631,9 +1677,9 @@ function _doStageComplete(photos){
           stockNo:stockNo, reg:(c.veh&&c.veh.registration)||task.reg||'',
           stageId:7, stageName:'Prep for Sale',
           assignedTo:'Sales Team', assignedToDept:'Sales',
-          assignedBy:currentStaff,
+          assignedBy:currentStaff, jobType:'docs',
           note:'Advertising done by '+currentStaff+' — please complete the documents (V5, service history, MOT, HPI, spare key).',
-          workRequired:'Documents: V5 Logbook · Service History · Spare Key · MOT Certificate · HPI Clear',
+          workRequired:'Documents to complete: V5 Logbook · Service History · Spare Key · MOT Certificate · HPI Clear',
           priority:'Normal', vehicle:vlab
         }); } catch(e){}
       }
@@ -1810,9 +1856,8 @@ function openRepairSignoff(jobId, stockNo){
       '<div style="font-size:13px;color:#7c2d12;white-space:pre-wrap;line-height:1.5">'+work.replace(/</g,'&lt;')+'</div></div>':'')+
     '<div style="font-size:13px;color:#475569;margin-bottom:10px">Confirm the repairs are complete. Add any notes or photos, then sign off — the vehicle then moves on to Valeting.</div>'+
     '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-bottom:10px">'+
-      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Photos of work done</div>'+
-      '<input type="file" id="sc_photo_work" accept="image/*" capture="environment" multiple onchange="scPhotoPreview(this,\'scPrevWork\')" style="width:100%;margin-bottom:6px;font-size:13px">'+
-      '<div id="scPrevWork" style="display:flex;gap:6px;flex-wrap:wrap"></div>'+
+      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Photos of work done (tap + to add, up to 6)</div>'+
+      scGridHTML('work','')+
     '</div>'+
     '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:6px 0 4px">What you did (notes)</label>'+
     '<textarea id="sc_notes" rows="3" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
@@ -1821,11 +1866,12 @@ function openRepairSignoff(jobId, stockNo){
       '<button onclick="submitRepairSignoff(event)" style="flex:2;background:#7c3aed;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">🔧 Repairs done &amp; sign off</button>'+
     '</div></div>';
   ov.style.display='block';
+  scResetPhotos(); scRenderGrid('work');
 }
 function submitRepairSignoff(ev){
   if (!_stageCtx) return;
   var btn=ev&&ev.target; if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
-  scCollectPhotos('sc_photo_work').then(function(work){ _doRepairSignoff(work||[]); });
+  scCollectPhotos('work').then(function(work){ _doRepairSignoff(work||[]); });
 }
 function _doRepairSignoff(workPhotos){
   var c=_stageCtx, stockNo=c.stockNo, now=new Date().toISOString();
@@ -2259,7 +2305,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = 'Nov26g';   // bump each release
+var CE_APP_VERSION = 'Nov26h';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){
