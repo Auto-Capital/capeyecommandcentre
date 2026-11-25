@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Nov 26h — Admin</title>
+<title>CapEye Nov 26i — Admin</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=nov26h"></script>
-<script src="firebase-init.js?v=nov26h"></script>
-<script src="live-sync.js?v=nov26h"></script>
-<script src="jobs-sync.js?v=nov26h"></script>
+<script src="./ac-data.js?v=nov26i"></script>
+<script src="firebase-init.js?v=nov26i"></script>
+<script src="live-sync.js?v=nov26i"></script>
+<script src="jobs-sync.js?v=nov26i"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,8 +38,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26h"></script>
-<script src="notifications-sync.js?v=nov26h"></script>
+<script src="notifications.js?v=nov26i"></script>
+<script src="notifications-sync.js?v=nov26i"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -366,7 +366,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26h">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26i">
 </head>
 <body>
 <nav class="nav">
@@ -802,11 +802,13 @@ function runSeed(){toast('Data loaded from ac-data.js — no Firestore in review
 // Wipe test jobs & aftersales issues from the SHARED store (all users), plus
 // local mirrors, so the demo starts clean. Does NOT touch stock or staff.
 function clearTestData(){
-  if(!confirm('Delete ALL staff jobs and aftersales issues for everyone? Stock and staff are NOT affected.')) return;
+  if(!confirm('Clean slate: delete ALL staff jobs, workflow progress, notifications, accessory bookings and aftersales issues for everyone? Stock and staff are NOT affected.')) return;
   // Local mirrors + flag so sample jobs don't auto-re-seed after a clear.
-  ['ce_staff_jobs','ce_aftersales_faults','ac_alerts'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+  ['ce_staff_jobs','ce_aftersales_faults','ac_alerts','ce_accessories'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+  // Clear every per-vehicle workflow cache + per-user notification cache.
+  try { Object.keys(localStorage).forEach(function(k){ if(/^ac_wf_|^ce_notifs_/.test(k)) localStorage.removeItem(k); }); } catch(e){}
   try { localStorage.setItem('ce_jobs_cleared','1'); } catch(e){}
-  var done = 0, cols = ['staff_jobs','aftersales'];
+  var done = 0, cols = ['staff_jobs','aftersales','workflows','notifications','accessories'];
   if (typeof FS !== 'undefined' && FS) {
     var pending = cols.length;
     cols.forEach(function(col){
@@ -1021,6 +1023,6 @@ function declineRequest(idx) {
   }
 }
 </script>
-<script src="mobile-menu.js?v=nov26h"></script>
+<script src="mobile-menu.js?v=nov26i"></script>
 </body>
 </html>
