@@ -133,17 +133,25 @@ var CE_JOBS = (function () {
   function all() { return _lsLoad(); }
 
   // Jobs assigned to a given staff NAME — or to that person's DEPARTMENT
-  // (team handovers). Pass the person's dept as the 2nd argument.
-  function forStaff(name, dept) {
+  // (team handovers) — or to a STAGE the person covers. Pass the person's dept
+  // as the 2nd arg and the array of stage names they see as the 3rd, so e.g.
+  // Stash (who covers Intake + Bodywork) gets the Bodywork job even though it
+  // was handed to the Bodyshop department.
+  function forStaff(name, dept, sees) {
     if (!name) return [];
     var first = name.split(' ')[0].toLowerCase();
     var d = (dept || '').toLowerCase();
+    var seesArr = (sees === 'all') ? 'all' : (Array.isArray(sees) ? sees.map(function(s){return (s||'').toLowerCase();}) : []);
     return _lsLoad().filter(function (j) {
       var a = (j.assignedTo || '').toLowerCase();
       var jd = (j.assignedToDept || '').toLowerCase();
       var mine = a === name.toLowerCase() || a.split(' ')[0] === first;
       var teamMine = d && (jd === d || a === (d + ' team'));
-      return mine || teamMine;
+      // Stage the person covers (but never steal another individual's named job).
+      var isTeamJob = !j.assignedTo || /team$/.test(a) || !!j.assignedToDept;
+      var stageMine = isTeamJob && Array.isArray(seesArr) && seesArr.length &&
+                      j.stageName && seesArr.indexOf((j.stageName||'').toLowerCase()) > -1;
+      return mine || teamMine || stageMine;
     });
   }
 

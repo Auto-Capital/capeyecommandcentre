@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26i — Workflow</title>
+<title>CapEye Nov 26j — Workflow</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,11 +14,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26i"></script>
-<script src="ac-data.js?v=nov26i"></script>
-<script src="firebase-init.js?v=nov26i"></script>
-<script src="jobs-sync.js?v=nov26i"></script>
-<script src="live-sync.js?v=nov26i"></script>
+<script src="firebase-config.js?v=nov26j"></script>
+<script src="ac-data.js?v=nov26j"></script>
+<script src="firebase-init.js?v=nov26j"></script>
+<script src="jobs-sync.js?v=nov26j"></script>
+<script src="live-sync.js?v=nov26j"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -35,8 +35,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26i"></script>
-<script src="notifications-sync.js?v=nov26i"></script>
+<script src="notifications.js?v=nov26j"></script>
+<script src="notifications-sync.js?v=nov26j"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -370,7 +370,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26i">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26j">
 </head><body>
 
 <nav class="nav">
@@ -380,6 +380,7 @@ input, select, textarea {
     <a class="nav-link" href="index.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
     <a class="nav-link active" href="workflow.html"><i class="fas fa-arrows-rotate"></i> Workflow</a>
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
+    <a class="nav-link" href="calendar.html"><i class="fas fa-calendar-days"></i> Calendar</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
@@ -627,7 +628,31 @@ let currentVehicle = null;
 let currentStageIdx = 0;
 
 /* ── INIT ── */
+// Overlay each vehicle's LIVE stage (set by the app/desktop) onto the static
+// list, so the pipeline, KPIs and dept strip show where vehicles actually are —
+// not the "Intake" they start at. Reads the per-vehicle workflow cache that
+// live-sync keeps current from Firestore.
+function _wfApplyLiveStages(){
+  var STAGE_NAMES = AC_WORKFLOW_STAGES.map(function(s){return s.name;});
+  vehicles.forEach(function(v){
+    try {
+      var wf = JSON.parse(localStorage.getItem('ac_wf_'+v.stockNo)||'{}');
+      // 1) explicit current stage wins (set on every advance)
+      if (wf.currentStage){ v.workflowStage = wf.currentStage; if(/ready for sale/i.test(wf.currentStage)) v.status='Ready for Sale'; return; }
+      // 2) otherwise derive from the highest completed stage + 1
+      var done = Object.keys(wf).map(Number).filter(function(n){ return wf[n]&&wf[n].completed; });
+      if (done.length){
+        var max=Math.max.apply(null,done);
+        var next=AC_WORKFLOW_STAGES.find(function(s){return s.id===max+1;});
+        if (next) v.workflowStage=next.name;
+        else { v.workflowStage='Ready for Sale'; v.status='Ready for Sale'; }
+      }
+    } catch(e){}
+  });
+}
+
 function init() {
+  _wfApplyLiveStages();
   document.getElementById('nav-user').textContent = getCurrentUser().name;
   // Populate vehicle selector
   const sel = document.getElementById('vehicleSelect');
@@ -1229,6 +1254,10 @@ function buildForm(stage, ex) {
           '<div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px">'+label+'</div><input class="form-control" type="number" id="'+id+'" value="'+(ex[id]||'')+'" placeholder="mm" min="0" max="10" step="0.5" style="text-align:center;font-size:16px;font-weight:700"></div>'
         ).join('')}
       </div>
+      ${ex.mm_sixwheel ? '<div style="margin-top:8px"><div style="font-size:10px;font-weight:700;color:var(--red);margin-bottom:4px">6-WHEEL — TWIN REAR (mm)</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
+        [['mm_tread_rl_outer','RL Outer'],['mm_tread_rl_inner','RL Inner'],['mm_tread_rr_outer','RR Outer'],['mm_tread_rr_inner','RR Inner']].map(function(a){
+          return '<div style="text-align:center"><div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:4px">'+a[1]+'</div><input class="form-control" type="number" id="'+a[0]+'" value="'+(ex[a[0]]||'')+'" placeholder="mm" min="0" max="10" step="0.5" style="text-align:center;font-size:16px;font-weight:700"></div>';
+        }).join('')+'</div></div>' : ''}
     </div>
     <div class="form-field full"><div class="form-label">Fault Codes</div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start">
@@ -1896,6 +1925,7 @@ document.addEventListener("DOMContentLoaded", function() {
     init();
     // Re-paint everything whenever any user changes a vehicle or workflow.
     CE_LIVE.attachListeners(vehicles, function() {
+      _wfApplyLiveStages();   // refresh live stages before repainting
       buildKPIs();
       buildDeptStrip();
       buildMyQueue();
@@ -1999,6 +2029,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26i"></script>
+<script src="mobile-menu.js?v=nov26j"></script>
 </body>
 </html>

@@ -74,10 +74,16 @@ function isAdmin() { return !!getCurrentUser().admin; }
 // Full-access people (Keith, Ibrahim, Ajay, David + admins/Management) see the
 // whole site. Lite staff who log into the website see only the operational
 // pages they need; management-only pages are hidden and blocked.
-var CE_FULL_PAGES = ['index.html','workflow.html','inventory.html','alerts.html','analytics.html','auction.html','accessories.html','aftersales.html','staff-jobs.html','import.html','audit.html','team.html','admin.html'];
+var CE_FULL_PAGES = ['index.html','workflow.html','inventory.html','calendar.html','alerts.html','analytics.html','auction.html','accessories.html','aftersales.html','staff-jobs.html','import.html','audit.html','team.html','admin.html'];
 var CE_LITE_PAGES = ['workflow.html','inventory.html','accessories.html','aftersales.html','staff-jobs.html'];
 function ceUserIsFull(){
-  try { var u=getCurrentUser(); return (typeof ceIsFullAccess==='function') ? ceIsFullAccess(u) : (!!u.admin||u.dept==='Management'); }
+  try {
+    var u=getCurrentUser();
+    // An explicit desktopAccess flag grants full DESKTOP navigation without
+    // changing what the person sees in the app or their data permissions.
+    if (u && u.desktopAccess) return true;
+    return (typeof ceIsFullAccess==='function') ? ceIsFullAccess(u) : (!!u.admin||u.dept==='Management');
+  }
   catch(e){ return true; }
 }
 function ceApplyDesktopAccess(){

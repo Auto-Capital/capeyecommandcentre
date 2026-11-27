@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapEye Nov 26j — Calendar</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{--navy:#001a4d;--red:#C8102E;--bg:#f4f6f9;--bg2:#fff;--border:#e4e7ec;--ink:#0f172a;--ink3:#64748b;--green:#1a7f37;--orange:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink)}
+.topnav{display:flex;align-items:center;gap:8px;background:var(--navy);padding:8px 14px;color:#fff;overflow-x:auto}
+.brand{background:var(--red);color:#fff;font-weight:800;border-radius:6px;padding:5px 9px;font-size:13px;letter-spacing:1px}
+.nav-links{display:flex;gap:1px;flex:1}
+.nav-link{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:6px;color:#cbd5e1;text-decoration:none;font-size:12px;font-weight:600;white-space:nowrap}
+.nav-link:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-link.active{background:var(--red);color:#fff}
+.nav-link i{font-size:10px}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+.hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.hdr h1{font-size:22px;color:var(--navy)}
+.hdr .sub{font-size:13px;color:var(--ink3)}
+.btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:14px}
+.btn.green{background:var(--green)}
+.btn.ghost{background:#eef1f5;color:var(--ink)}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bar h2{font-size:18px;color:var(--navy);min-width:180px;text-align:center}
+.arrow{background:#fff;border:1px solid var(--border);border-radius:8px;width:38px;height:38px;cursor:pointer;font-size:16px}
+.cal{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--navy);color:#fff}
+.cal-head div{padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cell{min-height:104px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:5px;cursor:pointer;position:relative}
+.cell:hover{background:#f8fafc}
+.cell.other{background:#fafbfc;color:#cbd5e1}
+.cell.today{background:#fff7ed}
+.cell .dnum{font-size:12px;font-weight:700;color:var(--ink3)}
+.cell.today .dnum{color:var(--red)}
+.ev{font-size:10px;border-radius:4px;padding:2px 5px;margin-top:3px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;font-size:12px;color:var(--ink3)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:22px;max-height:90vh;overflow:auto}
+.modal h3{color:var(--navy);margin-bottom:12px}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--ink3);margin:10px 0 4px}
+.fi{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;font-size:14px}
+.day-list{margin-top:6px}
+.day-ev{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+.pill{font-size:10px;font-weight:700;color:#fff;border-radius:10px;padding:2px 8px}
+</style>
+</head>
+<body>
+<div class="topnav">
+  <span class="brand">CE</span>
+  <div class="nav-links">
+    <a class="nav-link" href="index.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
+    <a class="nav-link" href="workflow.html"><i class="fas fa-arrows-rotate"></i> Workflow</a>
+    <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
+    <a class="nav-link" href="calendar.html" style="background:var(--red);color:#fff"><i class="fas fa-calendar-days"></i> Calendar</a>
+    <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+    <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
+    <a class="nav-link" href="accessories.html"><i class="fas fa-wrench"></i> Accessories</a>
+    <a class="nav-link" href="aftersales.html"><i class="fas fa-headset"></i> Aftersales</a>
+    <a class="nav-link" href="staff-jobs.html"><i class="fas fa-clipboard-list"></i> Staff Jobs</a>
+    <a class="nav-link" href="team.html"><i class="fas fa-users"></i> Team</a>
+    <a class="nav-link" href="admin.html"><i class="fas fa-cog"></i> Admin</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="hdr">
+    <div><h1>Staff Calendar</h1><div class="sub">Days off, holidays, appointments and cover</div></div>
+    <button class="btn green" onclick="openAdd()"><i class="fas fa-plus"></i> Add entry</button>
+  </div>
+
+  <div class="bar">
+    <button class="arrow" onclick="moveMonth(-1)">‹</button>
+    <h2 id="monthLabel"></h2>
+    <button class="arrow" onclick="moveMonth(1)">›</button>
+    <button class="btn ghost" onclick="goToday()" style="padding:8px 12px">Today</button>
+    <select class="fi" id="staffFilter" onchange="render()" style="width:auto;margin-left:auto"><option value="">All staff</option></select>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="cal">
+    <div class="cal-head"><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></div>
+    <div class="cal-grid" id="grid"></div>
+  </div>
+</div>
+
+<!-- ADD / EDIT -->
+<div class="overlay" id="ovl">
+  <div class="modal">
+    <h3 id="modalTitle">Add calendar entry</h3>
+    <label class="fl">Staff member</label>
+    <select class="fi" id="c_staff"></select>
+    <label class="fl">Type</label>
+    <select class="fi" id="c_type">
+      <option value="off">Day off</option>
+      <option value="holiday">Holiday</option>
+      <option value="appointment">Appointment</option>
+      <option value="sick">Sick</option>
+      <option value="training">Training</option>
+      <option value="other">Other</option>
+    </select>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><label class="fl">From</label><input class="fi" type="date" id="c_from"></div>
+      <div style="flex:1"><label class="fl">To</label><input class="fi" type="date" id="c_to"></div>
+    </div>
+    <label class="fl">Note (optional)</label>
+    <input class="fi" id="c_note" placeholder="e.g. Dentist 2pm / annual leave">
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn ghost" style="flex:1" onclick="closeOvl()">Cancel</button>
+      <button class="btn green" style="flex:2" onclick="saveEntry()">Save entry</button>
+    </div>
+    <div id="dayList" class="day-list"></div>
+  </div>
+</div>
+
+<script src="./ac-data.js?v=nov26j"></script>
+<script src="firebase-init.js?v=nov26j"></script>
+<script>
+// ── SESSION ──
+(function(){ var ts=parseInt(localStorage.getItem('ce_auth_ts')||'0'); if(!ts||(Date.now()-ts)>12*60*60*1000){ ['ce_user_id','ce_user_name','ce_user_dept','ce_auth_ts'].forEach(function(k){localStorage.removeItem(k);}); location.replace('login.html'); } })();
+
+var TYPE_COLORS={off:'#64748b',holiday:'#0891b2',appointment:'#8b5cf6',sick:'#C8102E',training:'#1a7f37',other:'#f59e0b'};
+var TYPE_LABELS={off:'Day off',holiday:'Holiday',appointment:'Appointment',sick:'Sick',training:'Training',other:'Other'};
+var LS='ce_calendar';
+var view=new Date(); view.setDate(1);
+var editId=null;
+
+function loadEntries(){ try { return JSON.parse(localStorage.getItem(LS)||'[]'); } catch(e){ return []; } }
+function saveEntries(a){ try { localStorage.setItem(LS, JSON.stringify(a)); } catch(e){} }
+
+// Live Firestore sync (shared across devices).
+function attachLive(){
+  if (typeof FS==='undefined' || !FS) return;
+  FS.collection('staff_calendar').onSnapshot(function(snap){
+    var arr=[]; snap.forEach(function(d){ arr.push(Object.assign({id:d.id}, d.data())); });
+    saveEntries(arr); render();
+  }, function(){});
+}
+
+function fillStaff(){
+  var staff=(typeof AC_STAFF!=='undefined')?AC_STAFF.filter(function(s){return s.role!=='Test User'&&s.id!=='master'&&!s.archived;}):[];
+  var opts=staff.map(function(s){return '<option value="'+s.name+'">'+s.name+'</option>';}).join('');
+  document.getElementById('c_staff').innerHTML=opts;
+  document.getElementById('staffFilter').innerHTML='<option value="">All staff</option>'+opts;
+}
+
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseYmd(s){ var p=(s||'').split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+
+function entriesOn(dateStr, staffFilter){
+  return loadEntries().filter(function(e){
+    if (staffFilter && e.staff!==staffFilter) return false;
+    var f=e.from||e.date, t=e.to||e.from||e.date;
+    return dateStr>=f && dateStr<=t;
+  });
+}
+
+function render(){
+  var y=view.getFullYear(), m=view.getMonth();
+  document.getElementById('monthLabel').textContent=view.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  // Legend
+  document.getElementById('legend').innerHTML=Object.keys(TYPE_LABELS).map(function(k){return '<span><span class="dot" style="background:'+TYPE_COLORS[k]+'"></span>'+TYPE_LABELS[k]+'</span>';}).join('');
+  var staffFilter=document.getElementById('staffFilter').value;
+  // First cell = Monday of the week containing the 1st
+  var first=new Date(y,m,1); var startDow=(first.getDay()+6)%7; // Mon=0
+  var start=new Date(y,m,1-startDow);
+  var todayStr=ymd(new Date());
+  var html='';
+  for (var i=0;i<42;i++){
+    var d=new Date(start); d.setDate(start.getDate()+i);
+    var ds=ymd(d); var other=d.getMonth()!==m;
+    var evs=entriesOn(ds, staffFilter);
+    html+='<div class="cell'+(other?' other':'')+(ds===todayStr?' today':'')+'" onclick="openDay(\''+ds+'\')">'+
+      '<div class="dnum">'+d.getDate()+'</div>'+
+      evs.slice(0,4).map(function(e){ return '<div class="ev" style="background:'+(TYPE_COLORS[e.type]||'#64748b')+'" title="'+(e.staff+' — '+(TYPE_LABELS[e.type]||e.type)+(e.note?' · '+e.note:''))+'">'+e.staff.split(' ')[0]+' · '+(TYPE_LABELS[e.type]||e.type)+'</div>'; }).join('')+
+      (evs.length>4?('<div class="ev" style="background:#94a3b8">+'+(evs.length-4)+' more</div>'):'')+
+    '</div>';
+  }
+  document.getElementById('grid').innerHTML=html;
+}
+
+function moveMonth(n){ view.setMonth(view.getMonth()+n); render(); }
+function goToday(){ view=new Date(); view.setDate(1); render(); }
+
+function openAdd(preDate){
+  editId=null;
+  document.getElementById('modalTitle').textContent='Add calendar entry';
+  document.getElementById('dayList').innerHTML='';
+  var today=preDate||ymd(new Date());
+  document.getElementById('c_from').value=today;
+  document.getElementById('c_to').value=today;
+  document.getElementById('c_note').value='';
+  document.getElementById('c_type').value='off';
+  document.getElementById('ovl').style.display='flex';
+}
+
+// Click a day → show its entries + quick add.
+function openDay(ds){
+  openAdd(ds);
+  var evs=entriesOn(ds,'');
+  if (evs.length){
+    document.getElementById('dayList').innerHTML='<div style="font-size:12px;font-weight:700;color:#64748b;margin:12px 0 6px">On '+parseYmd(ds).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</div>'+
+      evs.map(function(e){ return '<div class="day-ev"><div><b>'+e.staff+'</b> <span class="pill" style="background:'+(TYPE_COLORS[e.type]||'#64748b')+'">'+(TYPE_LABELS[e.type]||e.type)+'</span>'+(e.note?('<div style="font-size:11px;color:#64748b;margin-top:2px">'+e.note+'</div>'):'')+'</div>'+
+        '<button onclick="delEntry(\''+e.id+'\')" style="background:none;border:none;color:#C8102E;cursor:pointer"><i class="fas fa-trash"></i></button></div>'; }).join('');
+  }
+}
+
+function closeOvl(){ document.getElementById('ovl').style.display='none'; }
+
+function saveEntry(){
+  var staff=document.getElementById('c_staff').value;
+  var type=document.getElementById('c_type').value;
+  var from=document.getElementById('c_from').value;
+  var to=document.getElementById('c_to').value||from;
+  var note=document.getElementById('c_note').value.trim();
+  if (!staff){ alert('Pick a staff member'); return; }
+  if (!from){ alert('Pick a date'); return; }
+  if (to<from){ var tmp=to; to=from; from=tmp; }
+  var id='cal_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var entry={ id:id, staff:staff, type:type, from:from, to:to, note:note,
+    by:(typeof getCurrentUser==='function'?getCurrentUser().name:''), createdAt:Date.now() };
+  var arr=loadEntries(); arr.push(entry); saveEntries(arr);
+  if (typeof FS!=='undefined' && FS){ try { FS.collection('staff_calendar').doc(id).set(entry).catch(function(){}); } catch(e){} }
+  closeOvl(); render();
+}
+
+function delEntry(id){
+  if (!confirm('Delete this calendar entry?')) return;
+  var arr=loadEntries().filter(function(e){return e.id!==id;}); saveEntries(arr);
+  if (typeof FS!=='undefined' && FS){ try { FS.collection('staff_calendar').doc(id).delete().catch(function(){}); } catch(e){} }
+  render(); closeOvl();
+}
+
+// INIT
+fillStaff();
+render();
+attachLive();
+</script>
+<script src="mobile-menu.js?v=nov26j"></script>
+</body>
+</html>

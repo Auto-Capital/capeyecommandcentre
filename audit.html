@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Nov 26i — Audit</title>
+<title>CapEye Nov 26j — Audit</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=nov26i"></script>
+<script src="./ac-data.js?v=nov26j"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -309,7 +309,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26i">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26j">
 </head>
 <body>
 
@@ -320,6 +320,7 @@ input, select, textarea {
     <a class="nav-link" href="index.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
     <a class="nav-link" href="workflow.html"><i class="fas fa-arrows-rotate"></i> Workflow</a>
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
+    <a class="nav-link" href="calendar.html"><i class="fas fa-calendar-days"></i> Calendar</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
@@ -420,8 +421,8 @@ input, select, textarea {
   </div>
 </div>
 
-<script src="firebase-init.js?v=nov26i"></script>
-<script src="jobs-sync.js?v=nov26i"></script>
+<script src="firebase-init.js?v=nov26j"></script>
+<script src="jobs-sync.js?v=nov26j"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -438,8 +439,8 @@ input, select, textarea {
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26i"></script>
-<script src="notifications-sync.js?v=nov26i"></script>
+<script src="notifications.js?v=nov26j"></script>
+<script src="notifications-sync.js?v=nov26j"></script>
 <script>
 const DEPT_C = {Intake:'#6366f1',Workshop:'#7c3aed',Bodyshop:'#f97316',Valeting:'#10b981',Marketing:'#3b82f6',Sales:'#22c55e',Finance:'#a855f7',Management:'#64748b'};
 const TYPE_CFG = {
@@ -563,6 +564,32 @@ function collectEvents() {
         staff:'System', dept:'Ready for Sale',
         reg:a.stockNo||'', priority:a.level==='critical'?'critical':a.level==='warning'?'urgent':'normal',
       });
+    });
+  } catch(e){}
+
+  // 6. Live staff jobs (the current system's real activity) — assigned,
+  //    started and completed, with who did each. This is what makes the audit
+  //    trail actually reflect today's app + desktop activity.
+  try {
+    var jobs = (typeof CE_JOBS!=='undefined' && CE_JOBS.all) ? CE_JOBS.all() : [];
+    jobs.forEach(function(j){
+      var veh = j.vehicle || ((j.reg||'')+' ').trim();
+      if (j.assignedAt){
+        events.push({ type:'handover', ts:new Date(j.assignedAt).toISOString(),
+          title:(j.stageName?(j.stageName+' — '):'')+'assigned to '+(j.assignedTo||j.assignedToDept||'team'),
+          desc:veh+(j.note?(' · '+j.note):''), staff:j.assignedBy||'System',
+          dept:j.assignedToDept||j.stageName||'', reg:j.reg||'', priority:(j.priority||'normal').toLowerCase() });
+      }
+      if (j.startedAt){
+        events.push({ type:'other', ts:new Date(j.startedAt).toISOString(),
+          title:(j.stageName?(j.stageName+' — '):'')+'job started',
+          desc:veh, staff:j.startedBy||j.assignedTo||'', dept:j.assignedToDept||'', reg:j.reg||'', priority:'normal' });
+      }
+      if ((j.status==='done'||j.status==='Done') && j.completedAt){
+        events.push({ type:'other', ts:new Date(j.completedAt).toISOString(),
+          title:(j.stageName?(j.stageName+' — '):'')+'completed',
+          desc:veh, staff:j.completedBy||j.assignedTo||'', dept:j.assignedToDept||'', reg:j.reg||'', priority:'normal' });
+      }
     });
   } catch(e){}
 
@@ -824,10 +851,16 @@ document.addEventListener('DOMContentLoaded', function() {
           localStorage.setItem('ac_audit_log', JSON.stringify(merged.slice(0,500)));
         } catch(e2){}
       }
-      if (typeof collectEvents === 'function') collectEvents();
+      if (typeof buildAudit === 'function') buildAudit();   // re-render, not just collect
     }, 500);
-  } setTimeout(updateBell, 1000); });
+  }
+  // Rebuild the audit trail live whenever staff jobs change (assigned / started /
+  // completed) — this is the main source of day-to-day activity now.
+  if (typeof CE_JOBS !== 'undefined' && CE_JOBS.subscribe) {
+    try { CE_JOBS.subscribe(function(){ try { if (typeof buildAudit==='function') buildAudit(); } catch(e){} }); } catch(e){}
+  }
+  setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26i"></script>
+<script src="mobile-menu.js?v=nov26j"></script>
 </body>
 </html>

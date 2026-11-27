@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapEye Nov 26i — Team</title>
+<title>CapEye Nov 26j — Team</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
-<script src="./ac-data.js?v=nov26i"></script>
-<script src="firebase-init.js?v=nov26i"></script>
-<script src="live-sync.js?v=nov26i"></script>
-<script src="jobs-sync.js?v=nov26i"></script>
+<script src="./ac-data.js?v=nov26j"></script>
+<script src="firebase-init.js?v=nov26j"></script>
+<script src="live-sync.js?v=nov26j"></script>
+<script src="jobs-sync.js?v=nov26j"></script>
 <script>
 // ── SESSION CHECK ────────────────────────────────────────────
 (function() {
@@ -38,8 +38,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26i"></script>
-<script src="notifications-sync.js?v=nov26i"></script>
+<script src="notifications.js?v=nov26j"></script>
+<script src="notifications-sync.js?v=nov26j"></script>
 <style>
 /* ── STANDARD LAYOUT — optimised for 19-24 inch screens ── */
 .shell,.main{
@@ -346,7 +346,7 @@ input, select, textarea {
 }
 
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26i">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26j">
 </head>
 <body>
 <nav class="nav">
@@ -356,6 +356,7 @@ input, select, textarea {
     <a class="nav-link" href="index.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
     <a class="nav-link" href="workflow.html"><i class="fas fa-arrows-rotate"></i> Workflow</a>
     <a class="nav-link" href="inventory.html"><i class="fas fa-car"></i> Inventory</a>
+    <a class="nav-link" href="calendar.html"><i class="fas fa-calendar-days"></i> Calendar</a>
     <a class="nav-link" href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
     <a class="nav-link" href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a>
     <a class="nav-link" href="auction.html"><i class="fas fa-gavel"></i> Auction</a>
@@ -397,6 +398,7 @@ input, select, textarea {
   <div class="filters-row">
     <input class="search-box" id="teamSearch" placeholder="🔍 Search staff..." oninput="renderTeam()">
     <div id="deptFilters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button id="addStaffBtn" onclick="openAddStaff()" style="display:none;margin-left:auto;background:#1a7f37;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;white-space:nowrap"><i class="fas fa-user-plus"></i> Add Staff</button>
   </div>
 
   <!-- TEAM GRID -->
@@ -415,13 +417,15 @@ input, select, textarea {
 const DEPT_COLORS={Management:'#64748b',Sales:'#003DA5',Workshop:'#ef4444',Valeting:'#10b981',Marketing:'#8b5cf6',Finance:'#a855f7',Bodyshop:'#f97316',Intake:'#6366f1',Advertising:'#8b5cf6',Checklist:'#0891b2',Accounts:'#a855f7'};
 let activeDept='all';
 
-// Apply any saved staff edits (from the Edit button) onto AC_STAFF on load.
+// Apply any saved staff edits (from the Edit button) onto AC_STAFF on load,
+// and merge in any staff ADDED from the Team page (not in the code list).
 (function(){
   try {
     var ov = JSON.parse(localStorage.getItem('ac_staff_overrides')||'{}');
     Object.keys(ov).forEach(function(id){
       var s = AC_STAFF.find(function(x){ return x.id===id; });
       if (s) Object.assign(s, ov[id]);
+      else if (ov[id] && ov[id].name) AC_STAFF.push(ov[id]);   // added staff
     });
   } catch(e){}
 })();
@@ -430,6 +434,7 @@ function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUppe
 function avatarColor(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffffffff;const cols=['#003DA5','#C8102E','#1a7f37','#d4980a','#7c3aed','#0891b2','#be185d','#d4600a'];return cols[Math.abs(h)%cols.length];}
 
 function renderTeam(){
+  var asb=document.getElementById('addStaffBtn'); if(asb) asb.style.display=_amManagement()?'':'none';
   const q=(document.getElementById('teamSearch').value||'').toLowerCase();
   const list=AC_STAFF.filter(s=>{
     if(s.role==='Test User'||s.id==='master'||s.archived)return false;   // hide test/master/archived
@@ -548,7 +553,9 @@ function editProfile(name, authorised){
     '<div style="display:flex;gap:8px;margin-top:8px">'+
       '<button onclick="saveProfile(\''+s.name.replace(/'/g,"\\'")+'\')" style="flex:1;background:var(--green,#1a7f37);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer"><i class="fas fa-save"></i> Save</button>'+
       '<button onclick="openProfile(\''+s.name.replace(/'/g,"\\'")+'\')" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer">Cancel</button>'+
-    '</div></div>';
+    '</div>'+
+    (_amManagement()?'<button onclick="deleteStaff(\''+s.name.replace(/'/g,"\\'")+'\')" style="width:100%;margin-top:8px;background:#fff;color:#C8102E;border:1px solid #C8102E;border-radius:8px;padding:11px;font-weight:700;cursor:pointer"><i class="fas fa-user-minus"></i> Remove from team</button>':'')+
+    '</div>';
   document.getElementById('profileContent').innerHTML = html;
 }
 
@@ -558,11 +565,78 @@ function saveProfile(name){
   s.role=g('role'); s.dept=g('dept'); s.phone=g('phone'); s.email=g('email');
   s.startDate=g('startDate'); s.dob=g('dob'); s.address=g('address'); s.pin=g('pin');
   s.ec1name=g('ec1name'); s.ec1phone=g('ec1phone'); s.ec2name=g('ec2name'); s.ec2phone=g('ec2phone');
-  // Persist the edit to Firestore so it syncs, and to a local override.
-  if (typeof FS!=='undefined' && FS){ try{ FS.collection('staff_overrides').doc(s.id).set(s,{merge:true}); }catch(e){} }
-  try { var ov=JSON.parse(localStorage.getItem('ac_staff_overrides')||'{}'); ov[s.id]=s; localStorage.setItem('ac_staff_overrides',JSON.stringify(ov)); } catch(e){}
+  _persistStaff(s);
   renderTeam();
   openProfile(name);   // reopen read-only profile showing the new values
+}
+
+// Save a staff object to Firestore (sync) + local override (loads next time).
+function _persistStaff(s){
+  if (typeof FS!=='undefined' && FS){ try{ FS.collection('staff_overrides').doc(s.id).set(s,{merge:true}); }catch(e){} }
+  try { var ov=JSON.parse(localStorage.getItem('ac_staff_overrides')||'{}'); ov[s.id]=s; localStorage.setItem('ac_staff_overrides',JSON.stringify(ov)); } catch(e){}
+}
+
+// Only management may add / remove staff.
+function _amManagement(){
+  try { var u=getCurrentUser(); return !!u.admin || u.dept==='Management' || (typeof ceIsFullAccess==='function' && ceIsFullAccess(u)); }
+  catch(e){ return false; }
+}
+
+// Soft-delete: archive the staff member (keeps their history, hides them).
+function deleteStaff(name){
+  if (!_amManagement()){ alert('Only management can remove staff.'); return; }
+  var s = AC_STAFF.find(x=>x.name===name); if(!s) return;
+  if (!confirm('Remove '+s.name+' from the team? They’ll be hidden from the staff list and app logins. This can be undone by re-adding them.')) return;
+  s.archived = true;
+  _persistStaff(s);
+  renderTeam();
+  var pc=document.getElementById('profileContent'); if(pc) pc.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted)">'+s.name+' removed.</div>';
+}
+
+// Add a brand-new staff member.
+function openAddStaff(){
+  if (!_amManagement()){ alert('Only management can add staff.'); return; }
+  var depts=[...new Set(AC_STAFF.map(s=>s.dept))];
+  var f=function(id,label,ph){ return '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink3,#475569);margin:8px 0 3px">'+label+'</label><input id="ns_'+id+'" placeholder="'+(ph||'')+'" style="width:100%;padding:11px;border:1px solid var(--border,#d0d5dd);border-radius:8px;font-size:14px">'; };
+  var html='<div style="font-size:18px;font-weight:800;color:var(--navy,#001a4d);margin-bottom:10px">Add staff member</div>'+
+    f('name','Full name','e.g. John Smith')+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:8px 0 3px">Department</label>'+
+    '<select id="ns_dept" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px">'+depts.map(function(d){return '<option>'+d+'</option>';}).join('')+'</select>'+
+    f('role','Role','e.g. Valeter')+
+    f('pin','4-digit app PIN','e.g. 4821')+
+    f('email','Email','name@autocapital.co.uk')+
+    f('phone','Phone','07…')+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px"><input type="checkbox" id="ns_desktop"> Desktop access</label>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button onclick="submitAddStaff()" style="flex:1;background:var(--green,#1a7f37);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Add staff member</button>'+
+      '<button onclick="renderTeam();document.getElementById(\'profileContent\').innerHTML=\'\'" style="background:#eef1f5;border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer">Cancel</button>'+
+    '</div>';
+  var pc=document.getElementById('profileContent');
+  if (pc){ pc.innerHTML=html; pc.scrollIntoView({behavior:'smooth'}); }
+}
+function submitAddStaff(){
+  var g=function(id){var el=document.getElementById('ns_'+id);return el?el.value.trim():'';};
+  var name=g('name'); if(!name){ alert('Enter a name'); return; }
+  var dept=g('dept'); var pin=g('pin');
+  // Derive a unique id from the first name.
+  var base=name.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g,'');
+  var id=base; var n=2; while(AC_STAFF.find(function(x){return x.id===id;})){ id=base+n; n++; }
+  var s={ id:id, name:name, dept:dept, role:g('role')||dept, email:g('email'), phone:g('phone'),
+    pin:pin, admin:false, canSeePurchasePrice:false, canSkipStages:false, canSendBack:false,
+    desktopAccess: !!document.getElementById('ns_desktop') && document.getElementById('ns_desktop').checked,
+    sees: _defaultSeesForDept(dept), addedAt:new Date().toISOString() };
+  AC_STAFF.push(s);
+  _persistStaff(s);
+  renderTeam();
+  alert(name+' added.'+(pin?(' App PIN: '+pin):'')+'\n\nNote: for DESKTOP login they also need a Firebase account (email + password) set up in the Firebase console.');
+  openProfile(name);
+}
+// Which stages a new dept member should see by default.
+function _defaultSeesForDept(dept){
+  var map={Intake:['Intake','Bodywork','Dent Repair'],Bodyshop:['Bodywork','Dent Repair'],
+    Workshop:['Mechanical','External Work'],Valeting:['Valeting'],Advertising:['Prep for Sale'],
+    Sales:['Prep for Sale','Sold'],Management:'all'};
+  return map[dept] || ['Intake'];
 }
 
 function buildDeptFilters(){
@@ -689,6 +763,6 @@ function timeAgo(ts) {
 setInterval(updateBell, 60000);
 document.addEventListener('DOMContentLoaded', function() { setTimeout(updateBell, 1000); });
 </script>
-<script src="mobile-menu.js?v=nov26i"></script>
+<script src="mobile-menu.js?v=nov26j"></script>
 </body>
 </html>

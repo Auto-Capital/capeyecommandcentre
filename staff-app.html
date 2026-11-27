@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=nov26ib">
+<link rel="manifest" href="staff-manifest.json?v=nov26jb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,19 +27,19 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Nov 26i — Staff App</title>
+<title>CapEye Nov 26j — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26i"></script>
-<script src="./ac-data.js?v=nov26i"></script>
-<script src="firebase-init.js?v=nov26i"></script>
-<script src="jobs-sync.js?v=nov26i"></script>
+<script src="firebase-config.js?v=nov26j"></script>
+<script src="./ac-data.js?v=nov26j"></script>
+<script src="firebase-init.js?v=nov26j"></script>
+<script src="jobs-sync.js?v=nov26j"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26i"></script>
-<script src="notifications-sync.js?v=nov26i"></script>
+<script src="notifications.js?v=nov26j"></script>
+<script src="notifications-sync.js?v=nov26j"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -304,9 +304,13 @@ html,
         <div class="hero-stats" id="dashStats"></div>
 
         <!-- Two actions, one unified vehicle search behind both -->
-        <div id="dashActions" style="display:flex;gap:10px;margin-bottom:18px">
+        <div id="dashActions" style="display:flex;gap:10px;margin-bottom:10px">
           <button id="btnCompleteSale" onclick="openVehicleFinder('sale')" style="flex:1;background:#C8102E;color:#fff;border:none;border-radius:14px;padding:16px 10px;font-size:15px;font-weight:800;cursor:pointer"><i class="fas fa-file-signature"></i> Complete Sale</button>
           <button onclick="openVehicleFinder('inspect')" style="flex:1;background:#001a4d;color:#fff;border:none;border-radius:14px;padding:16px 10px;font-size:15px;font-weight:800;cursor:pointer"><i class="fas fa-clipboard-check"></i> Intake</button>
+        </div>
+        <!-- Full-access only: assign a task to any staff member on the go -->
+        <div id="dashNewTask" style="display:none;margin-bottom:18px">
+          <button onclick="openNewTask()" style="width:100%;background:#0d9488;color:#fff;border:none;border-radius:14px;padding:14px 10px;font-size:15px;font-weight:800;cursor:pointer"><i class="fas fa-plus"></i> New Task — assign to staff</button>
         </div>
 
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Your Tasks</div>
@@ -425,10 +429,13 @@ function getMyTasks(staffName) {
   // Include jobs handed to ANY of this person's departments (multi-dept staff).
   var me = (typeof AC_STAFF !== 'undefined') ? AC_STAFF.find(function(s){ return s.name === staffName; }) : null;
   var depts = ceStaffDepts(me);
+  // The stages this person covers — so a job handed to a department also reaches
+  // someone who covers that stage (e.g. Stash covers Bodywork).
+  var sees = (me && me.sees) ? me.sees : (typeof ceStaffSees==='function' ? ceStaffSees(me) : []);
   // Union jobs across every department the person belongs to, de-duped by id.
   var byId = {};
   (depts.length ? depts : ['']).forEach(function(d){
-    CE_JOBS.forStaff(staffName, d).forEach(function(j){ byId[j.id] = j; });
+    CE_JOBS.forStaff(staffName, d, sees).forEach(function(j){ byId[j.id] = j; });
   });
   return Object.keys(byId).map(function(k){ return byId[k]; }).map(function (j) {
     return {
@@ -851,6 +858,9 @@ function buildDash() {
   var canSell = meStaff && (ceStaffDepts(meStaff).indexOf('Sales')>-1 || ceIsFullAccess(meStaff));
   var csBtn = document.getElementById('btnCompleteSale');
   if (csBtn) csBtn.style.display = canSell ? '' : 'none';
+  // New Task button: full-access people only.
+  var ntWrap = document.getElementById('dashNewTask');
+  if (ntWrap) ntWrap.style.display = ceAmFull() ? 'block' : 'none';
 
   // Show up to 3 pending tasks on dash
   document.getElementById('dashTasks').innerHTML = pending.slice(0,3).map(t=>renderTaskCard(t,true)).join('')
@@ -1202,6 +1212,72 @@ function renderTaskActions(task){
   '</div>';
 }
 
+// ── NEW TASK (full-access users assign a job to any staff member on the go) ──
+function openNewTask(){
+  if (!ceAmFull()) return;
+  var staff = (typeof AC_STAFF!=='undefined') ? AC_STAFF.filter(function(s){ return s.role!=='Test User' && s.id!=='master'; }) : [];
+  var ov=document.getElementById('appSaleOverlay');
+  ov.innerHTML='<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">New task</div>'+
+      '<div style="font-size:13px;color:#64748b">Assign a job to a staff member</div></div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:4px 0 4px">Assign to</label>'+
+    '<select id="nt_who" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+
+      '<option value="">Choose a person…</option>'+
+      staff.map(function(s){ return '<option value="'+s.name+'">'+s.name+(s.dept?(' · '+s.dept):'')+'</option>'; }).join('')+
+    '</select>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:12px 0 4px">Task title</label>'+
+    '<input type="text" id="nt_title" placeholder="What needs doing…" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:12px 0 4px">Details (optional)</label>'+
+    '<textarea id="nt_notes" rows="3" placeholder="Any detail or instructions…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:12px 0 4px">Vehicle reg (optional)</label>'+
+    '<input type="text" id="nt_reg" placeholder="e.g. CJ21XYV" oninput="this.value=this.value.toUpperCase()" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:12px 0 4px">Priority</label>'+
+    '<select id="nt_priority" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+
+      ['Normal','Urgent','Low'].map(function(p){ return '<option>'+p+'</option>'; }).join('')+
+    '</select>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="flex:1;background:#eef1f5;border:none;border-radius:12px;padding:15px;font-weight:700;cursor:pointer">Cancel</button>'+
+      '<button onclick="submitNewTask()" style="flex:2;background:#0d9488;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">➕ Assign task</button>'+
+    '</div></div>';
+  ov.style.display='block';
+}
+function submitNewTask(){
+  var who=(document.getElementById('nt_who')||{}).value||'';
+  var title=(document.getElementById('nt_title')||{}).value||'';
+  var notes=(document.getElementById('nt_notes')||{}).value||'';
+  var reg=(document.getElementById('nt_reg')||{}).value||'';
+  var priority=(document.getElementById('nt_priority')||{}).value||'Normal';
+  if (!who){ showToast('Pick who it’s for'); return; }
+  if (!title.trim()){ showToast('Add a task title'); return; }
+  var veh = reg ? vehicles.find(function(v){ return (v.registration||'').toUpperCase()===reg.toUpperCase(); }) : null;
+  var vlabel = veh ? (veh.registration+' '+veh.make+' '+veh.model) : (reg||'');
+  if (typeof CE_JOBS!=='undefined'){
+    try { CE_JOBS.upsert({
+      id: 'task_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      stockNo: veh?veh.stockNo:'', reg: reg||'',
+      title: title.trim(),
+      note: notes.trim(),
+      assignedTo: who, assignedToDept:'',
+      assignedBy: currentStaff,
+      priority: priority,
+      status: 'pending',
+      vehicle: vlabel,
+      source: 'adhoc',
+      assignedAt: Date.now(), createdAt: Date.now()
+    }); } catch(e){}
+  }
+  if (typeof CE_NOTIFY!=='undefined'){
+    try { CE_NOTIFY.push({ toName:who, type:'urgent', reg:reg||'', vehicle:vlabel,
+      stage:'Task', fromName:currentStaff, note:title.trim(), priority:priority,
+      link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+  }
+  document.getElementById('appSaleOverlay').style.display='none';
+  showToast('➕ Task assigned to '+who.split(' ')[0]);
+  buildTasks(); buildDash();
+}
+
 // Start Job — stamp the start time, then refresh so the button flips to "Started".
 function startJob(jobId){
   if (typeof CE_JOBS!=='undefined' && CE_JOBS.start){ try { CE_JOBS.start(jobId, currentStaff); } catch(e){} }
@@ -1229,6 +1305,18 @@ function appMechFormHTML(wf){
       '<div style="padding:4px 12px 10px">';
     AA_INSPECTION_CHECKLIST[section].forEach(function(item){
       var id=_aaSlug(section,item); var cur=ex[id]||'g';
+      // Tread-depth rows take a direct mm reading instead of OK/Attention/Fault.
+      // Use the SAME field ids as the desktop (f_tyreFR/FL/RL/RR/Spare) so the
+      // readings sync straight to the office screen.
+      if (/tread depth/i.test(item)){
+        var TREADMAP={'Tread Depth FR':'f_tyreFR','Tread Depth FL':'f_tyreFL','Tread Depth RL':'f_tyreRL','Tread Depth RR':'f_tyreRR'};
+        var mmId=TREADMAP[item]||('mm_'+id);
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9">'+
+          '<span style="font-size:13px;flex:1">'+item+'</span>'+
+          '<div style="display:flex;align-items:center;gap:4px"><input type="number" step="0.1" min="0" max="20" id="'+mmId+'" value="'+(ex[mmId]!=null?ex[mmId]:'')+'" placeholder="0.0" style="width:62px;font-size:13px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px;text-align:right"><span style="font-size:12px;color:#64748b">mm</span></div>'+
+        '</div>';
+        return;
+      }
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9">'+
         '<span style="font-size:13px;flex:1">'+item+'</span>'+
         '<select id="'+id+'" style="font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px">'+
@@ -1236,6 +1324,19 @@ function appMechFormHTML(wf){
         '</select>'+
       '</div>';
     });
+    // 6-wheel vehicles: extra tread readings for twin rear wheels (inner/outer).
+    if (/wheels & tyres/i.test(section)){
+      html += '<div style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer">'+
+        '<input type="checkbox" id="mm_sixwheel"'+(ex.mm_sixwheel?' checked':'')+' onchange="document.getElementById(\'sixWheelRows\').style.display=this.checked?\'block\':\'none\'" style="width:16px;height:16px;accent-color:#C8102E"> 6-wheel vehicle (twin rear wheels)</label>'+
+        '<div id="sixWheelRows" style="display:'+(ex.mm_sixwheel?'block':'none')+';margin-top:6px">'+
+        [['mm_tread_rl_outer','Rear LH Outer'],['mm_tread_rl_inner','Rear LH Inner'],['mm_tread_rr_outer','Rear RH Outer'],['mm_tread_rr_inner','Rear RH Inner']].map(function(o){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9">'+
+            '<span style="font-size:13px;flex:1">Tread Depth '+o[1]+'</span>'+
+            '<div style="display:flex;align-items:center;gap:4px"><input type="number" step="0.1" min="0" max="20" id="'+o[0]+'" value="'+(ex[o[0]]!=null?ex[o[0]]:'')+'" placeholder="0.0" style="width:62px;font-size:13px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px;text-align:right"><span style="font-size:12px;color:#64748b">mm</span></div>'+
+          '</div>';
+        }).join('')+
+        '</div></div>';
+    }
     // Notes box for THIS section (same key the desktop reads).
     var noteId=_aaSecNote(section);
     html += '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;margin:8px 0 3px">Notes — '+section+'</label>'+
@@ -1277,7 +1378,7 @@ function appIntakeFormHTML(wf){
     '<textarea id="f_notes" rows="3" placeholder="General condition, any issues noticed on arrival, fuel level…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px;margin-bottom:12px">'+(ex.f_notes||'').replace(/</g,'&lt;')+'</textarea>'+
     // Intake photos — tap + to add, up to 6, synced to the desktop.
     '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-bottom:12px">'+
-      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Vehicle photos on arrival (tap + to add, up to 6)</div>'+
+      '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Vehicle photos on arrival (tap + to add — pick several at once, up to 30)</div>'+
       scGridHTML('work','')+
     '</div>'+
     // Which optional work this van needs — ticked here, the pipeline routes it to
@@ -1319,41 +1420,47 @@ function scResizeImage(file, maxDim){
 }
 // ── Accumulating photo picker ──
 // Photos are kept in a store keyed by slot ('before'/'after'/'work'), so each
-// time you add a picture it is ADDED (up to 6) rather than replacing the last.
-// Rendered as 6 tap-to-add squares; tap a filled square to remove it.
+// time you add pictures they are ADDED rather than replacing the last. You can
+// pick several at once. Intake allows many (vehicles can need lots); other
+// slots cap at 6. Tap a filled square's × to remove it.
 var _scPhotos = { before:[], after:[], work:[] };
-function scResetPhotos(){ _scPhotos = { before:[], after:[], work:[] }; }
+var _scMax = { before:6, after:6, work:6 };   // per-slot cap (work bumped to 30 for intake)
+function scResetPhotos(){ _scPhotos = { before:[], after:[], work:[] }; _scMax = { before:6, after:6, work:6 }; }
+function scSetMax(slot, n){ _scMax[slot] = n; }
 
-// Render the 6-square grid for a slot into its container.
+// Render the grid for a slot: one square per photo plus a trailing "+" to add
+// more, up to the slot's cap.
 function scRenderGrid(slot){
   var box=document.getElementById('scGrid_'+slot); if(!box) return;
   var arr=_scPhotos[slot]||[];
+  var cap=_scMax[slot]||6;
+  var squares=Math.min(cap, arr.length+1);   // grow as photos are added
   var html='';
-  for (var i=0;i<6;i++){
+  for (var i=0;i<squares;i++){
     if (arr[i]){
       html+='<div style="position:relative;width:62px;height:62px">'+
         '<img src="'+arr[i]+'" style="width:62px;height:62px;object-fit:cover;border-radius:8px;border:1px solid #e4e7ec">'+
         '<button type="button" onclick="scRemovePhoto(\''+slot+'\','+i+')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#C8102E;color:#fff;border:none;font-size:12px;line-height:1;cursor:pointer">&times;</button>'+
       '</div>';
-    } else if (i===arr.length){
-      // the next empty square is the "add" button
+    } else {
+      // the trailing empty square is the "add" button
       html+='<label style="width:62px;height:62px;border:2px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:24px">+'+
         '<input type="file" accept="image/*" capture="environment" multiple onchange="scAddPhotos(\''+slot+'\',this)" style="display:none">'+
       '</label>';
-    } else {
-      html+='<div style="width:62px;height:62px;border:1px dashed #e4e7ec;border-radius:8px"></div>';
     }
   }
   box.innerHTML=html;
 }
-// Add newly-picked files to a slot (resized), up to 6 total, then re-render.
+// Add newly-picked files to a slot (resized), up to the slot cap. You can pick
+// several at once — they all get added in one go.
 function scAddPhotos(slot, input){
   var files=Array.prototype.slice.call(input.files||[]);
   if(!files.length) return;
-  var room=6-(_scPhotos[slot]||[]).length;
+  var cap=_scMax[slot]||6;
+  var room=cap-(_scPhotos[slot]||[]).length;
   files=files.slice(0, Math.max(0,room));
   Promise.all(files.map(function(f){ return scResizeImage(f,900); })).then(function(urls){
-    urls.filter(Boolean).forEach(function(u){ if((_scPhotos[slot]||[]).length<6) _scPhotos[slot].push(u); });
+    urls.filter(Boolean).forEach(function(u){ if((_scPhotos[slot]||[]).length<cap) _scPhotos[slot].push(u); });
     scRenderGrid(slot);
   });
   try { input.value=''; } catch(e){}
@@ -1365,7 +1472,7 @@ function scGridHTML(slot, label){
     '<div id="scGrid_'+slot+'" style="display:flex;gap:8px;flex-wrap:wrap"></div>';
 }
 // Collect accumulated photos for a slot (already resized data URLs).
-function scCollectPhotos(slot){ return Promise.resolve((_scPhotos[slot]||[]).slice(0,6)); }
+function scCollectPhotos(slot){ return Promise.resolve((_scPhotos[slot]||[]).slice(0, _scMax[slot]||6)); }
 
 function openStageComplete(jobId, stockNo, stageName){
   var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
@@ -1430,6 +1537,8 @@ function openStageComplete(jobId, stockNo, stageName){
   ov.style.display='block';
   // Fresh photo store for this form, then render the grids.
   scResetPhotos();
+  // Intake can need lots of photos — allow up to 30; valeting gets 6 each side.
+  if (stageName==='Intake') scSetMax('work', 30);
   if (isValet){ scRenderGrid('before'); scRenderGrid('after'); }
   else if (needsPhotos || stageName==='Intake'){ scRenderGrid('work'); }
 }
@@ -1543,9 +1652,29 @@ function _doStageComplete(photos){
   if (stageName==='Mechanical' && typeof AA_INSPECTION_CHECKLIST!=='undefined'){
     Object.keys(AA_INSPECTION_CHECKLIST).forEach(function(section){
       AA_INSPECTION_CHECKLIST[section].forEach(function(item){
-        var id=_aaSlug(section,item); var el=document.getElementById(id);
+        var id=_aaSlug(section,item);
+        // Tread-depth rows are an mm reading (desktop f_tyre* ids), not a select.
+        if (/tread depth/i.test(item)){
+          var TREADMAP2={'Tread Depth FR':'f_tyreFR','Tread Depth FL':'f_tyreFL','Tread Depth RL':'f_tyreRL','Tread Depth RR':'f_tyreRR'};
+          var mmKey=TREADMAP2[item]||('mm_'+id);
+          var mmEl=document.getElementById(mmKey);
+          if (mmEl && mmEl.value!==''){ var mm=parseFloat(mmEl.value); aaFields[mmKey]=mm;
+            if (mm<=1.6) aaFlags.push('✗ '+section+': '+item+' '+mm+'mm (below legal limit)');
+            else if (mm<3) aaFlags.push('⚠ '+section+': '+item+' '+mm+'mm (low)'); }
+          return;
+        }
+        var el=document.getElementById(id);
         if (el){ aaFields[id]=el.value; if (el.value==='a'||el.value==='r') aaFlags.push((el.value==='r'?'✗ ':'⚠ ')+section+': '+item); }
       });
+      // 6-wheel tread readings.
+      if (/wheels & tyres/i.test(section)){
+        var six=document.getElementById('mm_sixwheel');
+        if (six && six.checked){ aaFields.mm_sixwheel=true;
+          ['mm_tread_rl_outer','mm_tread_rl_inner','mm_tread_rr_outer','mm_tread_rr_inner'].forEach(function(fid){
+            var e=document.getElementById(fid); if (e && e.value!==''){ var v=parseFloat(e.value); aaFields[fid]=v;
+              if (v<=1.6) aaFlags.push('✗ Tyres: '+fid.replace('mm_tread_','').replace('_',' ')+' '+v+'mm (below legal limit)'); } });
+        }
+      }
       // Per-section notes (same key the desktop reads).
       var noteId=_aaSecNote(section);
       var nEl=document.getElementById(noteId);
@@ -2305,7 +2434,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = 'Nov26i';   // bump each release
+var CE_APP_VERSION = 'Nov26j';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){
