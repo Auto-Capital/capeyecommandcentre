@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CapEye Nov 26j — Dashboard</title>
+<title>CapEye Nov 26k — Dashboard</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="CapEye Command Centre — Auto Capital's vehicle preparation pipeline. Track every van from intake to sold.">
@@ -30,11 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26j"></script>
-<script src="ac-data.js?v=nov26j"></script>
-<script src="firebase-init.js?v=nov26j"></script>
-<script src="jobs-sync.js?v=nov26j"></script>
-<script src="live-sync.js?v=nov26j"></script>
+<script src="firebase-config.js?v=nov26k"></script>
+<script src="ac-data.js?v=nov26k"></script>
+<script src="firebase-init.js?v=nov26k"></script>
+<script src="jobs-sync.js?v=nov26k"></script>
+<script src="live-sync.js?v=nov26k"></script>
 <script>
 (function() {
   var ts = parseInt(localStorage.getItem('ce_auth_ts') || '0');
@@ -47,8 +47,8 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26j"></script>
-<script src="notifications-sync.js?v=nov26j"></script>
+<script src="notifications.js?v=nov26k"></script>
+<script src="notifications-sync.js?v=nov26k"></script>
 <style>
 /* ── RESET & ROOT ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -250,7 +250,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 .notif-empty{padding:32px;text-align:center;color:var(--ink3);font-size:13px}
 .notif-empty i{display:block;font-size:24px;margin-bottom:8px;opacity:.3}
 </style>
-<link rel="stylesheet" href="mobile-responsive.css?v=nov26j">
+<link rel="stylesheet" href="mobile-responsive.css?v=nov26k">
 </head>
 <body>
 
@@ -340,6 +340,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink
 
   <!-- KPI ROW -->
   <div class="kpi-row" id="kpi-row"></div>
+
+  <!-- PENDING DRAFTS STRIP (saved-but-not-completed checks across the team) -->
+  <div id="drafts-strip" style="display:none;margin:0 0 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <i class="fas fa-pen-ruler" style="color:#d97706"></i>
+      <span style="font-weight:800;font-size:13px;color:#92400e">Pending drafts — saved, not yet completed</span>
+      <span id="drafts-count" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#b45309"></span>
+    </div>
+    <div id="drafts-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
 
   <!-- MAIN GRID: Active | Centre (full width) -->
   <div style="display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start">
@@ -523,7 +533,40 @@ function _ceRefreshDashboard() {
     buildReadyForSale();
     buildSalesToConfirm();
     buildSoldList();
+    buildDraftsStrip();
   } catch (e) { console.warn('[CapEye] dashboard refresh error', e); }
+}
+// Show every saved-but-not-completed draft across the team, so a check someone
+// started and parked doesn't get lost. Reads the shared staff_jobs (isDraft).
+function buildDraftsStrip() {
+  var strip = document.getElementById('drafts-strip');
+  var list  = document.getElementById('drafts-list');
+  if (!strip || !list || typeof CE_JOBS === 'undefined') return;
+  var drafts = (CE_JOBS.all() || []).filter(function (j) {
+    return j.isDraft === true && j.status !== 'done' && j.status !== 'Done';
+  });
+  if (!drafts.length) { strip.style.display = 'none'; list.innerHTML = ''; return; }
+  strip.style.display = 'block';
+  var cEl = document.getElementById('drafts-count'); if (cEl) cEl.textContent = drafts.length + (drafts.length === 1 ? ' vehicle' : ' vehicles');
+  list.innerHTML = drafts.map(function (j) {
+    var who = j.assignedTo || j.draftBy || '—';
+    var when = j.updatedAt || j.createdAt;
+    var ago = when ? _draftAgo(when) : '';
+    var reg = j.reg || (j.vehicle || '').split(' ')[0] || j.stockNo || '';
+    return '<a href="workflow.html?stock=' + encodeURIComponent(j.stockNo || '') + '" style="text-decoration:none">' +
+      '<div style="display:flex;flex-direction:column;background:#fff;border:1px solid #fde68a;border-radius:9px;padding:8px 11px;min-width:150px">' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:12px;color:#000;background:#f5c518;border-radius:3px;padding:1px 6px;align-self:flex-start">' + reg + '</span>' +
+        '<span style="font-size:12px;color:#1e293b;font-weight:700;margin-top:4px">' + (j.stageName || 'Stage') + '</span>' +
+        '<span style="font-size:11px;color:#64748b;margin-top:1px">' + who + (ago ? ' · ' + ago : '') + '</span>' +
+      '</div></a>';
+  }).join('');
+}
+function _draftAgo(ms) {
+  var s = Math.floor((Date.now() - ms) / 1000);
+  if (s < 60) return 'just now';
+  var m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
+  var h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
 }
 
 // Live workflow listener — mirrors every stage change (from the app or desktop)
@@ -728,6 +771,8 @@ function _ceBootstrapLive(){
   _ceLoadPendingSales();   // live list of app-submitted sales awaiting confirmation
   _ceLoadLiveStatuses();   // live Sold / Ready-for-Sale status by registration
   _ceLoadLiveWorkflows();  // live stage changes (from app or desktop) → dashboard counts
+  // Live staff-jobs → keeps the Pending Drafts strip current across the team.
+  if (typeof CE_JOBS!=='undefined' && CE_JOBS.subscribe){ try { CE_JOBS.subscribe(function(){ try { buildDraftsStrip(); } catch(e){} }); } catch(e){} }
 }
 
 // ── WELCOME BAR ──────────────────────────────────────────────────
@@ -1029,7 +1074,7 @@ function timeAgo(ts) {
 setInterval(updateBell,60000);
 document.addEventListener('DOMContentLoaded',function(){ setTimeout(updateBell,1000); });
 </script>
-<script src="mobile-menu.js?v=nov26j"></script>
+<script src="mobile-menu.js?v=nov26k"></script>
 
 <!-- CONFIRM SALE MODAL -->
 <div id="confirmSaleModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">

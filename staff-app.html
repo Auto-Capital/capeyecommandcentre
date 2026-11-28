@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CapEye Staff">
 <meta name="theme-color" content="#C8102E">
-<link rel="manifest" href="staff-manifest.json?v=nov26jb">
+<link rel="manifest" href="staff-manifest.json?v=nov26kb">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="description" content="CapEye Staff — your jobs and tasks for Auto Capital. Log in, see what's assigned to you, inspect vehicles and sign off.">
@@ -27,19 +27,19 @@
 <meta name="twitter:title" content="CapEye Staff App">
 <meta name="twitter:description" content="Your jobs and tasks for Auto Capital.">
 <meta name="twitter:image" content="https://www.capeye.co.uk/capeye-icon-512.png">
-<title>CapEye Nov 26j — Staff App</title>
+<title>CapEye Nov 26k — Staff App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=nov26j"></script>
-<script src="./ac-data.js?v=nov26j"></script>
-<script src="firebase-init.js?v=nov26j"></script>
-<script src="jobs-sync.js?v=nov26j"></script>
+<script src="firebase-config.js?v=nov26k"></script>
+<script src="./ac-data.js?v=nov26k"></script>
+<script src="firebase-init.js?v=nov26k"></script>
+<script src="jobs-sync.js?v=nov26k"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="notifications.js?v=nov26j"></script>
-<script src="notifications-sync.js?v=nov26j"></script>
+<script src="notifications.js?v=nov26k"></script>
+<script src="notifications-sync.js?v=nov26k"></script>
 <style>
 :root{
   --bg:#f4f6f9;--bg2:#fff;--bg3:#f0f2f6;--bg4:#eef0f5;
@@ -1153,14 +1153,26 @@ function renderTaskActions(task){
       '<button class="t-btn t-btn-done" style="flex:1;background:#0d9488" onclick="openAssignTech(\''+task.id+'\',\''+(task.stockNo||'')+'\')">👷 Review &amp; assign technician</button>'+
     '</div>';
   }
-  // Technician does the assigned repairs, then signs off → advances to Valeting.
+  // Technician works the assigned repairs, tick off each one, then sends back to David to check.
   if (task.jobType==='repair'){
     var sBtnR = task.startedAt
       ? '<button class="t-btn t-btn-start" style="flex:1;opacity:.6" disabled>▶️ Started '+timeAgo(new Date(task.startedAt))+'</button>'
       : '<button class="t-btn t-btn-start" style="flex:1" onclick="startJob(\''+task.id+'\')">▶️ Start Job</button>';
     return '<div class="task-actions">'+
       sBtnR+
-      '<button class="t-btn t-btn-done" style="flex:1;background:#7c3aed" onclick="openRepairSignoff(\''+task.id+'\',\''+(task.stockNo||'')+'\')">🔧 Repairs done &amp; sign off</button>'+
+      '<button class="t-btn t-btn-done" style="flex:1;background:#7c3aed" onclick="openRepairSignoff(\''+task.id+'\',\''+(task.stockNo||'')+'\')">🔧 Open job card</button>'+
+    '</div>';
+  }
+  // David / Ibrahim / Keith review the mechanic's completed card and sign off (→ Valeting or External Work).
+  if (task.jobType==='review'){
+    return '<div class="task-actions">'+
+      '<button class="t-btn t-btn-done" style="flex:1;background:#16a34a" onclick="openReviewSignoff(\''+task.id+'\',\''+(task.stockNo||'')+'\')">✅ Review &amp; sign off</button>'+
+    '</div>';
+  }
+  // Driver has the vehicle out for external work — confirm it's back → Valeting.
+  if (task.jobType==='external'){
+    return '<div class="task-actions">'+
+      '<button class="t-btn t-btn-done" style="flex:1;background:#4f46e5" onclick="openExternalReturn(\''+task.id+'\',\''+(task.stockNo||'')+'\')">🚚 Confirm vehicle back</button>'+
     '</div>';
   }
   // Legacy authorise jobs (kept so any already out in the field still work).
@@ -1648,7 +1660,8 @@ function _doStageComplete(photos){
   // For the full mechanical inspection, collect every aa_ field + parts, and
   // build a flagged-items summary (Attention/Fault) that becomes the job card
   // for whoever works it next.
-  var aaFields={}, aaFlags=[];
+  var aaFields={}, aaFlags=[], jobCardItems=[];
+  function _jcAdd(label, sev){ jobCardItems.push({ id:'jc_'+(jobCardItems.length+1)+'_'+Date.now().toString(36), label:label, sev:(sev||'attention'), inBudget:true, status:'open', doneBy:'', doneAt:'', note:'' }); }
   if (stageName==='Mechanical' && typeof AA_INSPECTION_CHECKLIST!=='undefined'){
     Object.keys(AA_INSPECTION_CHECKLIST).forEach(function(section){
       AA_INSPECTION_CHECKLIST[section].forEach(function(item){
@@ -1659,12 +1672,13 @@ function _doStageComplete(photos){
           var mmKey=TREADMAP2[item]||('mm_'+id);
           var mmEl=document.getElementById(mmKey);
           if (mmEl && mmEl.value!==''){ var mm=parseFloat(mmEl.value); aaFields[mmKey]=mm;
-            if (mm<=1.6) aaFlags.push('✗ '+section+': '+item+' '+mm+'mm (below legal limit)');
-            else if (mm<3) aaFlags.push('⚠ '+section+': '+item+' '+mm+'mm (low)'); }
+            if (mm<=1.6){ aaFlags.push('✗ '+section+': '+item+' '+mm+'mm (below legal limit)'); _jcAdd(section+': '+item+' — '+mm+'mm (below legal limit, replace)','fault'); }
+            else if (mm<3){ aaFlags.push('⚠ '+section+': '+item+' '+mm+'mm (low)'); _jcAdd(section+': '+item+' — '+mm+'mm (low)','attention'); } }
           return;
         }
         var el=document.getElementById(id);
-        if (el){ aaFields[id]=el.value; if (el.value==='a'||el.value==='r') aaFlags.push((el.value==='r'?'✗ ':'⚠ ')+section+': '+item); }
+        if (el){ aaFields[id]=el.value;
+          if (el.value==='a'||el.value==='r'){ aaFlags.push((el.value==='r'?'✗ ':'⚠ ')+section+': '+item); _jcAdd(section+': '+item, el.value==='r'?'fault':'attention'); } }
       });
       // 6-wheel tread readings.
       if (/wheels & tyres/i.test(section)){
@@ -1672,15 +1686,15 @@ function _doStageComplete(photos){
         if (six && six.checked){ aaFields.mm_sixwheel=true;
           ['mm_tread_rl_outer','mm_tread_rl_inner','mm_tread_rr_outer','mm_tread_rr_inner'].forEach(function(fid){
             var e=document.getElementById(fid); if (e && e.value!==''){ var v=parseFloat(e.value); aaFields[fid]=v;
-              if (v<=1.6) aaFlags.push('✗ Tyres: '+fid.replace('mm_tread_','').replace('_',' ')+' '+v+'mm (below legal limit)'); } });
+              if (v<=1.6){ var lbl='Tyres: '+fid.replace('mm_tread_','').replace('_',' ')+' '+v+'mm (below legal limit)'; aaFlags.push('✗ '+lbl); _jcAdd(lbl,'fault'); } } });
         }
       }
       // Per-section notes (same key the desktop reads).
       var noteId=_aaSecNote(section);
       var nEl=document.getElementById(noteId);
-      if (nEl && nEl.value.trim()){ aaFields[noteId]=nEl.value.trim(); aaFlags.push('📝 '+section+' note: '+nEl.value.trim()); }
+      if (nEl && nEl.value.trim()){ aaFields[noteId]=nEl.value.trim(); aaFlags.push('📝 '+section+' note: '+nEl.value.trim()); _jcAdd(section+' — '+nEl.value.trim(),'note'); }
     });
-    var pEl=document.getElementById('f_parts'); if (pEl) aaFields.f_parts=pEl.value;
+    var pEl=document.getElementById('f_parts'); if (pEl){ aaFields.f_parts=pEl.value; if (pEl.value.trim()) _jcAdd('Parts needed: '+pEl.value.trim(),'note'); }
   }
   var mechWorkSummary = aaFlags.length ? ('Flagged at inspection:\n'+aaFlags.join('\n')+(aaFields.f_parts?('\nParts: '+aaFields.f_parts):'')) : '';
   // Intake fields (mirror the desktop intake, so the office sees the full record).
@@ -1717,7 +1731,7 @@ function _doStageComplete(photos){
     if (sid && typeof FS!=='undefined' && FS){
       var mpatch={}; mpatch[sid]={ inspectionDone:true, inspectedAt:now, inspectedBy:currentStaff,
                                    checklist:checks, notes:notes, f_notes:notes, awaitingAssign:true,
-                                   workSummary:mechWorkSummary };
+                                   workSummary:mechWorkSummary, jobCard:jobCardItems };
       Object.keys(checks).forEach(function(k){ mpatch[sid][k]=checks[k]; });
       Object.assign(mpatch[sid], aaFields);   // full inspection results sync to desktop
       Object.assign(mpatch[sid], photoData);
@@ -1903,25 +1917,52 @@ function submitAuthorise(){
 }
 
 // ── MANAGER: review inspection & assign a technician for the repairs ──
+// Read the job-card line items off the workflow record (falls back to parsing
+// the text summary for any legacy vehicle that pre-dates structured cards).
+function _loadJobCard(stockNo){
+  var wf={}; try { wf = JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'); } catch(e){}
+  var st = wf[4]||wf['4']||{};
+  if (Array.isArray(st.jobCard) && st.jobCard.length) return st.jobCard.map(function(x){ return Object.assign({},x); });
+  // Legacy fallback: split the text summary into lines → items.
+  var txt = (st.workSummary||'')||'';
+  var items=[];
+  txt.split('\n').forEach(function(ln){ ln=ln.trim();
+    if (!ln || /^flagged at inspection/i.test(ln)) return;
+    items.push({ id:'jc_legacy_'+(items.length+1), label:ln.replace(/^[✗⚠📝]\s*/,''), sev:/✗/.test(ln)?'fault':'attention', inBudget:true, status:'open', doneBy:'', doneAt:'', note:'' });
+  });
+  return items;
+}
+function _saveJobCard(stockNo, items){
+  if (typeof FS!=='undefined' && FS){ try { var p={}; p[4]={ jobCard:items }; FS.collection('workflows').doc(String(stockNo)).set(p,{merge:true}); } catch(e){} }
+  try { var wf=JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'); wf[4]=Object.assign(wf[4]||{},{jobCard:items}); localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(wf)); } catch(e){}
+}
+function _sevDot(sev){ var c = sev==='fault'?'#ef4444':(sev==='note'?'#64748b':'#f59e0b'); return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+c+';margin-right:7px;flex:none"></span>'; }
+
+// ── DAVID / IBRAHIM / KEITH: review the job card, deselect out-of-budget items, assign a mechanic ──
 function openAssignTech(jobId, stockNo){
   var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
   var task = getMyTasks(currentStaff).find(function(t){ return t.id===jobId; }) || {};
-  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'Mechanical', veh:veh, task:task, assign:true };
-  var work=(task.workRequired||'').trim();
+  var items = _loadJobCard(stockNo);
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'Mechanical', veh:veh, task:task, assign:true, items:items };
   // Technician list — the workshop/mechanics.
   var techs = (typeof AC_STAFF!=='undefined') ? AC_STAFF.filter(function(s){
     var d=(s.dept||'').toLowerCase(); return (d==='workshop'||d==='mechanical'||/mechanic|technician/i.test(s.role||'')) && s.role!=='Test User';
   }) : [];
   if (!techs.length && typeof AC_STAFF!=='undefined') techs = AC_STAFF.filter(function(s){ return (Array.isArray(s.sees)?s.sees.indexOf('Mechanical')>-1:false); });
+  var cardHTML = items.length ? items.map(function(it,i){
+    return '<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #e4e7ec;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff">'+
+      '<input type="checkbox" id="jcb_'+i+'" '+(it.inBudget!==false?'checked':'')+' style="width:20px;height:20px;margin-top:1px;flex:none">'+
+      '<span style="display:flex;align-items:flex-start;font-size:14px;color:#1e293b;line-height:1.45">'+_sevDot(it.sev)+'<span>'+String(it.label).replace(/</g,'&lt;')+'</span></span>'+
+    '</label>';
+  }).join('') : '<div style="font-size:13px;color:#64748b;padding:8px 0">No individual items were flagged — assign for a general check if needed.</div>';
   var ov=document.getElementById('appSaleOverlay');
   ov.innerHTML='<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
-      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Assign technician</div>'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Review job card &amp; assign</div>'+
       '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
       '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
-    (work?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px">'+
-      '<div style="font-size:12px;font-weight:800;color:#9a3412;margin-bottom:6px">📋 Flagged at inspection</div>'+
-      '<div style="font-size:13px;color:#7c2d12;white-space:pre-wrap;line-height:1.5">'+work.replace(/</g,'&lt;')+'</div></div>':'')+
+    '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📋 Repairs to carry out — untick anything not within budget</div>'+
+    '<div style="margin-bottom:12px">'+cardHTML+'</div>'+
     '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:4px 0 4px">Assign to technician</label>'+
     '<select id="as_tech" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font-size:15px">'+
       '<option value="">Choose a technician…</option>'+
@@ -1937,12 +1978,19 @@ function openAssignTech(jobId, stockNo){
 }
 function submitAssignTech(){
   if (!_stageCtx) return;
-  var c=_stageCtx, stockNo=c.stockNo, task=c.task||{};
+  var c=_stageCtx, stockNo=c.stockNo, task=c.task||{}, items=c.items||[];
   var tech=(document.getElementById('as_tech')||{}).value||'';
   var extra=(document.getElementById('as_notes')||{}).value||'';
   if (!tech){ showToast('Pick a technician first'); return; }
+  // Apply the in-budget ticks from the dialog.
+  items.forEach(function(it,i){ var cb=document.getElementById('jcb_'+i); it.inBudget = cb?!!cb.checked:(it.inBudget!==false); });
+  var agreed = items.filter(function(it){ return it.inBudget!==false; });
+  if (!agreed.length){ showToast('Tick at least one repair to assign'); return; }
+  // Persist the reviewed card (keeps out-of-budget items recorded but flagged).
+  items.forEach(function(it){ it.assignedTo=tech; it.assignedBy=currentStaff; });
+  _saveJobCard(stockNo, items);
   var vlabel = c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo;
-  var card = (task.workRequired||'') + (extra?('\n\nFrom '+currentStaff+': '+extra):'');
+  var card = 'Repairs to carry out:\n'+agreed.map(function(it){ return '• '+it.label; }).join('\n')+(extra?('\n\nFrom '+currentStaff+': '+extra):'');
   // Create the repair job for the named technician.
   if (typeof CE_JOBS!=='undefined'){
     try { CE_JOBS.assignFromHandover({
@@ -1968,34 +2016,52 @@ function submitAssignTech(){
   buildTasks(); buildDash();
 }
 
-// ── TECHNICIAN: repairs done & sign off → advances to Valeting ──
+// ── TECHNICIAN: tick off each repair → back to David to check (does NOT auto-advance) ──
 function openRepairSignoff(jobId, stockNo){
   var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
   var task = getMyTasks(currentStaff).find(function(t){ return t.id===jobId; }) || {};
-  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'Mechanical', veh:veh, task:task, repair:true };
-  var work=(task.workRequired||'').trim();
+  var items = _loadJobCard(stockNo).filter(function(it){ return it.inBudget!==false; });
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'Mechanical', veh:veh, task:task, repair:true, items:items };
+  var rows = items.length ? items.map(function(it,i){
+    var isDone=it.status==='done', isInv=it.status==='investigate';
+    return '<div style="border:1px solid #e4e7ec;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(isInv?'#fef2f2':'#fff')+'">'+
+      '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">'+
+        '<input type="checkbox" id="jd_'+i+'" '+(isDone?'checked':'')+' onchange="_jcToggleDone('+i+')" style="width:20px;height:20px;margin-top:1px;flex:none">'+
+        '<span style="display:flex;align-items:flex-start;font-size:14px;color:#1e293b;line-height:1.45">'+_sevDot(it.sev)+'<span>'+String(it.label).replace(/</g,'&lt;')+'</span></span>'+
+      '</label>'+
+      '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'+
+        '<button type="button" id="ji_'+i+'" onclick="_jcToggleInv('+i+')" style="font-size:11px;font-weight:700;border:1px solid '+(isInv?'#ef4444':'#fecaca')+';background:'+(isInv?'#ef4444':'#fff')+';color:'+(isInv?'#fff':'#b91c1c')+';border-radius:8px;padding:6px 10px;cursor:pointer">⚠ Needs further investigation / parts</button>'+
+      '</div>'+
+      '<input id="jn_'+i+'" value="'+(it.note||'').replace(/"/g,'&quot;')+'" placeholder="Note (what you did / what you found)…" style="width:100%;margin-top:8px;padding:8px 10px;border:1px solid #e4e7ec;border-radius:8px;font-size:13px">'+
+    '</div>';
+  }).join('') : '<div style="font-size:13px;color:#64748b;padding:8px 0">General repair — no itemised card. Add your notes below.</div>';
   var ov=document.getElementById('appSaleOverlay');
   ov.innerHTML='<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
-      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Repairs &amp; sign off</div>'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Repair job card</div>'+
       '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
       '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
-    (work?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px">'+
-      '<div style="font-size:12px;font-weight:800;color:#9a3412;margin-bottom:6px">📋 Job card</div>'+
-      '<div style="font-size:13px;color:#7c2d12;white-space:pre-wrap;line-height:1.5">'+work.replace(/</g,'&lt;')+'</div></div>':'')+
-    '<div style="font-size:13px;color:#475569;margin-bottom:10px">Confirm the repairs are complete. Add any notes or photos, then sign off — the vehicle then moves on to Valeting.</div>'+
+    '<div style="font-size:13px;color:#475569;margin-bottom:10px">Tick each repair as you complete it. Leave anything not done unticked. If you find a new or linked fault, tap <b>Needs further investigation</b> — carry on with the rest and David will be notified.</div>'+
+    '<div style="margin-bottom:10px">'+rows+'</div>'+
     '<div style="border:1px solid #e4e7ec;border-radius:12px;padding:12px 14px;margin-bottom:10px">'+
       '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📷 Photos of work done (tap + to add, up to 6)</div>'+
       scGridHTML('work','')+
     '</div>'+
-    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:6px 0 4px">What you did (notes)</label>'+
-    '<textarea id="sc_notes" rows="3" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:6px 0 4px">Overall notes (optional)</label>'+
+    '<textarea id="sc_notes" rows="2" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
     '<div style="display:flex;gap:10px;margin-top:16px">'+
-      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="flex:1;background:#eef1f5;border:none;border-radius:12px;padding:15px;font-weight:700;cursor:pointer">Cancel</button>'+
-      '<button onclick="submitRepairSignoff(event)" style="flex:2;background:#7c3aed;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">🔧 Repairs done &amp; sign off</button>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="flex:1;background:#eef1f5;border:none;border-radius:12px;padding:15px;font-weight:700;cursor:pointer">Close</button>'+
+      '<button onclick="submitRepairSignoff(event)" style="flex:2;background:#7c3aed;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">✅ Send to David to check</button>'+
     '</div></div>';
   ov.style.display='block';
   scResetPhotos(); scRenderGrid('work');
+}
+// Tick handlers keep the in-memory items in sync (ticking Done clears an Investigate flag and vice-versa).
+function _jcToggleDone(i){ var c=_stageCtx; if(!c||!c.items||!c.items[i])return; var cb=document.getElementById('jd_'+i); c.items[i].status = cb&&cb.checked ? 'done':'open'; if(c.items[i].status==='done'){ var ib=document.getElementById('ji_'+i); if(ib){ib.style.background='#fff';ib.style.color='#b91c1c';ib.style.borderColor='#fecaca';} } }
+function _jcToggleInv(i){ var c=_stageCtx; if(!c||!c.items||!c.items[i])return; var it=c.items[i]; it.status = it.status==='investigate' ? 'open':'investigate';
+  var ib=document.getElementById('ji_'+i), cb=document.getElementById('jd_'+i), row=ib?ib.closest('div').parentNode:null;
+  if(it.status==='investigate'){ if(cb)cb.checked=false; if(ib){ib.style.background='#ef4444';ib.style.color='#fff';ib.style.borderColor='#ef4444';} if(ib&&ib.parentNode&&ib.parentNode.parentNode)ib.parentNode.parentNode.style.background='#fef2f2'; }
+  else { if(ib){ib.style.background='#fff';ib.style.color='#b91c1c';ib.style.borderColor='#fecaca';} if(ib&&ib.parentNode&&ib.parentNode.parentNode)ib.parentNode.parentNode.style.background='#fff'; }
 }
 function submitRepairSignoff(ev){
   if (!_stageCtx) return;
@@ -2003,19 +2069,221 @@ function submitRepairSignoff(ev){
   scCollectPhotos('work').then(function(work){ _doRepairSignoff(work||[]); });
 }
 function _doRepairSignoff(workPhotos){
-  var c=_stageCtx, stockNo=c.stockNo, now=new Date().toISOString();
+  var c=_stageCtx, stockNo=c.stockNo, now=new Date().toISOString(), items=c.items||[];
   var notes=(document.getElementById('sc_notes')||{}).value||'';
+  // Pull the latest per-line notes from the dialog.
+  items.forEach(function(it,i){ var n=document.getElementById('jn_'+i); if(n) it.note=n.value||''; it.doneBy=(it.status==='done')?currentStaff:''; it.doneAt=(it.status==='done')?now:''; });
+  // Merge back into the FULL card (keeping out-of-budget items untouched).
+  var full = _loadJobCard(stockNo);
+  full = full.map(function(f){ var m=items.find(function(x){return x.id===f.id;}); return m?Object.assign(f,{status:m.status,doneBy:m.doneBy,doneAt:m.doneAt,note:m.note}):f; });
+  _saveJobCard(stockNo, full);
+  var investigate = items.filter(function(it){ return it.status==='investigate'; });
+  var vlabel = c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo;
   if (typeof FS!=='undefined' && FS){
-    var patch={}; patch[4]={ completed:true, completedAt:now, awaitingAssign:false,
-                             repairsBy:currentStaff, repairsAt:now, repairNotes:notes };
+    var patch={}; patch[4]={ awaitingAssign:false, awaitingReview:true, repairsBy:currentStaff, repairsAt:now, repairNotes:notes };
     if ((workPhotos||[]).length) patch[4].photosWork=workPhotos;
     try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
     try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
   }
+  // Close the mechanic's repair job.
   if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  // Create the REVIEW job for David / Ibrahim / Keith (does not advance the stage).
+  var doneCount = items.filter(function(it){return it.status==='done';}).length;
+  var reviewNote = 'Repairs by '+currentStaff+' — '+doneCount+'/'+items.length+' done'+(investigate.length?(' · '+investigate.length+' need(s) further investigation'):'')+'. Review & sign off.';
+  if (typeof CE_JOBS!=='undefined'){
+    try { CE_JOBS.assignFromHandover({
+      stockNo:stockNo, reg:(c.veh&&c.veh.registration)||'',
+      stageId:4, stageName:'Mechanical',
+      assignedTo:'Management', assignedToDept:'Management',
+      assignedBy:currentStaff, jobType:'review',
+      note:reviewNote, workRequired:'', priority:(investigate.length?'Urgent':'Normal'), vehicle:vlabel
+    }); } catch(e){}
+  }
+  if (typeof CE_NOTIFY!=='undefined' && typeof CE_AUTHORISERS!=='undefined'){
+    CE_AUTHORISERS.forEach(function(auth){
+      try { CE_NOTIFY.push({ toName:auth, type:(investigate.length?'urgent':'info'), reg:(c.veh&&c.veh.registration)||'',
+        vehicle:(c.veh?(c.veh.make+' '+c.veh.model):''), stage:'Mechanical — review & sign off',
+        fromName:currentStaff, note:reviewNote,
+        priority:(investigate.length?'Urgent':'Normal'), link:'https://www.capeye.co.uk/staff-app.html', _noManagers:true }); } catch(e){}
+    });
+  }
+  document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
+  showToast(investigate.length?('⚠ Sent to David — '+investigate.length+' flagged for investigation'):'✅ Sent to David to check');
+  buildTasks(); buildDash();
+}
+
+// ── DAVID / IBRAHIM / KEITH: review the mechanic's ticks → sign off → Valeting, or send for External Work ──
+function openReviewSignoff(jobId, stockNo){
+  var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
+  var task = getMyTasks(currentStaff).find(function(t){ return t.id===jobId; }) || {};
+  var items = _loadJobCard(stockNo).filter(function(it){ return it.inBudget!==false; });
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'Mechanical', veh:veh, task:task, review:true, items:items };
+  var rows = items.length ? items.map(function(it){
+    var ic = it.status==='done'?'✅':(it.status==='investigate'?'⚠':'⬜');
+    var col = it.status==='done'?'#16a34a':(it.status==='investigate'?'#ef4444':'#94a3b8');
+    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border:1px solid #e4e7ec;border-radius:9px;margin-bottom:7px;background:'+(it.status==='investigate'?'#fef2f2':'#fff')+'">'+
+      '<span style="font-size:15px;color:'+col+';flex:none">'+ic+'</span>'+
+      '<div style="font-size:13px;color:#1e293b;line-height:1.4"><div>'+String(it.label).replace(/</g,'&lt;')+'</div>'+
+      (it.note?'<div style="font-size:12px;color:#64748b;margin-top:2px">📝 '+String(it.note).replace(/</g,'&lt;')+(it.doneBy?(' · '+it.doneBy):'')+'</div>':'')+'</div>'+
+    '</div>';
+  }).join('') : '<div style="font-size:13px;color:#64748b;padding:6px 0">General repair — no itemised card.</div>';
+  var anyOpen = items.some(function(it){ return it.status!=='done'; });
+  var ov=document.getElementById('appSaleOverlay');
+  ov.innerHTML='<div style="padding:24px 20px 48px;max-width:620px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Review &amp; sign off</div>'+
+      '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
+    '<div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:8px">📋 Repairs — what the mechanic completed</div>'+
+    '<div style="margin-bottom:10px">'+rows+'</div>'+
+    (anyOpen?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#9a3412">Some items are not yet ticked done. You can still re-assign if more work is needed.</div>':'')+
+    '<label style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid #c7d2fe;background:#eef2ff;border-radius:10px;margin-bottom:10px;cursor:pointer">'+
+      '<input type="checkbox" id="rv_external" onchange="_rvExtToggle()" style="width:20px;height:20px;flex:none">'+
+      '<span style="font-size:13px;color:#3730a3;font-weight:700">🚚 This vehicle needs External Work (send out of workshop)</span>'+
+    '</label>'+
+    '<div id="rv_extbox" style="display:none;border:1px solid #c7d2fe;border-radius:10px;padding:12px;margin-bottom:10px">'+
+      '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Assign driver to deliver / collect</label>'+
+      '<select id="rv_driver" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:9px;font-size:14px">'+
+        '<option value="">Choose…</option>'+_externalDrivers().map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('')+
+      '</select>'+
+      '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px">Where / what for (optional)</label>'+
+      '<input id="rv_extwhere" placeholder="e.g. ABC Bodyshop — alloy refurb" style="width:100%;padding:9px 10px;border:1px solid #d0d5dd;border-radius:8px;font-size:13px">'+
+    '</div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:4px 0 4px">Sign-off note (optional)</label>'+
+    '<textarea id="rv_notes" rows="2" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button onclick="openAssignTech(\''+jobId+'\',\''+stockNo+'\')" style="flex:1;background:#fff;border:1px solid #d0d5dd;border-radius:12px;padding:15px;font-weight:700;cursor:pointer;color:#475569">↩ Re-assign</button>'+
+      '<button onclick="submitReviewSignoff()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">✅ Sign off</button>'+
+    '</div></div>';
+  ov.style.display='block';
+}
+function _rvExtToggle(){ var cb=document.getElementById('rv_external'), box=document.getElementById('rv_extbox'); if(box) box.style.display = (cb&&cb.checked)?'block':'none'; }
+function submitReviewSignoff(){
+  if (!_stageCtx) return;
+  var c=_stageCtx, stockNo=c.stockNo, now=new Date().toISOString();
+  var notes=(document.getElementById('rv_notes')||{}).value||'';
+  var external=(document.getElementById('rv_external')||{}).checked;
+  if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  if (external){
+    var driver=(document.getElementById('rv_driver')||{}).value||'';
+    var where=(document.getElementById('rv_extwhere')||{}).value||'';
+    if (!driver){ showToast('Pick a driver to deliver/collect'); return; }
+    _sendExternal(c, driver, where, 'Mechanical', now, notes);
+    return;
+  }
+  // Mark Mechanical complete + advance. External Work is now David's explicit
+  // choice (the checkbox above), so a normal sign-off always skips it and goes
+  // to Valeting — even if external was ticked at intake.
+  if (typeof FS!=='undefined' && FS){
+    var patch={}; patch[4]={ completed:true, completedAt:now, awaitingReview:false, awaitingAssign:false,
+                             reviewedBy:currentStaff, reviewedAt:now, authorisedBy:currentStaff, authorisedAt:now, reviewNotes:notes };
+    // Clear any intake external-work request so it doesn't re-route here.
+    try { var w1=JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'); if (w1[1]) { w1[1].req_external=false; localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(w1)); patch[1]={req_external:false}; } } catch(e){}
+    try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
+    try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
+  }
   appAdvanceToNext(c, 'Mechanical');
   document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
-  showToast('🔧 Signed off — sent to '+(appNextRequiredStage('Mechanical', stockNo)||'Valeting'));
+  showToast('✅ Signed off — sent to '+(appNextRequiredStage('Mechanical', stockNo)||'Valeting'));
+  buildTasks(); buildDash();
+}
+
+// ── EXTERNAL WORK: send a vehicle OUT of the workshop; assign a driver to deliver/collect ──
+// Drivers = Kas Din and Mustafa Naama (the advertising/logistics pair). Falls back to
+// anyone whose 'sees' includes External Work if those names ever change.
+function _externalDrivers(){
+  var names=[];
+  if (typeof AC_STAFF!=='undefined'){
+    AC_STAFF.forEach(function(s){
+      if (s.role==='Test User') return;
+      if (/^kas\b/i.test(s.name) || /^must(afa|apha)?\b/i.test(s.name) || /mostafa/i.test(s.name)) names.push(s.name);
+    });
+    if (!names.length){ AC_STAFF.forEach(function(s){ if (Array.isArray(s.sees)&&s.sees.indexOf('External Work')>-1&&s.role!=='Test User') names.push(s.name); }); }
+  }
+  if (!names.length) names=['Kas Din','Mustafa Naama'];
+  return names.filter(function(v,i,a){return a.indexOf(v)===i;});
+}
+// Send the vehicle out: record it on the workflow (stage 5), create a delivery job for
+// the driver, and hold the vehicle "out for external work" until it's confirmed back.
+function _sendExternal(c, driver, where, fromStage, now, notes){
+  var stockNo=c.stockNo, vlabel=c.veh?(c.veh.registration+' '+c.veh.make+' '+c.veh.model):stockNo;
+  if (typeof FS!=='undefined' && FS){
+    var patch={};
+    // Close out Mechanical if we came from there.
+    if (fromStage==='Mechanical'){ patch[4]={ completed:true, completedAt:now, awaitingReview:false, reviewedBy:currentStaff, reviewedAt:now, authorisedBy:currentStaff, authorisedAt:now, reviewNotes:(notes||'') }; }
+    patch[5]={ externalOut:true, externalOutAt:now, externalDriver:driver, externalWhere:(where||''), externalBy:currentStaff, externalBack:false, completed:false };
+    patch.currentStage='External Work'; patch.currentStageAt=now;
+    try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
+    try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
+    try { if (c.veh) FS.collection('vehicles').doc(String(c.veh.registration)).set({registration:c.veh.registration, workflowStage:'External Work'},{merge:true}); } catch(e){}
+  }
+  // Driver's delivery job.
+  if (typeof CE_JOBS!=='undefined'){
+    try { CE_JOBS.assignFromHandover({
+      stockNo:stockNo, reg:(c.veh&&c.veh.registration)||'',
+      stageId:5, stageName:'External Work',
+      assignedTo:driver, assignedToDept:'',
+      assignedBy:currentStaff, jobType:'external',
+      note:'Deliver/collect for external work'+(where?(' — '+where):'')+'. Confirm when the vehicle is back.',
+      workRequired:(where||''), priority:'Normal', vehicle:vlabel
+    }); } catch(e){}
+  }
+  if (typeof CE_NOTIFY!=='undefined'){
+    try { CE_NOTIFY.push({ toName:driver, type:'info', reg:(c.veh&&c.veh.registration)||'',
+      vehicle:(c.veh?(c.veh.make+' '+c.veh.model):''), stage:'External Work — deliver/collect',
+      fromName:currentStaff, note:'Take this vehicle for external work'+(where?(' ('+where+')'):'')+' and confirm when back.',
+      priority:'Normal', link:'https://www.capeye.co.uk/staff-app.html' }); } catch(e){}
+  }
+  document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
+  showToast('🚚 Sent for external work — assigned to '+driver);
+  buildTasks(); buildDash();
+}
+// ── DRIVER (or manager) confirms the vehicle is back → moves on to Valeting ──
+function openExternalReturn(jobId, stockNo){
+  var veh = vehicles.find(function(v){ return v.stockNo===stockNo || (v.registration||'').toUpperCase()===(stockNo||'').toUpperCase(); });
+  var task = getMyTasks(currentStaff).find(function(t){ return t.id===jobId; }) || {};
+  _stageCtx = { jobId:jobId, stockNo:stockNo, stageName:'External Work', veh:veh, task:task, extreturn:true };
+  var d=new Date(), pad=function(n){return (n<10?'0':'')+n;};
+  var dateVal=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  var timeVal=pad(d.getHours())+':'+pad(d.getMinutes());
+  var ov=document.getElementById('appSaleOverlay');
+  ov.innerHTML='<div style="padding:24px 20px 48px;max-width:560px;margin:0 auto">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+      '<div><div style="font-size:21px;font-weight:800;color:#001a4d">Vehicle back from external work</div>'+
+      '<div style="font-size:13px;color:#64748b">'+(veh?(veh.registration+' · '+veh.make+' '+veh.model):stockNo)+'</div></div>'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="background:none;border:none;font-size:28px;color:#64748b;line-height:1">&times;</button></div>'+
+    (task.workRequired?'<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#3730a3">🚚 '+String(task.workRequired).replace(/</g,'&lt;')+'</div>':'')+
+    '<div style="display:flex;gap:10px">'+
+      '<div style="flex:1"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Date returned</label>'+
+        '<input type="date" id="er_date" value="'+dateVal+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:9px;font-size:14px"></div>'+
+      '<div style="flex:1"><label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">Time returned</label>'+
+        '<input type="time" id="er_time" value="'+timeVal+'" style="width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:9px;font-size:14px"></div>'+
+    '</div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:#475569;margin:12px 0 4px">Notes (optional)</label>'+
+    '<textarea id="er_notes" rows="2" placeholder="Work done externally / condition on return…" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px"></textarea>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button onclick="document.getElementById(\'appSaleOverlay\').style.display=\'none\'" style="flex:1;background:#eef1f5;border:none;border-radius:12px;padding:15px;font-weight:700;cursor:pointer">Cancel</button>'+
+      '<button onclick="submitExternalReturn()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;cursor:pointer">✅ Confirm back → Valeting</button>'+
+    '</div></div>';
+  ov.style.display='block';
+}
+function submitExternalReturn(){
+  if (!_stageCtx) return;
+  var c=_stageCtx, stockNo=c.stockNo, now=new Date().toISOString();
+  var date=(document.getElementById('er_date')||{}).value||'';
+  var time=(document.getElementById('er_time')||{}).value||'';
+  var notes=(document.getElementById('er_notes')||{}).value||'';
+  if (typeof FS!=='undefined' && FS){
+    var patch={}; patch[5]={ externalBack:true, externalBackAt:now, externalReturnDate:date, externalReturnTime:time,
+                             externalReturnBy:currentStaff, externalReturnNotes:notes, completed:true, completedAt:now, completedBy:currentStaff };
+    try { FS.collection('workflows').doc(String(stockNo)).set(patch, {merge:true}); } catch(e){}
+    try { localStorage.setItem('ac_wf_'+stockNo, JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('ac_wf_'+stockNo)||'{}'), patch))); } catch(e){}
+  }
+  if (typeof CE_JOBS!=='undefined' && c.jobId){ try { CE_JOBS.complete(c.jobId, currentStaff); } catch(e){} }
+  // Advance past External Work → Valeting.
+  appAdvanceToNext(c, 'External Work');
+  document.getElementById('appSaleOverlay').style.display='none'; _stageCtx=null;
+  showToast('✅ Back in — moved to '+(appNextRequiredStage('External Work', stockNo)||'Valeting'));
   buildTasks(); buildDash();
 }
 
@@ -2434,7 +2702,7 @@ function doLogout(){window.location.href='./login.html';}
 // serving stale files even after reinstalling). This forces a one-time clean
 // update: if the running code's version doesn't match, clear every cache,
 // update the service worker, and reload once.
-var CE_APP_VERSION = 'Nov26j';   // bump each release
+var CE_APP_VERSION = 'Nov26k';   // bump each release
 (function(){
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', function(){
