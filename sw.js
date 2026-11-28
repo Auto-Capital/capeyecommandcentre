@@ -1,10 +1,17 @@
 // CapEye Auto Capital | CapEye Final V1.1
-// Build: v20261020  (bump this on each release so old caches are purged)
+// Build: v20261128-nov26k  (bump this on each release so old caches are purged)
 const CACHE_NAME = 'capeye-nov26k';
 
-// Install — activate immediately, don't wait
+// Install — DON'T skip waiting automatically. The app shows an
+// "Update available" banner and the user taps "Update now", which posts
+// SKIP_WAITING (handled below). This stops the app reloading mid-job.
 self.addEventListener('install', e => {
-  self.skipWaiting();
+  // no skipWaiting here — wait for the user's tap
+});
+
+// Let the page trigger activation when the user taps "Update now".
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Activate — delete ALL old caches, take control immediately

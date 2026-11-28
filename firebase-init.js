@@ -29,9 +29,41 @@ if (FS) {
   } catch(e){}
 }
 
-// PWA service worker
+// PWA service worker + "Update available" banner (desktop pages).
+function ceShowUpdateBanner(reg){
+  if (document.getElementById('ceUpdateBanner')) return;
+  var bar=document.createElement('div');
+  bar.id='ceUpdateBanner';
+  bar.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:99999;'+
+    'background:#001a4d;color:#fff;display:flex;align-items:center;gap:12px;padding:12px 16px;'+
+    'border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.3);font-family:inherit;max-width:460px';
+  bar.innerHTML='<span style="font-size:20px">🔄</span>'+
+    '<div style="flex:1;line-height:1.3"><div style="font-weight:800;font-size:14px">Update available</div>'+
+    '<div style="font-size:12px;opacity:.8">A new version of CapEye is ready.</div></div>'+
+    '<button id="ceUpdateBtn" style="background:#f5c518;color:#000;border:none;border-radius:9px;padding:10px 15px;font-weight:800;font-size:13px;cursor:pointer">Update now</button>';
+  document.body.appendChild(bar);
+  document.getElementById('ceUpdateBtn').onclick=function(){
+    this.textContent='Updating…'; this.disabled=true;
+    try { if (reg && reg.waiting){ reg.waiting.postMessage({type:'SKIP_WAITING'}); }
+      setTimeout(function(){ if(!window.__ceReloaded){ window.__ceReloaded=true; location.reload(); } }, 1200);
+    } catch(e){ location.reload(); }
+  };
+}
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function(){});
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    try { reg.update(); } catch(e){}
+    if (reg.waiting && navigator.serviceWorker.controller){ ceShowUpdateBanner(reg); }
+    reg.addEventListener('updatefound', function(){
+      var nw = reg.installing; if (!nw) return;
+      nw.addEventListener('statechange', function(){
+        if (nw.state==='installed' && navigator.serviceWorker.controller){ ceShowUpdateBanner(reg); }
+      });
+    });
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden){ try { reg.update(); } catch(e){} } });
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if (!window.__ceReloaded){ window.__ceReloaded=true; location.reload(); }
+    });
+  }).catch(function(){});
 }
 
 // ── SESSION ──────────────────────────────────────────────────────────
